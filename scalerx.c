@@ -385,7 +385,7 @@ void scale2x3(unsigned char* dst_ptr, unsigned dst_slice, const unsigned char* s
 	}
 }
 
-#define SCALE2X4_REVISION_MAX 1
+#define SCALE2X4_REVISION_MAX 2
 
 void scale2x4(unsigned char* dst_ptr, unsigned dst_slice, const unsigned char* src_ptr, unsigned src_slice, unsigned pixel, unsigned width, unsigned height, int opt_tes, int opt_ver)
 {
@@ -443,6 +443,21 @@ void scale2x4(unsigned char* dst_ptr, unsigned dst_slice, const unsigned char* s
 				E3 = (k1 && E != I) || (k3 && E != C) ? F : E;
 				E4 = (k0 && E != G) || (k2 && E != A) ? D : E;
 				E5 = (k1 && E != I) || (k3 && E != C) ? F : E;
+				E6 = k2 ? D : E;
+				E7 = k3 ? F : E;
+				break;
+			case 2 :
+				/* Hans de Goede variation, rejected */
+				k0 = D == B && B != F && D != H;
+				k1 = B == F && B != D && F != H;
+				k2 = D == H && D != B && H != F;
+				k3 = H == F && D != H && B != F;
+				E0 = k0 ? D : E;
+				E1 = k1 ? F : E;
+				E2 = k0 ? D : E;
+				E3 = k1 ? F : E;
+				E4 = k2 ? D : E;
+				E5 = k3 ? F : E;
 				E6 = k2 ? D : E;
 				E7 = k3 ? F : E;
 				break;
