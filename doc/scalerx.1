@@ -1,0 +1,44 @@
+.TH "Scale a .PNG image using the reference implementation of the Scale effects" 1
+.SH NAME
+scalerx \(hy Scale a .PNG image using the reference implementation of the Scale effects
+.SH SYNOPSIS 
+scalerx [\(hyk N] [\(hyw] [\(hyr N] input.png output.png
+.PD 0
+.PP
+.PD
+.SH DESCRIPTION 
+Scale2x, Scale3x and Scale4x are real\(hytime graphics effects
+able to increase the size of small bitmaps guessing the
+missing pixels without blurring the images.
+.PP
+They were originally developed for the AdvanceMAME project
+in the year 2001 to improve the quality of old games running
+at low video resolutions.
+.PP
+The specification of the algorithm and more details are at:
+.PP
+.RS 4
+http://scale2x.sourceforge.net
+.PD 0
+.PP
+.PD
+.RE
+.PP
+These command line tools read a .PNG file and write another
+image with the effects applied.
+.PP
+The reference implementation of the Scale effects is used.
+.SH OPTIONS 
+.TP
+.B \(hyk N, \(hy\(hyscale N
+Select the scale factor. Available values are 2, 3 and 4.
+.TP
+.B \(hyw, \(hy\(hywrap
+Compute the image border for a wraparound effect.
+.TP
+.B \(hyr N
+Select a specific revision of the Scale2x effect.
+The standard algorithm is 1. 0 is the normal scaling.
+2 and 3 are alternative versions.
+.SH COPYRIGHT 
+This file is Copyright (C) 2003 Andrea Mazzoleni

@@ -1,0 +1,61 @@
+<html>
+<head>
+<title>Scale a .PNG image using the fast implementation of the Scale effects</title>
+</head>
+<body>
+<h2><center>Scale a .PNG image using the fast implementation of the Scale effects</center></h2>
+<h2>1 
+Synopsis
+</h2>
+<font face="Courier">
+scalex [-k N] input.png output.png<br>
+</font>
+<h2>2 
+Description
+</h2>
+Scale2x, Scale3x and Scale4x are real-time graphics effects
+able to increase the size of small bitmaps guessing the
+missing pixels without blurring the images.
+<p>
+They were originally developed for the AdvanceMAME project
+in the year 2001 to improve the quality of old games running
+at low video resolutions.
+<p>
+The specification of the algorithm and more details are at:
+<p>
+<table width="100%" border="0" cellspacing="0" cellpadding="2"><tr><td width="5%"></td><td width="95%">
+http://scale2x.sourceforge.net
+<br>
+</td></tr></table>
+<p>
+These command line tools read a .PNG file and write another
+image with the effects applied.
+<p>
+The fast implementation of the Scale effects is used. It imposes
+some limitations of the type of the image usable. Specifically :
+<ul>
+<li>
+Only the pixel sizes of 1, 2 and 4 bytes are supported. If the
+image has another pixel size it's automatically converted.
+</li>
+<li>
+The width of the image must be an exact multiplier of 8 bytes.
+If the image has an odd width the conversion fails.
+</li>
+</ul>
+<h2>3 
+Options
+</h2>
+<table width="100%" border="0" cellspacing="0" cellpadding="2">
+<tr valign="top" align="left"><td><strong>
+-k N, --scale N
+</em></td></tr><tr><td>
+Select the scale factor. Available values are 2, 3 and 4.
+</td></tr>
+</table>
+<h2>4 
+Copyright
+</h2>
+This file is Copyright (C) 2003 Andrea Mazzoleni
+</body>
+</html>
