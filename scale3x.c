@@ -108,6 +108,8 @@ unsigned get(int x, int y, png_byte** pix, unsigned dx, unsigned dy, unsigned dp
 		return p[0] | p[1] << 8 | p[2] << 16;
 	case 4 :
 		return p[0] | p[1] << 8 | p[2] << 16 | p[3] << 24;
+	default:
+		return 0;
 	}
 }
 
@@ -139,7 +141,7 @@ void put(int x, int y, png_byte** pix, unsigned dx, unsigned dy, unsigned dp, un
 	}
 }
 
-#define REVISION 2
+#define REVISION_MAX 2
 
 void scale3x(png_byte** dst, png_byte** src, unsigned dx, unsigned dy, unsigned dp, int opt_tes, int opt_ver) {
 	int x;
@@ -175,6 +177,7 @@ void scale3x(png_byte** dst, png_byte** src, unsigned dx, unsigned dy, unsigned 
 				E6E7E8
 			*/
 			switch (opt_ver) {
+			default:
 			case 0 :
 				/* version 0, normal scaling */
 				E0 = E;
@@ -367,7 +370,7 @@ void usage(void) {
 	printf("Syntax: scale3x [-t] [-r N] FROM.png TO.png\n");
 	printf("Options:\n");
 	printf("-w\tWrap around on the borders.\n");
-	printf("-r N\tSelect the revision of the algorithm 0-%d (default 1).\n", REVISION);
+	printf("-r N\tSelect the revision of the algorithm 0-%d (default 1).\n", REVISION_MAX);
 	exit(EXIT_FAILURE);
 }
 
@@ -400,17 +403,17 @@ int main(int argc, char* argv[]) {
 		switch (c) {
 			case 'h' :
 				usage();
-				return;
+				exit(EXIT_SUCCESS);
 			case 'v' :
 				version();
-				return;
+				exit(EXIT_SUCCESS);
 			case 'w' :
 				opt_tes = 1;
 				break;
 			case 'r' :
 				opt_ver = atoi(optarg);
-				if (opt_ver < 0 || opt_ver > REVISION) {
-					printf("Invalid -r option. Valid values are 0 - %d\n", REVISION);
+				if (opt_ver < 0 || opt_ver > REVISION_MAX) {
+					printf("Invalid -r option. Valid values are 0 - %d\n", REVISION_MAX);
 					exit(EXIT_FAILURE);
 				}
 				break;
