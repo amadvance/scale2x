@@ -1,8 +1,8 @@
 Name
 	scale2x - History For Scale2x
 
-Scale2x v1.5 2003/04
-	) Added the scale3x effect.
+Scale2x v1.5 2003/05
+	) Added the scale3x and scale4x command line tools.
 
 Scale2x v1.4 2003/01
 	) Added in the contrib dir a VisualC MMX assembler implementation

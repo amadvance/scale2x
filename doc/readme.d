@@ -1,11 +1,11 @@
 Name
-	scale2x - Scale2x
+	scale2x - Scale2x, Scale3x, Scale4x
 
-	Scale2x is real-time graphics effect able to increase
-	the size of small bitmaps guessing the missing pixels
-	without blurring the images.
+	Scale2x, Scale3x and Scale4x are real-time graphics effects
+	able to increase the size of small bitmaps guessing the
+	missing pixels without blurring the images.
 
-	It was originally developed for the AdvanceMAME project
+	They were originally developed for the AdvanceMAME project
 	in the year 2001 to improve the quality of old games running
 	at low video resolutions.
 
@@ -13,26 +13,27 @@ Name
 
 		+http://scale2x.sourceforge.net
 
-	This package contains some implementations of the Scale2x
-	effect in C and MMX Pentium assembler, and a command
-	line tool to convert manually .PNG images.
+	This package contains some implementations of the effects
+	in C and MMX Pentium assembler, and a command line tool to
+	convert manually .PNG images.
 
 Implementation
-	The fast C and MMX implementations are in the file scale2x.h.
-	To use these implementations in your program you need simply
-	to include the file in a C source.
+	The files scale2x.h and scale3x.h are fast C and MMX
+	implementations of the effects.
 
-	In the file scale2x.c there is the reference implementation
-	used by the command line tool.
+	The file scale2x.c, scale3x.c and scale4x.c are simple command
+	line processors of PNG files. They use reference implementations
+	of the effects.
 
-Tool
-	The command line tools "scale2x" and "scale3x" read a .PNG file
-	and write another .PNG file with the Scale2x effect applied.
-	The syntax of the program is :
+Tools
+	The command line tools "scale2x", "scale3x" and "scale4x" read
+	a .PNG file and write another .PNG file with the effect applied.
+	The syntax of the programs is :
 
 		:scale2x [-w] FROM.png TO.png
 
 	The option -w can be used to scale textures with a wraparound effect.
 
-	To compile the command line tool you need the libpng library.
+	To compile the command line tool you need the libz and libpng
+	libraries.
 

@@ -1,8 +1,9 @@
 ## Process this file with automake to produce Makefile.in
 
-bin_PROGRAMS = scale2x scale3x
+bin_PROGRAMS = scale2x scale3x scale4x
 
 EXTRA_DIST = \
+	scale2x.h scale3x.h \
 	README AUTHORS COPYING HISTORY \
 	example/mslug2-1.png \
 	example/mslug2-1x.png \
@@ -30,15 +31,19 @@ EXTRA_DIST = \
 	contrib/java/Scale2xImageFilter.java \
 	contrib/sdl/scale2x.c \
 	contrib/visualc/scale2x.cpp \
-	doc/scale3x.1
+	doc/scale3x.1 \
+	doc/scale4x.1
 
-man_MANS = doc/scale2x.1 doc/scale3x.1
+man_MANS = doc/scale2x.1 doc/scale3x.1 doc/scale4x.1
 
 scale2x_SOURCES = \
-	scale2x.c portable.c portable.h scale2x.h
+	scale2x.c portable.c portable.h
 
 scale3x_SOURCES = \
-	scale3x.c portable.c portable.h scale3x.h
+	scale3x.c portable.c portable.h
+
+scale4x_SOURCES = \
+	scale4x.c portable.c portable.h
 
 clean-local:
 	rm -f *~
@@ -70,7 +75,7 @@ doc/copying.txt: COPYING
 	cat $< | todos > $@
 
 DIST_WINDOWS = \
-	scale2x.exe scale3x.exe \
+	scale2x.exe scale3x.exe scale4x.exe \
 	support/zlib.dll support/libpng.dll \
 	doc/copying.txt \
 	doc/scale2x.txt doc/readme.txt doc/authors.txt doc/history.txt
@@ -80,15 +85,21 @@ DIST_WINDOWS_DOC = \
 
 DIST_WINDOWS_EXAMPLE = \
 	example/mslug2-1.png \
-	example/mslug2-1s.png \
+	example/mslug2-1x.png \
 	example/mslug2-2.png \
-	example/mslug2-2s.png \
+	example/mslug2-2x.png \
 	example/mslug2-3.png \
+	example/mslug2-3x.png \
+	example/mslug2-4.png \
+	example/mslug2-4x.png \
 	example/test-1.png \
-	example/test-1s.png \
+	example/test-1x.png \
 	example/test-2.png \
-	example/test-2s.png \
-	example/test-3.png
+	example/test-2x.png \
+	example/test-3.png \
+	example/test-3x.png \
+	example/test-4.png \
+	example/test-4x.png
 
 distwindows: $(DIST_WINDOWS)
 	rm -f $(PACKAGE)-$(VERSION)-windows-pentium.zip

@@ -1,7 +1,7 @@
 /*
  * This file is part of the Scale2x project.
  *
- * Copyright (C) 2001-2002 Andrea Mazzoleni
+ * Copyright (C) 2001-2003 Andrea Mazzoleni
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -30,7 +30,7 @@ int file_write(const char* file, unsigned width, unsigned height, png_byte** row
 	png_info* info_ptr;
 	FILE* fp = fopen(file, "wb");
 	if (!fp) {
-		fprintf(stderr,"Error opening file %s\n", file);
+		fprintf(stderr,"Error creating file %s\n", file);
 		return -1;
 	}
 
@@ -141,7 +141,7 @@ void put(int x, int y, png_byte** pix, unsigned dx, unsigned dy, unsigned dp, un
 	}
 }
 
-#define REVISION_MAX 2
+#define REVISION_MAX 4
 
 void scale3x(png_byte** dst, png_byte** src, unsigned dx, unsigned dy, unsigned dp, int opt_tes, int opt_ver) {
 	int x;
@@ -192,22 +192,42 @@ void scale3x(png_byte** dst, png_byte** src, unsigned dx, unsigned dy, unsigned 
 				break;
 			case 1 :
 				/* version 1 */
-				k0 = D == B && B != F && D != H;
-				k1 = B == F && B != D && F != H;
-				k2 = D == H && D != B && H != F;
-				k3 = H == F && D != H && B != F;
-				E0 = k0 ? D : E;
+				E0 = D == B && B != F && D != H ? D : E;
 				E1 = E;
-				E2 = k1 ? F : E;
+				E2 = B == F && B != D && F != H ? F : E;
 				E3 = E;
 				E4 = E;
 				E5 = E;
-				E6 = k2 ? D : E;
+				E6 = D == H && D != B && H != F ? D : E;
 				E7 = E;
-				E8 = k3 ? F : E;
+				E8 = H == F && D != H && B != F ? F : E;
 				break;
 			case 2 :
 				/* version 2 */
+				E0 = D == B && ((B != F && D != H) || D == A) ? D : E;
+				E1 = E;
+				E2 = B == F && ((B != D && F != H) || B == C) ? F : E;
+				E3 = E;
+				E4 = E;
+				E5 = E;
+				E6 = D == H && ((D != B && H != F) || D == G) ? D : E;
+				E7 = E;
+				E8 = H == F && ((D != H && B != F) || H == I) ? F : E;
+				break;
+			case 3 :
+				/* version 3 */
+				E0 = D == B && A != E ? D : E;
+				E1 = E;
+				E2 = B == F && C != E ? F : E;
+				E3 = E;
+				E4 = E;
+				E5 = E;
+				E6 = D == H && G != E ? D : E;
+				E7 = E;
+				E8 = H == F && I != E ? F : E;
+				break;
+			case 4 :
+				/* version 4 */
 				k0 = D == B && B != F && D != H;
 				k1 = B == F && B != D && F != H;
 				k2 = D == H && D != B && H != F;
@@ -252,7 +272,6 @@ int file_transform(const char* file, png_struct* png_ptr, png_info* info_ptr, pn
 	png_color* palette;
 	int palette_size;
 	png_byte** row_tra;
-	unsigned scan;
 	unsigned i;
 	unsigned dp;
 
@@ -284,10 +303,9 @@ int file_transform(const char* file, png_struct* png_ptr, png_info* info_ptr, pn
 		dp = 4;
 	break;
 	default:
+		fprintf(stderr,"Unsupported PNG format\n");
 		return -1;
 	}
-
-	scan = width * 3 * dp;
 
 	row_tra = malloc(sizeof(void*) * height * 3);
 	if (!row_tra) {
@@ -295,7 +313,7 @@ int file_transform(const char* file, png_struct* png_ptr, png_info* info_ptr, pn
 		return -1;
 	}
 	for(i=0;i<height * 3;++i) {
-		row_tra[i] = malloc(scan);
+		row_tra[i] = malloc(width * 3 * dp);
 		if (!row_tra[i]) {
 			fprintf(stderr,"Low memory\n");
 			return -1;
@@ -304,8 +322,13 @@ int file_transform(const char* file, png_struct* png_ptr, png_info* info_ptr, pn
 
 	scale3x(row_tra, row, width, height, dp, opt_tes, opt_ver);
 
-	if (file_write(file, width * 3, height * 3, row_tra, color_type, palette, palette_size) != 0)
+	if (file_write(file, width * 3, height * 3, row_tra, color_type, palette, palette_size) != 0) {
 		return -1;
+	}
+
+	for(i=0;i<height * 2;++i)
+		free(row_tra[i]);
+	free(row_tra);
 
 	return 0;
 }

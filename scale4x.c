@@ -220,7 +220,8 @@ int file_transform(const char* file, png_struct* png_ptr, png_info* info_ptr, pn
 	int filter_type;
 	png_color* palette;
 	int palette_size;
-	png_byte** row_tra;
+	png_byte** row_tra2;
+	png_byte** row_tra4;
 	unsigned i;
 	unsigned dp;
 
@@ -256,28 +257,45 @@ int file_transform(const char* file, png_struct* png_ptr, png_info* info_ptr, pn
 		return -1;
 	}
 
-	row_tra = malloc(sizeof(void*) * height * 2);
-	if (!row_tra) {
+	row_tra2 = malloc(sizeof(void*) * height * 2);
+	if (!row_tra2) {
 		fprintf(stderr,"Low memory\n");
 		return -1;
 	}
 	for(i=0;i<height * 2;++i) {
-		row_tra[i] = malloc(width * 2 * dp);
-		if (!row_tra[i]) {
+		row_tra2[i] = malloc(width * 2 * dp);
+		if (!row_tra2[i]) {
 			fprintf(stderr,"Low memory\n");
 			return -1;
 		}
 	}
 
-	scale2x(row_tra, row, width, height, dp, opt_tes, opt_ver);
+	row_tra4 = malloc(sizeof(void*) * height * 4);
+	if (!row_tra4) {
+		fprintf(stderr,"Low memory\n");
+		return -1;
+	}
+	for(i=0;i<height * 4;++i) {
+		row_tra4[i] = malloc(width * 4 * dp);
+		if (!row_tra4[i]) {
+			fprintf(stderr,"Low memory\n");
+			return -1;
+		}
+	}
 
-	if (file_write(file, width * 2, height * 2, row_tra, color_type, palette, palette_size) != 0) {
+	scale2x(row_tra2, row, width, height, dp, opt_tes, opt_ver);
+	scale2x(row_tra4, row_tra2, width * 2, height * 2, dp, opt_tes, opt_ver);
+
+	if (file_write(file, width * 4, height * 4, row_tra4, color_type, palette, palette_size) != 0) {
 		return -1;
 	}
 
 	for(i=0;i<height * 2;++i)
-		free(row_tra[i]);
-	free(row_tra);
+		free(row_tra2[i]);
+	for(i=0;i<height * 4;++i)
+		free(row_tra4[i]);
+	free(row_tra2);
+	free(row_tra4);
 
 	return 0;
 }
@@ -339,7 +357,7 @@ void version(void) {
 
 void usage(void) {
 	version();
-	printf("Syntax: scale2x [-t] [-r N] FROM.png TO.png\n");
+	printf("Syntax: scale4x [-t] [-r N] FROM.png TO.png\n");
 	printf("Options:\n");
 	printf("-w\tWrap around on the borders.\n");
 	printf("-r N\tSelect the revision of the algorithm 0-%d (default 1).\n", REVISION_MAX);
