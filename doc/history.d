@@ -1,7 +1,7 @@
 Name
 	scale2x - History For Scale2x
 
-Scale2x v2.1 2004/08
+Scale2x v2.1 2004/12
 	) Added the `scale2x3' and `scale2x4' effects.
 	) Fixed the computation of the border pixels for scale3x.
 	) Fixed the scalebit.c implementation to be C++
