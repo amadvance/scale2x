@@ -31,14 +31,17 @@ The reference implementation of the Scale effects is used.
 .SH OPTIONS 
 .TP
 .B \(hyk N, \(hy\(hyscale N
-Select the scale factor. Available values are 2, 3 and 4.
+Select the scale factor. Available values are 2, 2x3,
+2x4, 3, and 4.
 .TP
 .B \(hyw, \(hy\(hywrap
 Compute the image border for a wraparound effect.
 .TP
 .B \(hyr N
 Select a specific revision of the Scale2x effect.
-The standard algorithm is 1. 0 is the normal scaling.
-2 and 3 are alternative versions.
+The standard algorithm is always 1. To scale an image
+without any effect use the value 0. Other nunbers
+are alternative versions. Refers at the source
+implementation for more details.
 .SH COPYRIGHT 
-This file is Copyright (C) 2003 Andrea Mazzoleni
+This file is Copyright (C) 2003, 2004 Andrea Mazzoleni

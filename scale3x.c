@@ -43,17 +43,120 @@
 /***************************************************************************/
 /* Scale3x C implementation */
 
-static inline void scale3x_8_def_border(scale3x_uint8* __restrict__ dst, const scale3x_uint8* __restrict__ src0, const scale3x_uint8* __restrict__ src1, const scale3x_uint8* __restrict__ src2, unsigned count)
+/**
+ * Define the macro USE_SCALE_RANDOMWRITE to enable
+ * an optimized version which writes memory in random order.
+ * This version is a little faster if you write in system memory.
+ * But it's a lot slower if you write in video memory.
+ * So, enable it only if you are sure to never write directly in video memory.
+ */
+/* #define USE_SCALE_RANDOMWRITE */
+
+static inline void scale3x_8_def_whole(scale3x_uint8* restrict dst0, scale3x_uint8* restrict dst1, scale3x_uint8* restrict dst2, const scale3x_uint8* restrict src0, const scale3x_uint8* restrict src1, const scale3x_uint8* restrict src2, unsigned count)
 {
 	assert(count >= 2);
 
 	/* first pixel */
-	dst[0] = src1[0];
-	dst[1] = src1[0];
-	if (src1[1] == src0[0] && src2[0] != src0[0])
-		dst[2] = src0[0];
-	else
+	if (src0[0] != src2[0] && src1[0] != src1[1]) {
+		dst0[0] = src1[0];
+		dst0[1] = (src1[0] == src0[0] && src1[0] != src0[1]) || (src1[1] == src0[0] && src1[0] != src0[0]) ? src0[0] : src1[0];
+		dst0[2] = src1[1] == src0[0] ? src1[1] : src1[0];
+		dst1[0] = (src1[0] == src0[0] && src1[0] != src2[0]) || (src1[0] == src2[0] && src1[0] != src0[0]) ? src1[0] : src1[0];
+		dst1[1] = src1[0];
+		dst1[2] = (src1[1] == src0[0] && src1[0] != src2[1]) || (src1[1] == src2[0] && src1[0] != src0[1]) ? src1[1] : src1[0];
+		dst2[0] = src1[0];
+		dst2[1] = (src1[0] == src2[0] && src1[0] != src2[1]) || (src1[1] == src2[0] && src1[0] != src2[0]) ? src2[0] : src1[0];
+		dst2[2] = src1[1] == src2[0] ? src1[1] : src1[0];
+	} else {
+		dst0[0] = src1[0];
+		dst0[1] = src1[0];
+		dst0[2] = src1[0];
+		dst1[0] = src1[0];
+		dst1[1] = src1[0];
+		dst1[2] = src1[0];
+		dst2[0] = src1[0];
+		dst2[1] = src1[0];
+		dst2[2] = src1[0];
+	}
+	++src0;
+	++src1;
+	++src2;
+	dst0 += 3;
+	dst1 += 3;
+	dst2 += 3;
+
+	/* central pixels */
+	count -= 2;
+	while (count) {
+		if (src0[0] != src2[0] && src1[-1] != src1[1]) {
+			dst0[0] = src1[-1] == src0[0] ? src1[-1] : src1[0];
+			dst0[1] = (src1[-1] == src0[0] && src1[0] != src0[1]) || (src1[1] == src0[0] && src1[0] != src0[-1]) ? src0[0] : src1[0];
+			dst0[2] = src1[1] == src0[0] ? src1[1] : src1[0];
+			dst1[0] = (src1[-1] == src0[0] && src1[0] != src2[-1]) || (src1[-1] == src2[0] && src1[0] != src0[-1]) ? src1[-1] : src1[0];
+			dst1[1] = src1[0];
+			dst1[2] = (src1[1] == src0[0] && src1[0] != src2[1]) || (src1[1] == src2[0] && src1[0] != src0[1]) ? src1[1] : src1[0];
+			dst2[0] = src1[-1] == src2[0] ? src1[-1] : src1[0];
+			dst2[1] = (src1[-1] == src2[0] && src1[0] != src2[1]) || (src1[1] == src2[0] && src1[0] != src2[-1]) ? src2[0] : src1[0];
+			dst2[2] = src1[1] == src2[0] ? src1[1] : src1[0];
+		} else {
+			dst0[0] = src1[0];
+			dst0[1] = src1[0];
+			dst0[2] = src1[0];
+			dst1[0] = src1[0];
+			dst1[1] = src1[0];
+			dst1[2] = src1[0];
+			dst2[0] = src1[0];
+			dst2[1] = src1[0];
+			dst2[2] = src1[0];
+		}
+
+		++src0;
+		++src1;
+		++src2;
+		dst0 += 3;
+		dst1 += 3;
+		dst2 += 3;
+		--count;
+	}
+
+	/* last pixel */
+	if (src0[0] != src2[0] && src1[-1] != src1[0]) {
+		dst0[0] = src1[-1] == src0[0] ? src1[-1] : src1[0];
+		dst0[1] = (src1[-1] == src0[0] && src1[0] != src0[0]) || (src1[0] == src0[0] && src1[0] != src0[-1]) ? src0[0] : src1[0];
+		dst0[2] = src1[0];
+		dst1[0] = (src1[-1] == src0[0] && src1[0] != src2[-1]) || (src1[-1] == src2[0] && src1[0] != src0[-1]) ? src1[-1] : src1[0];
+		dst1[1] = src1[0];
+		dst1[2] = (src1[0] == src0[0] && src1[0] != src2[0]) || (src1[0] == src2[0] && src1[0] != src0[0]) ? src1[0] : src1[0];
+		dst2[0] = src1[-1] == src2[0] ? src1[-1] : src1[0];
+		dst2[1] = (src1[-1] == src2[0] && src1[0] != src2[0]) || (src1[0] == src2[0] && src1[0] != src2[-1]) ? src2[0] : src1[0];
+		dst2[2] = src1[0];
+	} else {
+		dst0[0] = src1[0];
+		dst0[1] = src1[0];
+		dst0[2] = src1[0];
+		dst1[0] = src1[0];
+		dst1[1] = src1[0];
+		dst1[2] = src1[0];
+		dst2[0] = src1[0];
+		dst2[1] = src1[0];
+		dst2[2] = src1[0];
+	}
+}
+
+static inline void scale3x_8_def_border(scale3x_uint8* restrict dst, const scale3x_uint8* restrict src0, const scale3x_uint8* restrict src1, const scale3x_uint8* restrict src2, unsigned count)
+{
+	assert(count >= 2);
+
+	/* first pixel */
+	if (src0[0] != src2[0] && src1[0] != src1[1]) {
+		dst[0] = src1[0];
+		dst[1] = (src1[0] == src0[0] && src1[0] != src0[1]) || (src1[1] == src0[0] && src1[0] != src0[0]) ? src0[0] : src1[0];
+		dst[2] = src1[1] == src0[0] ? src1[1] : src1[0];
+	} else {
+		dst[0] = src1[0];
+		dst[1] = src1[0];
 		dst[2] = src1[0];
+	}
 	++src0;
 	++src1;
 	++src2;
@@ -80,24 +183,29 @@ static inline void scale3x_8_def_border(scale3x_uint8* __restrict__ dst, const s
 	}
 
 	/* last pixel */
-	if (src1[-1] == src0[0] && src2[0] != src0[0])
-		dst[0] = src0[0];
-	else
+	if (src0[0] != src2[0] && src1[-1] != src1[0]) {
+		dst[0] = src1[-1] == src0[0] ? src1[-1] : src1[0];
+		dst[1] = (src1[-1] == src0[0] && src1[0] != src0[0]) || (src1[0] == src0[0] && src1[0] != src0[-1]) ? src0[0] : src1[0];
+		dst[2] = src1[0];
+	} else {
 		dst[0] = src1[0];
-	dst[1] = src1[0];
-	dst[2] = src1[0];
+		dst[1] = src1[0];
+		dst[2] = src1[0];
+	}
 }
 
-static inline void scale3x_8_def_center(scale3x_uint8* __restrict__ dst, const scale3x_uint8* __restrict__ src0, const scale3x_uint8* __restrict__ src1, const scale3x_uint8* __restrict__ src2, unsigned count)
+static inline void scale3x_8_def_center(scale3x_uint8* restrict dst, const scale3x_uint8* restrict src0, const scale3x_uint8* restrict src1, const scale3x_uint8* restrict src2, unsigned count)
 {
 	assert(count >= 2);
 
 	/* first pixel */
-	dst[0] = src1[0];
-	dst[1] = src1[0];
-	if (src0[0] != src2[0]) {
+	if (src0[0] != src2[0] && src1[0] != src1[1]) {
+		dst[0] = (src1[0] == src0[0] && src1[0] != src2[0]) || (src1[0] == src2[0] && src1[0] != src0[0]) ? src1[0] : src1[0];
+		dst[1] = src1[0];
 		dst[2] = (src1[1] == src0[0] && src1[0] != src2[1]) || (src1[1] == src2[0] && src1[0] != src0[1]) ? src1[1] : src1[0];
 	} else {
+		dst[0] = src1[0];
+		dst[1] = src1[0];
 		dst[2] = src1[0];
 	}
 	++src0;
@@ -126,26 +234,122 @@ static inline void scale3x_8_def_center(scale3x_uint8* __restrict__ dst, const s
 	}
 
 	/* last pixel */
-	if (src0[0] != src2[0]) {
+	if (src0[0] != src2[0] && src1[-1] != src1[0]) {
 		dst[0] = (src1[-1] == src0[0] && src1[0] != src2[-1]) || (src1[-1] == src2[0] && src1[0] != src0[-1]) ? src1[-1] : src1[0];
+		dst[1] = src1[0];
+		dst[2] = (src1[0] == src0[0] && src1[0] != src2[0]) || (src1[0] == src2[0] && src1[0] != src0[0]) ? src1[0] : src1[0];
 	} else {
 		dst[0] = src1[0];
+		dst[1] = src1[0];
+		dst[2] = src1[0];
 	}
-	dst[1] = src1[0];
-	dst[2] = src1[0];
 }
 
-static inline void scale3x_16_def_border(scale3x_uint16* __restrict__ dst, const scale3x_uint16* __restrict__ src0, const scale3x_uint16* __restrict__ src1, const scale3x_uint16* __restrict__ src2, unsigned count)
+static inline void scale3x_16_def_whole(scale3x_uint16* restrict dst0, scale3x_uint16* restrict dst1, scale3x_uint16* restrict dst2, const scale3x_uint16* restrict src0, const scale3x_uint16* restrict src1, const scale3x_uint16* restrict src2, unsigned count)
 {
 	assert(count >= 2);
 
 	/* first pixel */
-	dst[0] = src1[0];
-	dst[1] = src1[0];
-	if (src1[1] == src0[0] && src2[0] != src0[0])
-		dst[2] = src0[0];
-	else
+	if (src0[0] != src2[0] && src1[0] != src1[1]) {
+		dst0[0] = src1[0];
+		dst0[1] = (src1[0] == src0[0] && src1[0] != src0[1]) || (src1[1] == src0[0] && src1[0] != src0[0]) ? src0[0] : src1[0];
+		dst0[2] = src1[1] == src0[0] ? src1[1] : src1[0];
+		dst1[0] = (src1[0] == src0[0] && src1[0] != src2[0]) || (src1[0] == src2[0] && src1[0] != src0[0]) ? src1[0] : src1[0];
+		dst1[1] = src1[0];
+		dst1[2] = (src1[1] == src0[0] && src1[0] != src2[1]) || (src1[1] == src2[0] && src1[0] != src0[1]) ? src1[1] : src1[0];
+		dst2[0] = src1[0];
+		dst2[1] = (src1[0] == src2[0] && src1[0] != src2[1]) || (src1[1] == src2[0] && src1[0] != src2[0]) ? src2[0] : src1[0];
+		dst2[2] = src1[1] == src2[0] ? src1[1] : src1[0];
+	} else {
+		dst0[0] = src1[0];
+		dst0[1] = src1[0];
+		dst0[2] = src1[0];
+		dst1[0] = src1[0];
+		dst1[1] = src1[0];
+		dst1[2] = src1[0];
+		dst2[0] = src1[0];
+		dst2[1] = src1[0];
+		dst2[2] = src1[0];
+	}
+	++src0;
+	++src1;
+	++src2;
+	dst0 += 3;
+	dst1 += 3;
+	dst2 += 3;
+
+	/* central pixels */
+	count -= 2;
+	while (count) {
+		if (src0[0] != src2[0] && src1[-1] != src1[1]) {
+			dst0[0] = src1[-1] == src0[0] ? src1[-1] : src1[0];
+			dst0[1] = (src1[-1] == src0[0] && src1[0] != src0[1]) || (src1[1] == src0[0] && src1[0] != src0[-1]) ? src0[0] : src1[0];
+			dst0[2] = src1[1] == src0[0] ? src1[1] : src1[0];
+			dst1[0] = (src1[-1] == src0[0] && src1[0] != src2[-1]) || (src1[-1] == src2[0] && src1[0] != src0[-1]) ? src1[-1] : src1[0];
+			dst1[1] = src1[0];
+			dst1[2] = (src1[1] == src0[0] && src1[0] != src2[1]) || (src1[1] == src2[0] && src1[0] != src0[1]) ? src1[1] : src1[0];
+			dst2[0] = src1[-1] == src2[0] ? src1[-1] : src1[0];
+			dst2[1] = (src1[-1] == src2[0] && src1[0] != src2[1]) || (src1[1] == src2[0] && src1[0] != src2[-1]) ? src2[0] : src1[0];
+			dst2[2] = src1[1] == src2[0] ? src1[1] : src1[0];
+		} else {
+			dst0[0] = src1[0];
+			dst0[1] = src1[0];
+			dst0[2] = src1[0];
+			dst1[0] = src1[0];
+			dst1[1] = src1[0];
+			dst1[2] = src1[0];
+			dst2[0] = src1[0];
+			dst2[1] = src1[0];
+			dst2[2] = src1[0];
+		}
+
+		++src0;
+		++src1;
+		++src2;
+		dst0 += 3;
+		dst1 += 3;
+		dst2 += 3;
+		--count;
+	}
+
+	/* last pixel */
+	if (src0[0] != src2[0] && src1[-1] != src1[0]) {
+		dst0[0] = src1[-1] == src0[0] ? src1[-1] : src1[0];
+		dst0[1] = (src1[-1] == src0[0] && src1[0] != src0[0]) || (src1[0] == src0[0] && src1[0] != src0[-1]) ? src0[0] : src1[0];
+		dst0[2] = src1[0];
+		dst1[0] = (src1[-1] == src0[0] && src1[0] != src2[-1]) || (src1[-1] == src2[0] && src1[0] != src0[-1]) ? src1[-1] : src1[0];
+		dst1[1] = src1[0];
+		dst1[2] = (src1[0] == src0[0] && src1[0] != src2[0]) || (src1[0] == src2[0] && src1[0] != src0[0]) ? src1[0] : src1[0];
+		dst2[0] = src1[-1] == src2[0] ? src1[-1] : src1[0];
+		dst2[1] = (src1[-1] == src2[0] && src1[0] != src2[0]) || (src1[0] == src2[0] && src1[0] != src2[-1]) ? src2[0] : src1[0];
+		dst2[2] = src1[0];
+	} else {
+		dst0[0] = src1[0];
+		dst0[1] = src1[0];
+		dst0[2] = src1[0];
+		dst1[0] = src1[0];
+		dst1[1] = src1[0];
+		dst1[2] = src1[0];
+		dst2[0] = src1[0];
+		dst2[1] = src1[0];
+		dst2[2] = src1[0];
+	}
+}
+
+static inline void scale3x_16_def_border(scale3x_uint16* restrict dst, const scale3x_uint16* restrict src0, const scale3x_uint16* restrict src1, const scale3x_uint16* restrict src2, unsigned count)
+{
+	assert(count >= 2);
+
+	/* first pixel */
+	if (src0[0] != src2[0] && src1[0] != src1[1]) {
+		dst[0] = src1[0];
+		dst[1] = (src1[0] == src0[0] && src1[0] != src0[1]) || (src1[1] == src0[0] && src1[0] != src0[0]) ? src0[0] : src1[0];
+		dst[2] = src1[1] == src0[0] ? src1[1] : src1[0];
+	} else {
+		dst[0] = src1[0];
+		dst[1] = src1[0];
 		dst[2] = src1[0];
+	}
 	++src0;
 	++src1;
 	++src2;
@@ -172,24 +376,29 @@ static inline void scale3x_16_def_border(scale3x_uint16* __restrict__ dst, const
 	}
 
 	/* last pixel */
-	if (src1[-1] == src0[0] && src2[0] != src0[0])
-		dst[0] = src0[0];
-	else
+	if (src0[0] != src2[0] && src1[-1] != src1[0]) {
+		dst[0] = src1[-1] == src0[0] ? src1[-1] : src1[0];
+		dst[1] = (src1[-1] == src0[0] && src1[0] != src0[0]) || (src1[0] == src0[0] && src1[0] != src0[-1]) ? src0[0] : src1[0];
+		dst[2] = src1[0];
+	} else {
 		dst[0] = src1[0];
-	dst[1] = src1[0];
-	dst[2] = src1[0];
+		dst[1] = src1[0];
+		dst[2] = src1[0];
+	}
 }
 
-static inline void scale3x_16_def_center(scale3x_uint16* __restrict__ dst, const scale3x_uint16* __restrict__ src0, const scale3x_uint16* __restrict__ src1, const scale3x_uint16* __restrict__ src2, unsigned count)
+static inline void scale3x_16_def_center(scale3x_uint16* restrict dst, const scale3x_uint16* restrict src0, const scale3x_uint16* restrict src1, const scale3x_uint16* restrict src2, unsigned count)
 {
 	assert(count >= 2);
 
 	/* first pixel */
-	dst[0] = src1[0];
-	dst[1] = src1[0];
-	if (src0[0] != src2[0]) {
+	if (src0[0] != src2[0] && src1[0] != src1[1]) {
+		dst[0] = (src1[0] == src0[0] && src1[0] != src2[0]) || (src1[0] == src2[0] && src1[0] != src0[0]) ? src1[0] : src1[0];
+		dst[1] = src1[0];
 		dst[2] = (src1[1] == src0[0] && src1[0] != src2[1]) || (src1[1] == src2[0] && src1[0] != src0[1]) ? src1[1] : src1[0];
 	} else {
+		dst[0] = src1[0];
+		dst[1] = src1[0];
 		dst[2] = src1[0];
 	}
 	++src0;
@@ -218,26 +427,122 @@ static inline void scale3x_16_def_center(scale3x_uint16* __restrict__ dst, const
 	}
 
 	/* last pixel */
-	if (src0[0] != src2[0]) {
+	if (src0[0] != src2[0] && src1[-1] != src1[0]) {
 		dst[0] = (src1[-1] == src0[0] && src1[0] != src2[-1]) || (src1[-1] == src2[0] && src1[0] != src0[-1]) ? src1[-1] : src1[0];
+		dst[1] = src1[0];
+		dst[2] = (src1[0] == src0[0] && src1[0] != src2[0]) || (src1[0] == src2[0] && src1[0] != src0[0]) ? src1[0] : src1[0];
 	} else {
 		dst[0] = src1[0];
+		dst[1] = src1[0];
+		dst[2] = src1[0];
 	}
-	dst[1] = src1[0];
-	dst[2] = src1[0];
 }
 
-static inline void scale3x_32_def_border(scale3x_uint32* __restrict__ dst, const scale3x_uint32* __restrict__ src0, const scale3x_uint32* __restrict__ src1, const scale3x_uint32* __restrict__ src2, unsigned count)
+static inline void scale3x_32_def_whole(scale3x_uint32* restrict dst0, scale3x_uint32* restrict dst1, scale3x_uint32* restrict dst2, const scale3x_uint32* restrict src0, const scale3x_uint32* restrict src1, const scale3x_uint32* restrict src2, unsigned count)
 {
 	assert(count >= 2);
 
 	/* first pixel */
-	dst[0] = src1[0];
-	dst[1] = src1[0];
-	if (src1[1] == src0[0] && src2[0] != src0[0])
-		dst[2] = src0[0];
-	else
+	if (src0[0] != src2[0] && src1[0] != src1[1]) {
+		dst0[0] = src1[0];
+		dst0[1] = (src1[0] == src0[0] && src1[0] != src0[1]) || (src1[1] == src0[0] && src1[0] != src0[0]) ? src0[0] : src1[0];
+		dst0[2] = src1[1] == src0[0] ? src1[1] : src1[0];
+		dst1[0] = (src1[0] == src0[0] && src1[0] != src2[0]) || (src1[0] == src2[0] && src1[0] != src0[0]) ? src1[0] : src1[0];
+		dst1[1] = src1[0];
+		dst1[2] = (src1[1] == src0[0] && src1[0] != src2[1]) || (src1[1] == src2[0] && src1[0] != src0[1]) ? src1[1] : src1[0];
+		dst2[0] = src1[0];
+		dst2[1] = (src1[0] == src2[0] && src1[0] != src2[1]) || (src1[1] == src2[0] && src1[0] != src2[0]) ? src2[0] : src1[0];
+		dst2[2] = src1[1] == src2[0] ? src1[1] : src1[0];
+	} else {
+		dst0[0] = src1[0];
+		dst0[1] = src1[0];
+		dst0[2] = src1[0];
+		dst1[0] = src1[0];
+		dst1[1] = src1[0];
+		dst1[2] = src1[0];
+		dst2[0] = src1[0];
+		dst2[1] = src1[0];
+		dst2[2] = src1[0];
+	}
+	++src0;
+	++src1;
+	++src2;
+	dst0 += 3;
+	dst1 += 3;
+	dst2 += 3;
+
+	/* central pixels */
+	count -= 2;
+	while (count) {
+		if (src0[0] != src2[0] && src1[-1] != src1[1]) {
+			dst0[0] = src1[-1] == src0[0] ? src1[-1] : src1[0];
+			dst0[1] = (src1[-1] == src0[0] && src1[0] != src0[1]) || (src1[1] == src0[0] && src1[0] != src0[-1]) ? src0[0] : src1[0];
+			dst0[2] = src1[1] == src0[0] ? src1[1] : src1[0];
+			dst1[0] = (src1[-1] == src0[0] && src1[0] != src2[-1]) || (src1[-1] == src2[0] && src1[0] != src0[-1]) ? src1[-1] : src1[0];
+			dst1[1] = src1[0];
+			dst1[2] = (src1[1] == src0[0] && src1[0] != src2[1]) || (src1[1] == src2[0] && src1[0] != src0[1]) ? src1[1] : src1[0];
+			dst2[0] = src1[-1] == src2[0] ? src1[-1] : src1[0];
+			dst2[1] = (src1[-1] == src2[0] && src1[0] != src2[1]) || (src1[1] == src2[0] && src1[0] != src2[-1]) ? src2[0] : src1[0];
+			dst2[2] = src1[1] == src2[0] ? src1[1] : src1[0];
+		} else {
+			dst0[0] = src1[0];
+			dst0[1] = src1[0];
+			dst0[2] = src1[0];
+			dst1[0] = src1[0];
+			dst1[1] = src1[0];
+			dst1[2] = src1[0];
+			dst2[0] = src1[0];
+			dst2[1] = src1[0];
+			dst2[2] = src1[0];
+		}
+
+		++src0;
+		++src1;
+		++src2;
+		dst0 += 3;
+		dst1 += 3;
+		dst2 += 3;
+		--count;
+	}
+
+	/* last pixel */
+	if (src0[0] != src2[0] && src1[-1] != src1[0]) {
+		dst0[0] = src1[-1] == src0[0] ? src1[-1] : src1[0];
+		dst0[1] = (src1[-1] == src0[0] && src1[0] != src0[0]) || (src1[0] == src0[0] && src1[0] != src0[-1]) ? src0[0] : src1[0];
+		dst0[2] = src1[0];
+		dst1[0] = (src1[-1] == src0[0] && src1[0] != src2[-1]) || (src1[-1] == src2[0] && src1[0] != src0[-1]) ? src1[-1] : src1[0];
+		dst1[1] = src1[0];
+		dst1[2] = (src1[0] == src0[0] && src1[0] != src2[0]) || (src1[0] == src2[0] && src1[0] != src0[0]) ? src1[0] : src1[0];
+		dst2[0] = src1[-1] == src2[0] ? src1[-1] : src1[0];
+		dst2[1] = (src1[-1] == src2[0] && src1[0] != src2[0]) || (src1[0] == src2[0] && src1[0] != src2[-1]) ? src2[0] : src1[0];
+		dst2[2] = src1[0];
+	} else {
+		dst0[0] = src1[0];
+		dst0[1] = src1[0];
+		dst0[2] = src1[0];
+		dst1[0] = src1[0];
+		dst1[1] = src1[0];
+		dst1[2] = src1[0];
+		dst2[0] = src1[0];
+		dst2[1] = src1[0];
+		dst2[2] = src1[0];
+	}
+}
+
+static inline void scale3x_32_def_border(scale3x_uint32* restrict dst, const scale3x_uint32* restrict src0, const scale3x_uint32* restrict src1, const scale3x_uint32* restrict src2, unsigned count)
+{
+	assert(count >= 2);
+
+	/* first pixel */
+	if (src0[0] != src2[0] && src1[0] != src1[1]) {
+		dst[0] = src1[0];
+		dst[1] = (src1[0] == src0[0] && src1[0] != src0[1]) || (src1[1] == src0[0] && src1[0] != src0[0]) ? src0[0] : src1[0];
+		dst[2] = src1[1] == src0[0] ? src1[1] : src1[0];
+	} else {
+		dst[0] = src1[0];
+		dst[1] = src1[0];
 		dst[2] = src1[0];
+	}
 	++src0;
 	++src1;
 	++src2;
@@ -264,24 +569,29 @@ static inline void scale3x_32_def_border(scale3x_uint32* __restrict__ dst, const
 	}
 
 	/* last pixel */
-	if (src1[-1] == src0[0] && src2[0] != src0[0])
-		dst[0] = src0[0];
-	else
+	if (src0[0] != src2[0] && src1[-1] != src1[0]) {
+		dst[0] = src1[-1] == src0[0] ? src1[-1] : src1[0];
+		dst[1] = (src1[-1] == src0[0] && src1[0] != src0[0]) || (src1[0] == src0[0] && src1[0] != src0[-1]) ? src0[0] : src1[0];
+		dst[2] = src1[0];
+	} else {
 		dst[0] = src1[0];
-	dst[1] = src1[0];
-	dst[2] = src1[0];
+		dst[1] = src1[0];
+		dst[2] = src1[0];
+	}
 }
 
-static inline void scale3x_32_def_center(scale3x_uint32* __restrict__ dst, const scale3x_uint32* __restrict__ src0, const scale3x_uint32* __restrict__ src1, const scale3x_uint32* __restrict__ src2, unsigned count)
+static inline void scale3x_32_def_center(scale3x_uint32* restrict dst, const scale3x_uint32* restrict src0, const scale3x_uint32* restrict src1, const scale3x_uint32* restrict src2, unsigned count)
 {
 	assert(count >= 2);
 
 	/* first pixel */
-	dst[0] = src1[0];
-	dst[1] = src1[0];
-	if (src0[0] != src2[0]) {
+	if (src0[0] != src2[0] && src1[0] != src1[1]) {
+		dst[0] = (src1[0] == src0[0] && src1[0] != src2[0]) || (src1[0] == src2[0] && src1[0] != src0[0]) ? src1[0] : src1[0];
+		dst[1] = src1[0];
 		dst[2] = (src1[1] == src0[0] && src1[0] != src2[1]) || (src1[1] == src2[0] && src1[0] != src0[1]) ? src1[1] : src1[0];
 	} else {
+		dst[0] = src1[0];
+		dst[1] = src1[0];
 		dst[2] = src1[0];
 	}
 	++src0;
@@ -310,13 +620,15 @@ static inline void scale3x_32_def_center(scale3x_uint32* __restrict__ dst, const
 	}
 
 	/* last pixel */
-	if (src0[0] != src2[0]) {
+	if (src0[0] != src2[0] && src1[-1] != src1[0]) {
 		dst[0] = (src1[-1] == src0[0] && src1[0] != src2[-1]) || (src1[-1] == src2[0] && src1[0] != src0[-1]) ? src1[-1] : src1[0];
+		dst[1] = src1[0];
+		dst[2] = (src1[0] == src0[0] && src1[0] != src2[0]) || (src1[0] == src2[0] && src1[0] != src0[0]) ? src1[0] : src1[0];
 	} else {
 		dst[0] = src1[0];
+		dst[1] = src1[0];
+		dst[2] = src1[0];
 	}
-	dst[1] = src1[0];
-	dst[2] = src1[0];
 }
 
 /**
@@ -335,11 +647,13 @@ static inline void scale3x_32_def_center(scale3x_uint32* __restrict__ dst, const
  */
 void scale3x_8_def(scale3x_uint8* dst0, scale3x_uint8* dst1, scale3x_uint8* dst2, const scale3x_uint8* src0, const scale3x_uint8* src1, const scale3x_uint8* src2, unsigned count)
 {
-	assert(count >= 2);
-
+#ifdef USE_SCALE_RANDOMWRITE
+	scale3x_8_def_whole(dst0, dst1, dst2, src0, src1, src2, count);
+#else
 	scale3x_8_def_border(dst0, src0, src1, src2, count);
 	scale3x_8_def_center(dst1, src0, src1, src2, count);
 	scale3x_8_def_border(dst2, src2, src1, src0, count);
+#endif
 }
 
 /**
@@ -356,11 +670,13 @@ void scale3x_8_def(scale3x_uint8* dst0, scale3x_uint8* dst1, scale3x_uint8* dst2
  */
 void scale3x_16_def(scale3x_uint16* dst0, scale3x_uint16* dst1, scale3x_uint16* dst2, const scale3x_uint16* src0, const scale3x_uint16* src1, const scale3x_uint16* src2, unsigned count)
 {
-	assert(count >= 2);
-
+#ifdef USE_SCALE_RANDOMWRITE
+	scale3x_16_def_whole(dst0, dst1, dst2, src0, src1, src2, count);
+#else
 	scale3x_16_def_border(dst0, src0, src1, src2, count);
 	scale3x_16_def_center(dst1, src0, src1, src2, count);
 	scale3x_16_def_border(dst2, src2, src1, src0, count);
+#endif
 }
 
 /**
@@ -377,10 +693,12 @@ void scale3x_16_def(scale3x_uint16* dst0, scale3x_uint16* dst1, scale3x_uint16* 
  */
 void scale3x_32_def(scale3x_uint32* dst0, scale3x_uint32* dst1, scale3x_uint32* dst2, const scale3x_uint32* src0, const scale3x_uint32* src1, const scale3x_uint32* src2, unsigned count)
 {
-	assert(count >= 2);
-
+#ifdef USE_SCALE_RANDOMWRITE
+	scale3x_32_def_whole(dst0, dst1, dst2, src0, src1, src2, count);
+#else
 	scale3x_32_def_border(dst0, src0, src1, src2, count);
 	scale3x_32_def_center(dst1, src0, src1, src2, count);
 	scale3x_32_def_border(dst2, src2, src1, src0, count);
+#endif
 }
 

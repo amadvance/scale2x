@@ -25,13 +25,12 @@ Description
 
 	* Only the pixel sizes of 1, 2 and 4 bytes are supported. If the
 		image has another pixel size it's automatically converted.
-	* The width of the image must be an exact multiplier of 8 bytes.
-		If the image has an odd width the conversion fails.
 
 Options
 	-k N, --scale N
-		Select the scale factor. Available values are 2, 3 and 4.
+		Select the scale factor. Available values are 2, 2x3,
+		2x4, 3, and 4.
 
 Copyright
-	This file is Copyright (C) 2003 Andrea Mazzoleni
+	This file is Copyright (C) 2003, 2004 Andrea Mazzoleni
 

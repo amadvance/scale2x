@@ -8,4 +8,5 @@ Acknowledgments
 	* Randy Schnedler (Randy Power)
 	* Pete Shinners
 	* VisualBoy
+	* Max Horn
 

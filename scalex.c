@@ -36,7 +36,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-int file_process(const char* file0, const char* file1, int opt_scale, int opt_crc)
+int file_process(const char* file0, const char* file1, int opt_scale_x, int opt_scale_y, int opt_crc)
 {
 	unsigned pixel;
 	unsigned width;
@@ -54,28 +54,28 @@ int file_process(const char* file0, const char* file1, int opt_scale, int opt_cr
 		goto err;
 	}
 
-	if (scale_precondition(opt_scale, pixel, width, height) != 0) {
+	if (scale_precondition(opt_scale_x * 100 + opt_scale_y, pixel, width, height) != 0) {
 		fprintf(stderr, "Error in the size of the source bitmap. Generally this happen\n");
 		fprintf(stderr, "when the bitmap is too small or when the width is not an exact\n");
 		fprintf(stderr, "multiplier of 8 bytes.\n");
 		goto err_src;
 	}
 
-	dst_slice = width * pixel * opt_scale;
-	dst_ptr = malloc(dst_slice * height * opt_scale);
+	dst_slice = width * pixel * opt_scale_x;
+	dst_ptr = malloc(dst_slice * height * opt_scale_y);
 	if (!dst_ptr) {
 		fprintf(stderr, "Low memory.\n");
 		goto err_src;
 	}
 
-	scale(opt_scale, dst_ptr, dst_slice, src_ptr, src_slice, pixel, width, height);
+	scale(opt_scale_x * 100 + opt_scale_y, dst_ptr, dst_slice, src_ptr, src_slice, pixel, width, height);
 
-	if (file_write(file1, dst_ptr, dst_slice, pixel, width * opt_scale, height * opt_scale, type, channel, palette, palette_size) != 0) {
+	if (file_write(file1, dst_ptr, dst_slice, pixel, width * opt_scale_x, height * opt_scale_y, type, channel, palette, palette_size) != 0) {
 		goto err_dst;
 	}
 
 	if (opt_crc) {
-		unsigned crc = crc32(0, dst_ptr, dst_slice * height * opt_scale);
+		unsigned crc = crc32(0, dst_ptr, dst_slice * height * opt_scale_y);
 		printf("%08x\n", crc);
 	}
 
@@ -106,7 +106,7 @@ void usage(void) {
 #endif
 	printf("\nSyntax: scalex [-k N] FROM.png TO.png\n");
 	printf("\nOptions:\n");
-	printf("\t-k N\tSelect the scale factor. 2, 3 or 4. (default 2).\n");
+	printf("\t-k N\tSelect the scale factor. 2, 2x3, 2x4, 3 or 4. (default 2).\n");
 	printf("\nMore info at http://scale2x.sourceforge.net/\n");
 	exit(EXIT_FAILURE);
 }
@@ -124,7 +124,8 @@ struct option long_options[] = {
 #define OPTIONS "k:chv"
 
 int main(int argc, char* argv[]) {
-	int opt_scale = 2;
+	int opt_scale_x = 2;
+	int opt_scale_y = 2;
 	int opt_crc = 0;
 	int c;
 
@@ -145,10 +146,23 @@ int main(int argc, char* argv[]) {
 				version();
 				exit(EXIT_SUCCESS);
 			case 'k' :
-				opt_scale = atoi(optarg);
-				if (opt_scale != 2 && opt_scale != 3 && opt_scale != 4) {
-					printf("Invalid -k option. Valid values are 2, 3 and 4.\n");
-					exit(EXIT_FAILURE);
+				if (strcmp(optarg, "2") == 0) {
+					opt_scale_x = 2;
+					opt_scale_y = 2;
+				} else if (strcmp(optarg, "3") == 0) {
+					opt_scale_x = 3;
+					opt_scale_y = 3;
+				} else if (strcmp(optarg, "4") == 0) {
+					opt_scale_x = 4;
+					opt_scale_y = 4;
+				} else {
+					if (sscanf(optarg, "%dx%d", &opt_scale_x, &opt_scale_y) != 2
+						|| opt_scale_x < 1
+						|| opt_scale_y < 1
+					) {
+						printf("Invalid -k option. Valid values are 2, 2x3, 2x4, 3 and 4.\n");
+						exit(EXIT_FAILURE);
+					}
 				}
 				break;
 			case 'c' :
@@ -165,7 +179,7 @@ int main(int argc, char* argv[]) {
 		exit(EXIT_FAILURE);
 	}
 
-	if (file_process(argv[optind], argv[optind+1], opt_scale, opt_crc) != 0) {
+	if (file_process(argv[optind], argv[optind+1], opt_scale_x, opt_scale_y, opt_crc) != 0) {
 		exit(EXIT_FAILURE);
 	}
 

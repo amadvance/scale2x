@@ -7,9 +7,9 @@
 <h2>1 
 Synopsis
 </h2>
-<font face="Courier">
-scalerx [-k N] [-w] [-r N] input.png output.png<br>
-</font>
+<pre>
+scalerx [-k N] [-w] [-r N] input.png output.png
+</pre>
 <h2>2 
 Description
 </h2>
@@ -24,7 +24,7 @@ at low video resolutions.
 The specification of the algorithm and more details are at:
 <p>
 <table width="100%" border="0" cellspacing="0" cellpadding="2"><tr><td width="5%"></td><td width="95%">
-http://scale2x.sourceforge.net
+<a href="http://scale2x.sourceforge.net">http://scale2x.sourceforge.net</a>
 <br>
 </td></tr></table>
 <p>
@@ -38,29 +38,32 @@ Options
 <table width="100%" border="0" cellspacing="0" cellpadding="2">
 <tr valign="top" align="left"><td><strong>
 -k N, --scale N
-</em></td></tr><tr><td>
-Select the scale factor. Available values are 2, 3 and 4.
+</strong></td></tr><tr><td>
+Select the scale factor. Available values are 2, 2x3,
+2x4, 3, and 4.
 </td></tr>
 </table>
 <table width="100%" border="0" cellspacing="0" cellpadding="2">
 <tr valign="top" align="left"><td><strong>
 -w, --wrap
-</em></td></tr><tr><td>
+</strong></td></tr><tr><td>
 Compute the image border for a wraparound effect.
 </td></tr>
 </table>
 <table width="100%" border="0" cellspacing="0" cellpadding="2">
 <tr valign="top" align="left"><td><strong>
 -r N
-</em></td></tr><tr><td>
+</strong></td></tr><tr><td>
 Select a specific revision of the Scale2x effect.
-The standard algorithm is 1. 0 is the normal scaling.
-2 and 3 are alternative versions.
+The standard algorithm is always 1. To scale an image
+without any effect use the value 0. Other nunbers
+are alternative versions. Refers at the source
+implementation for more details.
 </td></tr>
 </table>
 <h2>4 
 Copyright
 </h2>
-This file is Copyright (C) 2003 Andrea Mazzoleni
+This file is Copyright (C) 2003, 2004 Andrea Mazzoleni
 </body>
 </html>

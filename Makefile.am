@@ -36,7 +36,7 @@ EXTRA_DIST = \
 	test/basn4a16.png \
 	test/basn6a08.png \
 	test/basn6a16.png \
-	configure.msdos configure.windows autogen.sh noautomake.sh \
+	configure.dos configure.windows configure.darwin autogen.sh noautomake.sh \
 	doc/scalex.d doc/scalex.1 doc/scalex.txt doc/scalex.html \
 	doc/scalerx.d doc/scalerx.1 doc/scalerx.txt doc/scalerx.html \
 	doc/history.d doc/history.txt doc/history.html \
@@ -59,7 +59,7 @@ scalerx_SOURCES = \
 
 clean-local:
 	rm -f tx*.png tr*.png
-	rm -f new.lst
+	rm -f new.lst newrx.lst newx.lst
 
 maintainer-clean-local:
 	rm -f README AUTHORS HISTORY doc/copying.txt
@@ -130,18 +130,63 @@ distwindows: $(DIST_WINDOWS)
 	rm -r tmp
 
 TEST = 0g01 0g02 0g04 0g16 2c08 2c16 3p01 3p02 3p04 3p08 4a08 4a16 6a08 6a16
+EXAMPLE = mslug2-1 test-1
 
 check-local:
-	rm -f new.lst
+	rm -f new.lst newx.lst newrx.lst
 	for i in $(TEST); do \
-		./scalerx -k 2 -c $(srcdir)/test/basn$$i.png tr2x$$i.png >> new.lst ; \
-		./scalerx -k 3 -c $(srcdir)/test/basn$$i.png tr3x$$i.png >> new.lst ; \
-		./scalerx -k 4 -c $(srcdir)/test/basn$$i.png tr4x$$i.png >> new.lst ; \
-		./scalex -k 2 -c $(srcdir)/test/basn$$i.png tx2x$$i.png >> new.lst ; \
-		./scalex -k 3 -c $(srcdir)/test/basn$$i.png tx3x$$i.png >> new.lst ; \
-		./scalex -k 4 -c $(srcdir)/test/basn$$i.png tx4x$$i.png >> new.lst ; \
+		./scalerx -k 2 -c $(srcdir)/test/basn$$i.png tr22$$i.png >> new.lst ; \
+		./scalerx -k 2x3 -c $(srcdir)/test/basn$$i.png tr23$$i.png >> new.lst ; \
+		./scalerx -k 2x4 -c $(srcdir)/test/basn$$i.png tr24$$i.png >> new.lst ; \
+		./scalerx -k 3 -c $(srcdir)/test/basn$$i.png tr33$$i.png >> new.lst ; \
+		./scalerx -k 4 -c $(srcdir)/test/basn$$i.png tr44$$i.png >> new.lst ; \
+		./scalex -k 2 -c $(srcdir)/test/basn$$i.png tx22$$i.png >> new.lst ; \
+		./scalex -k 2x3 -c $(srcdir)/test/basn$$i.png tr23$$i.png >> new.lst ; \
+		./scalex -k 2x4 -c $(srcdir)/test/basn$$i.png tr24$$i.png >> new.lst ; \
+		./scalex -k 3 -c $(srcdir)/test/basn$$i.png tx33$$i.png >> new.lst ; \
+		./scalex -k 4 -c $(srcdir)/test/basn$$i.png tx44$$i.png >> new.lst ; \
+	done
+	for i in $(EXAMPLE); do \
+		./scalerx -k 2 -c $(srcdir)/example/$$i.png tr22$$i.png >> new.lst ; \
+		./scalerx -k 2x3 -c $(srcdir)/example/$$i.png tr23$$i.png >> new.lst ; \
+		./scalerx -k 2x4 -c $(srcdir)/example/$$i.png tr24$$i.png >> new.lst ; \
+		./scalerx -k 3 -c $(srcdir)/example/$$i.png tr33$$i.png >> new.lst ; \
+		./scalerx -k 4 -c $(srcdir)/example/$$i.png tr44$$i.png >> new.lst ; \
+		./scalex -k 2 -c $(srcdir)/example/$$i.png tx22$$i.png >> new.lst ; \
+		./scalex -k 2x3 -c $(srcdir)/example/$$i.png tr23$$i.png >> new.lst ; \
+		./scalex -k 2x4 -c $(srcdir)/example/$$i.png tr24$$i.png >> new.lst ; \
+		./scalex -k 3 -c $(srcdir)/example/$$i.png tx33$$i.png >> new.lst ; \
+		./scalex -k 4 -c $(srcdir)/example/$$i.png tx44$$i.png >> new.lst ; \
 	done
 	cmp new.lst $(srcdir)/check.lst
+	for i in $(TEST); do \
+		./scalerx -k 2 -c -o $(srcdir)/test/basn$$i.png tr22$$i.png >> newrx.lst ; \
+		./scalerx -k 2x3 -c -o $(srcdir)/test/basn$$i.png tr23$$i.png >> newrx.lst ; \
+		./scalerx -k 2x4 -c -o $(srcdir)/test/basn$$i.png tr24$$i.png >> newrx.lst ; \
+		./scalerx -k 3 -c -o $(srcdir)/test/basn$$i.png tr33$$i.png >> newrx.lst ; \
+		./scalerx -k 4 -c -o $(srcdir)/test/basn$$i.png tr43$$i.png >> newrx.lst ; \
+	done
+	for i in $(EXAMPLE); do \
+		./scalerx -k 2 -c -o $(srcdir)/example/$$i.png tr22$$i.png >> newrx.lst ; \
+		./scalerx -k 2x3 -c -o $(srcdir)/example/$$i.png tr23$$i.png >> newrx.lst ; \
+		./scalerx -k 2x4 -c -o $(srcdir)/example/$$i.png tr24$$i.png >> newrx.lst ; \
+		./scalerx -k 3 -c -o $(srcdir)/example/$$i.png tr33$$i.png >> newrx.lst ; \
+		./scalerx -k 4 -c -o $(srcdir)/example/$$i.png tr43$$i.png >> newrx.lst ; \
+	done
+	for i in $(TEST); do \
+		./scalex -k 2 -c $(srcdir)/test/basn$$i.png tx22$$i.png >> newx.lst ; \
+		./scalex -k 2x3 -c $(srcdir)/test/basn$$i.png tx23$$i.png >> newx.lst ; \
+		./scalex -k 2x4 -c $(srcdir)/test/basn$$i.png tx24$$i.png >> newx.lst ; \
+		./scalex -k 3 -c $(srcdir)/test/basn$$i.png tx33$$i.png >> newx.lst ; \
+		./scalex -k 4 -c $(srcdir)/test/basn$$i.png tx44$$i.png >> newx.lst ; \
+	done
+	for i in $(EXAMPLE); do \
+		./scalex -k 2 -c $(srcdir)/example/$$i.png tx22$$i.png >> newx.lst ; \
+		./scalex -k 2x3 -c $(srcdir)/example/$$i.png tx23$$i.png >> newx.lst ; \
+		./scalex -k 2x4 -c $(srcdir)/example/$$i.png tx24$$i.png >> newx.lst ; \
+		./scalex -k 3 -c $(srcdir)/example/$$i.png tx33$$i.png >> newx.lst ; \
+		./scalex -k 4 -c $(srcdir)/example/$$i.png tx44$$i.png >> newx.lst ; \
+	done
+	cmp newx.lst newrx.lst
 	echo Success!
-
 

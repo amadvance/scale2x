@@ -36,6 +36,26 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+void scalex(unsigned char* dst_ptr, unsigned dst_slice, const unsigned char* src_ptr, unsigned src_slice, unsigned pixel, unsigned width, unsigned height, unsigned mx, unsigned my)
+{
+	int x;
+	int y;
+
+	for(y=0;y<height;++y) {
+		for(x=0;x<width;++x) {
+			pixel_t E;
+			unsigned i,j;
+
+			E = pixel_get(x, y, src_ptr, src_slice, pixel, width, height, 0);
+
+			for(i=0;i<mx;++i)
+				for(j=0;j<my;++j)
+					pixel_put(x*mx+i, y*my+j, dst_ptr, dst_slice, pixel, width*mx, height*my, E);
+		}
+	}
+}
+
+
 #define SCALE2X_REVISION_MAX 3
 
 void scale2x(unsigned char* dst_ptr, unsigned dst_slice, const unsigned char* src_ptr, unsigned src_slice, unsigned pixel, unsigned width, unsigned height, int opt_tes, int opt_ver)
@@ -157,7 +177,7 @@ void scale3x(unsigned char* dst_ptr, unsigned dst_slice, const unsigned char* sr
 				E8 = E;
 				break;
 			case 1 :
-				/* second version, default  */
+				/* second version, default */
 				k0 = D == B && B != F && D != H;
 				k1 = B == F && B != D && F != H;
 				k2 = D == H && D != B && H != F;
@@ -229,7 +249,7 @@ void scale3x(unsigned char* dst_ptr, unsigned dst_slice, const unsigned char* sr
 				E8 = k3 ? F : E;
 				break;
 			case 6 :
-				/* rejected  */
+				/* rejected */
 				k0 = D == B && B != F && D != H;
 				k1 = B == F && B != D && F != H;
 				k2 = D == H && D != B && H != F;
@@ -245,7 +265,7 @@ void scale3x(unsigned char* dst_ptr, unsigned dst_slice, const unsigned char* sr
 				E8 = k3 ? F : E;
 				break;
 			case 7 :
-				/* rejected  */
+				/* rejected */
 				k0 = D == B && B != F && D != H;
 				k1 = B == F && B != D && F != H;
 				k2 = D == H && D != B && H != F;
@@ -297,7 +317,150 @@ int scale4x(unsigned char* dst_ptr, unsigned dst_slice, const unsigned char* src
 	return 0;
 }
 
-int file_process(const char* file0, const char* file1, int opt_scale, int opt_tes, int opt_ver, int opt_crc)
+#define SCALE2X3_REVISION_MAX 1
+
+void scale2x3(unsigned char* dst_ptr, unsigned dst_slice, const unsigned char* src_ptr, unsigned src_slice, unsigned pixel, unsigned width, unsigned height, int opt_tes, int opt_ver)
+{
+	int x;
+	int y;
+
+	for(y=0;y<height;++y) {
+		for(x=0;x<width;++x) {
+			pixel_t E0, E1, E2, E3, E4, E5;
+			pixel_t A, B, C, D, E, F, G, H, I;
+			int k0, k1, k2, k3;
+
+			A = pixel_get(x-1, y-1, src_ptr, src_slice, pixel, width, height, opt_tes);
+			B = pixel_get(x, y-1, src_ptr, src_slice, pixel, width, height, opt_tes);
+			C = pixel_get(x+1, y-1, src_ptr, src_slice, pixel, width, height, opt_tes);
+			D = pixel_get(x-1, y, src_ptr, src_slice, pixel, width, height, opt_tes);
+			E = pixel_get(x, y, src_ptr, src_slice, pixel, width, height, opt_tes);
+			F = pixel_get(x+1, y, src_ptr, src_slice, pixel, width, height, opt_tes);
+			G = pixel_get(x-1, y+1, src_ptr, src_slice, pixel, width, height, opt_tes);
+			H = pixel_get(x, y+1, src_ptr, src_slice, pixel, width, height, opt_tes);
+			I = pixel_get(x+1, y+1, src_ptr, src_slice, pixel, width, height, opt_tes);
+
+			/*
+				ABC
+				DEF
+				GHI
+
+				E0E1
+				E2E3
+				E4E5
+			*/
+			switch (opt_ver) {
+			default:
+			case 0 :
+				/* version 0, normal scaling */
+				E0 = E;
+				E1 = E;
+				E2 = E;
+				E3 = E;
+				E4 = E;
+				E5 = E;
+				break;
+			case 1 :
+				/* default */
+				k0 = D == B && B != F && D != H;
+				k1 = B == F && B != D && F != H;
+				k2 = D == H && D != B && H != F;
+				k3 = H == F && D != H && B != F;
+				E0 = k0 ? D : E;
+				E1 = k1 ? F : E;
+				E2 = (k0 && E != G) || (k2 && E != A) ? D : E;
+				E3 = (k1 && E != I) || (k3 && E != C) ? F : E;
+				E4 = k2 ? D : E;
+				E5 = k3 ? F : E;
+				break;
+			}
+
+			pixel_put(x*2, y*3, dst_ptr, dst_slice, pixel, width*2, height*3, E0);
+			pixel_put(x*2+1, y*3, dst_ptr, dst_slice, pixel, width*2, height*3, E1);
+			pixel_put(x*2, y*3+1, dst_ptr, dst_slice, pixel, width*2, height*3, E2);
+			pixel_put(x*2+1, y*3+1, dst_ptr, dst_slice, pixel, width*2, height*3, E3);
+			pixel_put(x*2, y*3+2, dst_ptr, dst_slice, pixel, width*2, height*3, E4);
+			pixel_put(x*2+1, y*3+2, dst_ptr, dst_slice, pixel, width*2, height*3, E5);
+		}
+	}
+}
+
+#define SCALE2X4_REVISION_MAX 1
+
+void scale2x4(unsigned char* dst_ptr, unsigned dst_slice, const unsigned char* src_ptr, unsigned src_slice, unsigned pixel, unsigned width, unsigned height, int opt_tes, int opt_ver)
+{
+	int x;
+	int y;
+
+	for(y=0;y<height;++y) {
+		for(x=0;x<width;++x) {
+			pixel_t E0, E1, E2, E3, E4, E5, E6, E7;
+			pixel_t A, B, C, D, E, F, G, H, I;
+			int k0, k1, k2, k3;
+
+			A = pixel_get(x-1, y-1, src_ptr, src_slice, pixel, width, height, opt_tes);
+			B = pixel_get(x, y-1, src_ptr, src_slice, pixel, width, height, opt_tes);
+			C = pixel_get(x+1, y-1, src_ptr, src_slice, pixel, width, height, opt_tes);
+			D = pixel_get(x-1, y, src_ptr, src_slice, pixel, width, height, opt_tes);
+			E = pixel_get(x, y, src_ptr, src_slice, pixel, width, height, opt_tes);
+			F = pixel_get(x+1, y, src_ptr, src_slice, pixel, width, height, opt_tes);
+			G = pixel_get(x-1, y+1, src_ptr, src_slice, pixel, width, height, opt_tes);
+			H = pixel_get(x, y+1, src_ptr, src_slice, pixel, width, height, opt_tes);
+			I = pixel_get(x+1, y+1, src_ptr, src_slice, pixel, width, height, opt_tes);
+
+			/*
+				ABC
+				DEF
+				GHI
+
+				E0E1
+				E2E3
+				E4E5
+				E6E7
+			*/
+			switch (opt_ver) {
+			default:
+			case 0 :
+				/* version 0, normal scaling */
+				E0 = E;
+				E1 = E;
+				E2 = E;
+				E3 = E;
+				E4 = E;
+				E5 = E;
+				E6 = E;
+				E7 = E;
+				break;
+			case 1 :
+				/* default */
+				k0 = D == B && B != F && D != H;
+				k1 = B == F && B != D && F != H;
+				k2 = D == H && D != B && H != F;
+				k3 = H == F && D != H && B != F;
+				E0 = k0 ? D : E;
+				E1 = k1 ? F : E;
+				E2 = (k0 && E != G) || (k2 && E != A) ? D : E;
+				E3 = (k1 && E != I) || (k3 && E != C) ? F : E;
+				E4 = (k0 && E != G) || (k2 && E != A) ? D : E;
+				E5 = (k1 && E != I) || (k3 && E != C) ? F : E;
+				E6 = k2 ? D : E;
+				E7 = k3 ? F : E;
+				break;
+			}
+
+			pixel_put(x*2, y*4, dst_ptr, dst_slice, pixel, width*2, height*4, E0);
+			pixel_put(x*2+1, y*4, dst_ptr, dst_slice, pixel, width*2, height*4, E1);
+			pixel_put(x*2, y*4+1, dst_ptr, dst_slice, pixel, width*2, height*4, E2);
+			pixel_put(x*2+1, y*4+1, dst_ptr, dst_slice, pixel, width*2, height*4, E3);
+			pixel_put(x*2, y*4+2, dst_ptr, dst_slice, pixel, width*2, height*4, E4);
+			pixel_put(x*2+1, y*4+2, dst_ptr, dst_slice, pixel, width*2, height*4, E5);
+			pixel_put(x*2, y*4+3, dst_ptr, dst_slice, pixel, width*2, height*4, E6);
+			pixel_put(x*2+1, y*4+3, dst_ptr, dst_slice, pixel, width*2, height*4, E7);
+		}
+	}
+}
+
+int file_process(const char* file0, const char* file1, int opt_scale_x, int opt_scale_y, int opt_tes, int opt_ver, int opt_crc, int opt_only124)
 {
 	unsigned pixel;
 	unsigned width;
@@ -311,36 +474,45 @@ int file_process(const char* file0, const char* file1, int opt_scale, int opt_te
 	png_color* palette;
 	unsigned palette_size;
 
-	if (file_read(file0, &src_ptr, &src_slice, &pixel, &width, &height, &type, &channel, &palette, &palette_size, 0) != 0) {
+	if (file_read(file0, &src_ptr, &src_slice, &pixel, &width, &height, &type, &channel, &palette, &palette_size, opt_only124 ? 1 : 0) != 0) {
 		goto err;
 	}
 
-	dst_slice = width * pixel * opt_scale;
-	dst_ptr = malloc(dst_slice * height * opt_scale);
+	dst_slice = width * pixel * opt_scale_x;
+	dst_ptr = malloc(dst_slice * height * opt_scale_y);
 	if (!dst_ptr) {
 		fprintf(stderr, "Low memory.\n");
 		goto err_src;
 	}
 
-	switch (opt_scale) {
-	case 2 :
+	switch (opt_scale_x * 100 + opt_scale_y) {
+	case 202 :
 		scale2x(dst_ptr, dst_slice, src_ptr, src_slice, pixel, width, height, opt_tes, opt_ver);
 		break;
-	case 3 :
+	case 203 :
+		scale2x3(dst_ptr, dst_slice, src_ptr, src_slice, pixel, width, height, opt_tes, opt_ver);
+		break;
+	case 204 :
+		scale2x4(dst_ptr, dst_slice, src_ptr, src_slice, pixel, width, height, opt_tes, opt_ver);
+		break;
+	case 303 :
 		scale3x(dst_ptr, dst_slice, src_ptr, src_slice, pixel, width, height, opt_tes, opt_ver);
 		break;
-	case 4 :
+	case 404 :
 		if (scale4x(dst_ptr, dst_slice, src_ptr, src_slice, pixel, width, height, opt_tes, opt_ver) != 0)
 			goto err_dst;
 		break;
+	default:
+		scalex(dst_ptr, dst_slice, src_ptr, src_slice, pixel, width, height, opt_scale_x, opt_scale_y);
+		break;
 	}
 
-	if (file_write(file1, dst_ptr, dst_slice, pixel, width * opt_scale, height * opt_scale, type, channel, palette, palette_size) != 0) {
+	if (file_write(file1, dst_ptr, dst_slice, pixel, width * opt_scale_x, height * opt_scale_y, type, channel, palette, palette_size) != 0) {
 		goto err_dst;
 	}
 
 	if (opt_crc) {
-		unsigned crc = crc32(0, dst_ptr, dst_slice * height * opt_scale);
+		unsigned crc = crc32(0, dst_ptr, dst_slice * height * opt_scale_y);
 		printf("%08x\n", crc);
 	}
 
@@ -368,7 +540,7 @@ void usage(void) {
 	printf("Reference implementation of the Scale2/3/4x effect\n");
 	printf("\nSyntax: scalerx [-k N] [-w] [-r N] FROM.png TO.png\n");
 	printf("\nOptions:\n");
-	printf("\t-k N\tSelect the scale factor. 2, 3 or 4 (default 2).\n");
+	printf("\t-k N\tSelect the scale factor. 2, 2x3, 2x4, 3, 4 (default 2).\n");
 	printf("\t-w\tWrap around on the borders.\n");
 	printf("\t-r N\tSelect the revision of the algorithm 0-N (default 1).\n");
 	printf("\nMore info at http://scale2x.sourceforge.net/\n");
@@ -379,6 +551,7 @@ void usage(void) {
 struct option long_options[] = {
 	{"scale", 1, 0, 'k'},
 	{"crc", 0, 0, 'c'},
+	{"only124", 0, 0, 'o'},
 	{"wrap", 0, 0, 'w'},
 	{"revision", 1, 0, 'r'},
 	{"help", 0, 0, 'h'},
@@ -387,13 +560,15 @@ struct option long_options[] = {
 };
 #endif
 
-#define OPTIONS "k:cwr:hv"
+#define OPTIONS "k:cowr:hv"
 
 int main(int argc, char* argv[]) {
-	int opt_scale = 2;
+	int opt_scale_x = 2;
+	int opt_scale_y = 2;
 	int opt_crc = 0;
 	int opt_tes = 0;
 	int opt_ver = 1;
+	int opt_only124 = 0;
 	int max_ver;
 	int c;
 
@@ -414,14 +589,30 @@ int main(int argc, char* argv[]) {
 				version();
 				exit(EXIT_SUCCESS);
 			case 'k' :
-				opt_scale = atoi(optarg);
-				if (opt_scale != 2 && opt_scale != 3 && opt_scale != 4) {
-					printf("Invalid -k option. Valid values are 2, 3 and 4.\n");
-					exit(EXIT_FAILURE);
+				if (strcmp(optarg, "2") == 0) {
+					opt_scale_x = 2;
+					opt_scale_y = 2;
+				} else if (strcmp(optarg, "3") == 0) {
+					opt_scale_x = 3;
+					opt_scale_y = 3;
+				} else if (strcmp(optarg, "4") == 0) {
+					opt_scale_x = 4;
+					opt_scale_y = 4;
+				} else {
+					if (sscanf(optarg, "%dx%d", &opt_scale_x, &opt_scale_y) != 2
+						|| opt_scale_x < 1
+						|| opt_scale_y < 1
+					) {
+						printf("Invalid -k option. Valid values are 2, 2x3, 2x4, 3 and 4.\n");
+						exit(EXIT_FAILURE);
+					}
 				}
 				break;
 			case 'c' :
 				opt_crc = 1;
+				break;
+			case 'o' :
+				opt_only124 = 1;
 				break;
 			case 'w' :
 				opt_tes = 1;
@@ -435,10 +626,12 @@ int main(int argc, char* argv[]) {
 		} 
 	}
 
-	switch (opt_scale) {
-	case 2 : max_ver = SCALE2X_REVISION_MAX; break;
-	case 3 : max_ver = SCALE3X_REVISION_MAX; break;
-	case 4 : max_ver = SCALE4X_REVISION_MAX; break;
+	switch (opt_scale_x * 100 + opt_scale_y) {
+	case 202 : max_ver = SCALE2X_REVISION_MAX; break;
+	case 203 : max_ver = SCALE2X3_REVISION_MAX; break;
+	case 204 : max_ver = SCALE2X4_REVISION_MAX; break;
+	case 303 : max_ver = SCALE3X_REVISION_MAX; break;
+	case 404 : max_ver = SCALE4X_REVISION_MAX; break;
 	default : max_ver = 0; break;
 	}
 
@@ -452,7 +645,7 @@ int main(int argc, char* argv[]) {
 		exit(EXIT_FAILURE);
 	}
 
-	if (file_process(argv[optind], argv[optind+1], opt_scale, opt_tes, opt_ver, opt_crc) != 0) {
+	if (file_process(argv[optind], argv[optind+1], opt_scale_x, opt_scale_y, opt_tes, opt_ver, opt_crc, opt_only124) != 0) {
 		exit(EXIT_FAILURE);
 	}
 

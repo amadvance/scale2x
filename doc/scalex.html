@@ -7,9 +7,9 @@
 <h2>1 
 Synopsis
 </h2>
-<font face="Courier">
-scalex [-k N] input.png output.png<br>
-</font>
+<pre>
+scalex [-k N] input.png output.png
+</pre>
 <h2>2 
 Description
 </h2>
@@ -24,7 +24,7 @@ at low video resolutions.
 The specification of the algorithm and more details are at:
 <p>
 <table width="100%" border="0" cellspacing="0" cellpadding="2"><tr><td width="5%"></td><td width="95%">
-http://scale2x.sourceforge.net
+<a href="http://scale2x.sourceforge.net">http://scale2x.sourceforge.net</a>
 <br>
 </td></tr></table>
 <p>
@@ -38,10 +38,6 @@ some limitations of the type of the image usable. Specifically :
 Only the pixel sizes of 1, 2 and 4 bytes are supported. If the
 image has another pixel size it's automatically converted.
 </li>
-<li>
-The width of the image must be an exact multiplier of 8 bytes.
-If the image has an odd width the conversion fails.
-</li>
 </ul>
 <h2>3 
 Options
@@ -49,13 +45,14 @@ Options
 <table width="100%" border="0" cellspacing="0" cellpadding="2">
 <tr valign="top" align="left"><td><strong>
 -k N, --scale N
-</em></td></tr><tr><td>
-Select the scale factor. Available values are 2, 3 and 4.
+</strong></td></tr><tr><td>
+Select the scale factor. Available values are 2, 2x3,
+2x4, 3, and 4.
 </td></tr>
 </table>
 <h2>4 
 Copyright
 </h2>
-This file is Copyright (C) 2003 Andrea Mazzoleni
+This file is Copyright (C) 2003, 2004 Andrea Mazzoleni
 </body>
 </html>

@@ -24,16 +24,19 @@ Description
 
 Options
 	-k N, --scale N
-		Select the scale factor. Available values are 2, 3 and 4.
+		Select the scale factor. Available values are 2, 2x3,
+		2x4, 3, and 4.
 
 	-w, --wrap
 		Compute the image border for a wraparound effect.
 
 	-r N
 		Select a specific revision of the Scale2x effect.
-		The standard algorithm is 1. 0 is the normal scaling.
-		2 and 3 are alternative versions.
+		The standard algorithm is always 1. To scale an image
+		without any effect use the value 0. Other nunbers
+		are alternative versions. Refers at the source
+		implementation for more details.
 
 Copyright
-	This file is Copyright (C) 2003 Andrea Mazzoleni
+	This file is Copyright (C) 2003, 2004 Andrea Mazzoleni
 
