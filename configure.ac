@@ -22,7 +22,6 @@ AC_C_INLINE
 
 # Checks for library functions.
 AC_FUNC_ALLOCA
-AC_FUNC_MALLOC
 AC_CHECK_FUNCS([getopt])
 AC_CHECK_FUNCS([getopt_long])
 

@@ -20,7 +20,7 @@
 
 #include "portable.h"
 
-#ifndef HAVE_GETOPT
+#if !HAVE_GETOPT
 
 /* This source is extracted from the DJGPP LIBC library */
 

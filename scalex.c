@@ -19,7 +19,7 @@
  */
 
 /*
- * This the source of a simple command line tools which uses the fast
+ * This is the source of a simple command line tool which uses the fast
  * implementation of the Scale effects.
  *
  * You can find an high level description of the effects at :

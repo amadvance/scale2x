@@ -30,6 +30,7 @@ int file_write(const char* file, unsigned char* ptr, unsigned slice, unsigned pi
 	png_byte** row;
 	unsigned i;
 	int bit_depth;
+	FILE* fp;
 
 	row = malloc(sizeof(void*) * height);
 	if (!row) {
@@ -40,7 +41,7 @@ int file_write(const char* file, unsigned char* ptr, unsigned slice, unsigned pi
 		row[i] = ptr + i * slice;
 	}
 
-	FILE* fp = fopen(file, "wb");
+	fp = fopen(file, "wb");
 	if (!fp) {
 		fprintf(stderr,"Error creating file %s.\n", file);
 		goto err_free;
@@ -104,13 +105,14 @@ int file_read(const char* file, unsigned char** ptr, unsigned* slice, unsigned* 
 	int pre_type;
 	int pre_channel;
 	unsigned i;
+	FILE* fp;
 
 	/* always freed on error */
 	row = 0;
 	*ptr = 0;
 	*palette = 0;
 
-	FILE* fp = fopen(file, "rb");
+	fp = fopen(file, "rb");
 	if (!fp) {
 		fprintf(stderr,"Error opening file %s.\n", file);
 		goto err;
@@ -230,3 +232,4 @@ err_close:
 err:
 	return -1;
 }
+

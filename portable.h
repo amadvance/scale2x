@@ -21,15 +21,15 @@
 #ifndef __PORTABLE_H
 #define __PORTABLE_H
 
-#ifdef HAVE_CONFIG_H
+#if HAVE_CONFIG_H
 #include <config.h>
 #endif
 
-#ifdef HAVE_GETOPT_H
+#if HAVE_GETOPT_H
 #include <getopt.h>
 #endif
 
-#ifndef HAVE_GETOPT
+#if !HAVE_GETOPT
 int getopt(int argc, char * const *argv, const char *options);
 extern char *optarg;
 extern int optind, opterr, optopt;

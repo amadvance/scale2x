@@ -21,7 +21,7 @@ Description
 	image with the effects applied.
 
 	The fast implementation of the Scale effects is used. It imposes
-	some limitations of the type of the image useable. Specifically :
+	some limitations of the type of the image usable. Specifically :
 
 	* Only the pixel size of 1, 2 and 4 bytes are supported. If the
 		image has another pixel size it's automatically converted.

@@ -33,11 +33,22 @@
  * - derivative works of the program are allowed.
  */
 
+#if HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include "scale2x.h"
 #include "scale3x.h"
 
 #include <assert.h>
-#include <stdlib.h> /* for alloca */
+
+#if HAVE_ALLOCA
+#if HAVE_ALLOCA_H
+#include <alloca.h>
+#else
+#include <stdlib.h>
+#endif
+#endif
 
 /**
  * Apply the Scale2x effect on a group of rows. Used internally.
@@ -276,13 +287,24 @@ static void scale4x(void* void_dst, unsigned dst_slice, const void* void_src, un
 
 	mid_slice = 2 * pixel * width; /* required space for 1 row buffer */
 
-	mid_slice = (mid_slice + 0xF) & ~0xF; /* align */
+	mid_slice = (mid_slice + 0x7) & ~0x7; /* align to 8 bytes */
 
+#if HAVE_ALLOCA
 	mid = alloca(6 * mid_slice); /* allocate space for 6 row buffers */
 
 	assert(mid != 0); /* alloca should never fails */
+#else
+	mid = malloc(6 * mid_slice); /* allocate space for 6 row buffers */
+
+	if (!mid)
+		return;
+#endif
 
 	scale4x_buf(void_dst, dst_slice, mid, mid_slice, void_src, src_slice, pixel, width, height);
+
+#if !HAVE_ALLOCA
+	free(mid);
+#endif
 }
 
 /**

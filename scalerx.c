@@ -19,7 +19,7 @@
  */
 
 /*
- * This the source of a simple command line tools which uses the reference
+ * This is the source of a simple command line tool which uses the reference
  * implementation of the Scale effects.
  *
  * You can find an high level description of the effects at :
@@ -346,8 +346,8 @@ int main(int argc, char* argv[]) {
 	int opt_crc = 0;
 	int opt_tes = 0;
 	int opt_ver = 1;
+	int max_ver = SCALE2X_REVISION_MAX;
 	int c;
-	int max_ver;
 
 	opterr = 0;
 
