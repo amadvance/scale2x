@@ -1,0 +1,147 @@
+<html>
+<head>
+<title>The Scale2x, Scale3x and Scale4x algorithm</title>
+</head>
+<body>
+<h2><center>The Scale2x, Scale3x and Scale4x algorithm</center></h2>
+<h2>1 
+Scale2x Algorithm
+</h2>
+The effect works repeating a computation pattern for every
+pixel of the original image.
+The pattern starts from a square of 9 pixels and expands the
+central pixel computing 4 new pixels.
+<p>
+Starting from this pattern :
+<p>
+<table width="100%" border="0" cellspacing="0" cellpadding="2"><tr><td width="5%"></td><td width="95%">
+<pre>
+A B C
+D E F
+G H I
+</pre>
+</td></tr></table>
+<p>
+The central pixel E is expanded in 4 new pixels:
+<p>
+<table width="100%" border="0" cellspacing="0" cellpadding="2"><tr><td width="5%"></td><td width="95%">
+<pre>
+E0 E1
+E2 E3
+</pre>
+</td></tr></table>
+<p>
+with these rules (in C language) :
+<p>
+<table width="100%" border="0" cellspacing="0" cellpadding="2"><tr><td width="5%"></td><td width="95%">
+<pre>
+E0 = D == B &amp;&amp; B != F &amp;&amp; D != H ? D : E;
+E1 = B == F &amp;&amp; B != D &amp;&amp; F != H ? F : E;
+E2 = D == H &amp;&amp; D != B &amp;&amp; H != F ? D : E;
+E3 = H == F &amp;&amp; D != H &amp;&amp; B != F ? F : E;
+</pre>
+</td></tr></table>
+<p>
+which can be rewritten as :
+<p>
+<table width="100%" border="0" cellspacing="0" cellpadding="2"><tr><td width="5%"></td><td width="95%">
+<pre>
+E0 = D == B &amp;&amp; B != H &amp;&amp; D != F ? D : E;
+E1 = B == F &amp;&amp; B != H &amp;&amp; D != F ? F : E;
+E2 = D == H &amp;&amp; B != H &amp;&amp; D != F ? D : E;
+E3 = H == F &amp;&amp; B != H &amp;&amp; D != F ? F : E;
+</pre>
+</td></tr></table>
+<p>
+and optimized as:
+<p>
+<table width="100%" border="0" cellspacing="0" cellpadding="2"><tr><td width="5%"></td><td width="95%">
+<pre>
+if (B != H &amp;&amp; D != F) {
+&nbsp;&nbsp;&nbsp;&nbsp;E0 = D == B ? D : E;
+&nbsp;&nbsp;&nbsp;&nbsp;E1 = B == F ? F : E;
+&nbsp;&nbsp;&nbsp;&nbsp;E2 = D == H ? D : E;
+&nbsp;&nbsp;&nbsp;&nbsp;E3 = H == F ? F : E;
+} else {
+&nbsp;&nbsp;&nbsp;&nbsp;E0 = E;
+&nbsp;&nbsp;&nbsp;&nbsp;E1 = E;
+&nbsp;&nbsp;&nbsp;&nbsp;E2 = E;
+&nbsp;&nbsp;&nbsp;&nbsp;E3 = E;
+}
+</pre>
+</td></tr></table>
+<p>
+The image border is computed reusing the value of the nearest pixel
+on the border when the value of a pixel over the border is required.
+<h2>2 
+Scale3x Algorithm
+</h2>
+Starting from this pattern :
+<p>
+<table width="100%" border="0" cellspacing="0" cellpadding="2"><tr><td width="5%"></td><td width="95%">
+<pre>
+A B C
+D E F
+G H I
+</pre>
+</td></tr></table>
+<p>
+The central pixel E is expanded in 9 new pixels:
+<p>
+<table width="100%" border="0" cellspacing="0" cellpadding="2"><tr><td width="5%"></td><td width="95%">
+<pre>
+E0 E1 E2
+E3 E4 E5
+E6 E7 E8
+</pre>
+</td></tr></table>
+<p>
+with these rules (in C language) :
+<p>
+<table width="100%" border="0" cellspacing="0" cellpadding="2"><tr><td width="5%"></td><td width="95%">
+<pre>
+E0 = D == B &amp;&amp; B != F &amp;&amp; D != H ? D : E;
+E1 = (D == B &amp;&amp; B != F &amp;&amp; D != H &amp;&amp; E != C) || (B == F &amp;&amp; B != D &amp;&amp; F != H &amp;&amp; E != A) ? B : E;
+E2 = B == F &amp;&amp; B != D &amp;&amp; F != H ? F : E;
+E3 = (D == B &amp;&amp; B != F &amp;&amp; D != H &amp;&amp; E != G) || (D == B &amp;&amp; B != F &amp;&amp; D != H &amp;&amp; E != A) ? D : E;
+E4 = E
+E5 = (B == F &amp;&amp; B != D &amp;&amp; F != H &amp;&amp; E != I) || (H == F &amp;&amp; D != H &amp;&amp; B != F &amp;&amp; E != C) ? F : E;
+E6 = D == H &amp;&amp; D != B &amp;&amp; H != F ? D : E;
+E7 = (D == H &amp;&amp; D != B &amp;&amp; H != F &amp;&amp; E != I) || (H == F &amp;&amp; D != H &amp;&amp; B != F &amp;&amp; E != G) ? H : E;
+E8 = H == F &amp;&amp; D != H &amp;&amp; B != F ? F : E;
+</pre>
+</td></tr></table>
+<p>
+and optimized as:
+<p>
+<table width="100%" border="0" cellspacing="0" cellpadding="2"><tr><td width="5%"></td><td width="95%">
+<pre>
+if (B != H &amp;&amp; D != F) {
+&nbsp;&nbsp;&nbsp;&nbsp;E0 = D == B ? D : E;
+&nbsp;&nbsp;&nbsp;&nbsp;E1 = (D == B &amp;&amp; E != C) || (B == F &amp;&amp; E != A) ? B : E;
+&nbsp;&nbsp;&nbsp;&nbsp;E2 = B == F ? F : E;
+&nbsp;&nbsp;&nbsp;&nbsp;E3 = (D == B &amp;&amp; E != G) || (D == B &amp;&amp; E != A) ? D : E;
+&nbsp;&nbsp;&nbsp;&nbsp;E4 = E;
+&nbsp;&nbsp;&nbsp;&nbsp;E5 = (B == F &amp;&amp; E != I) || (H == F &amp;&amp; E != C) ? F : E;
+&nbsp;&nbsp;&nbsp;&nbsp;E6 = D == H ? D : E;
+&nbsp;&nbsp;&nbsp;&nbsp;E7 = (D == H &amp;&amp; E != I) || (H == F &amp;&amp; E != G) ? H : E;
+&nbsp;&nbsp;&nbsp;&nbsp;E8 = H == F ? F : E;
+} else {
+&nbsp;&nbsp;&nbsp;&nbsp;E0 = E;
+&nbsp;&nbsp;&nbsp;&nbsp;E1 = E;
+&nbsp;&nbsp;&nbsp;&nbsp;E2 = E;
+&nbsp;&nbsp;&nbsp;&nbsp;E3 = E;
+&nbsp;&nbsp;&nbsp;&nbsp;E4 = E;
+&nbsp;&nbsp;&nbsp;&nbsp;E5 = E;
+&nbsp;&nbsp;&nbsp;&nbsp;E6 = E;
+&nbsp;&nbsp;&nbsp;&nbsp;E7 = E;
+&nbsp;&nbsp;&nbsp;&nbsp;E8 = E;
+}
+</pre>
+</td></tr></table>
+<h2>3 
+Scale4x Algorithm
+</h2>
+The Scale4x effect is simply the Scale2x effect applied two times.
+</body>
+</html>

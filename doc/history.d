@@ -1,6 +1,13 @@
 Name
 	scale2x - History For Scale2x
 
+Scale2x v2.0 2004/02
+	) Added a new revision of the `scale3x' effect. It now looks good as
+		`scale2x'.
+	) Added a new optimized C version of the `scale2x' effect.
+	) Added a detailed algorithm specification in the `algorithm.txt' file.
+	) Minor fixes at the scalebit.c file.
+
 Scale2x v1.6 2003/07
 	) Added an example of the fast implementation of the effects
 		applied to a generic bitmap. There is also an

@@ -1,7 +1,7 @@
 /*
  * This file is part of the Scale2x project.
  *
- * Copyright (C) 2001-2003 Andrea Mazzoleni
+ * Copyright (C) 2003 Andrea Mazzoleni
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -307,9 +307,9 @@ static void scale4x(void* void_dst, unsigned dst_slice, const void* void_src, un
 /**
  * Check if the scale implementation is applicable at the given arguments.
  * \param scale Scale factor. 2, 3 or 4.
- * \param src_slice Size in bytes of a source bitmap row.
  * \param pixel Bytes per pixel of the source and destination bitmap.
  * \param width Horizontal size in pixels of the source bitmap.
+ * \param height Vertical size in pixels of the source bitmap.
  * \return
  *   - -1 on precondition violated.
  *   - 0 on success.
@@ -327,9 +327,11 @@ int scale_precondition(unsigned scale, unsigned pixel, unsigned width, unsigned 
 	case 3 :
 		if (height < 2)
 			return -1;
+		break;
 	case 4 :
 		if (height < 4)
 			return -1;
+		break;
 	}
 
 #if defined(__GNUC__) && defined(__i386__)
@@ -340,9 +342,11 @@ int scale_precondition(unsigned scale, unsigned pixel, unsigned width, unsigned 
 			return -1;
 		if (width % (8 / pixel) != 0)
 			return -1;
+		break;
 	case 3 :
 		if (width < 2)
 			return -1;
+		break;
 	}
 #else
 	if (width < 2)
@@ -367,9 +371,15 @@ int scale_precondition(unsigned scale, unsigned pixel, unsigned width, unsigned 
 void scale(unsigned scale, void* void_dst, unsigned dst_slice, const void* void_src, unsigned src_slice, unsigned pixel, unsigned width, unsigned height)
 {
 	switch (scale) {
-	case 2 : scale2x(void_dst, dst_slice, void_src, src_slice, pixel, width, height); break;
-	case 3 : scale3x(void_dst, dst_slice, void_src, src_slice, pixel, width, height); break;
-	case 4 : scale4x(void_dst, dst_slice, void_src, src_slice, pixel, width, height); break;
+	case 2 :
+		scale2x(void_dst, dst_slice, void_src, src_slice, pixel, width, height);
+		break;
+	case 3 :
+		scale3x(void_dst, dst_slice, void_src, src_slice, pixel, width, height);
+		break;
+	case 4 :
+		scale4x(void_dst, dst_slice, void_src, src_slice, pixel, width, height);
+		break;
 	}
 }
 

@@ -26,7 +26,7 @@ convert manually .PNG images.
 <h2>1 
 Implementation
 </h2>
-The files scale2x.h and scale3x.h are the fast C and MMX
+The files scale2x.c and scale3x.c are the fast C and MMX
 implementations of the effects.
 <p>
 The files scalebit.c and scalebit.h are the fast C implementations
@@ -47,10 +47,10 @@ and write another .PNG file with the effect applied.
 The syntax of the programs is :
 <p>
 <table width="100%" border="0" cellspacing="0" cellpadding="2"><tr><td width="5%"></td><td width="95%">
-<font face="Courier">
-scalerx [-k N] [-w] FROM.png TO.png<br>
-scalex [-k N] FROM.png TO.png<br>
-</font>
+<pre>
+scalerx [-k N] [-w] FROM.png TO.png
+scalex [-k N] FROM.png TO.png
+</pre>
 </td></tr></table>
 <p>
 The option -k can be used to select the scale factor.

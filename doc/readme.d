@@ -18,7 +18,7 @@ Name
 	convert manually .PNG images.
 
 Implementation
-	The files scale2x.h and scale3x.h are the fast C and MMX
+	The files scale2x.c and scale3x.c are the fast C and MMX
 	implementations of the effects.
 
 	The files scalebit.c and scalebit.h are the fast C implementations

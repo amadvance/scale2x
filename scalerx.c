@@ -1,7 +1,7 @@
 /*
  * This file is part of the Scale2x project.
  *
- * Copyright (C) 2001-2003 Andrea Mazzoleni
+ * Copyright (C) 2003 Andrea Mazzoleni
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -76,21 +76,21 @@ void scale2x(unsigned char* dst_ptr, unsigned dst_slice, const unsigned char* sr
 				E3 = E;
 				break;
 			case 1 :
-				/* version 1, default */
+				/* default */
 				E0 = D == B && B != F && D != H ? D : E;
 				E1 = B == F && B != D && F != H ? F : E;
 				E2 = D == H && D != B && H != F ? D : E;
 				E3 = H == F && D != H && B != F ? F : E;
 				break;
 			case 2 :
-				/* version 2, rejected */
+				/* rejected */
 				E0 = D == B && ((B != F && D != H) || D == A) ? D : E;
 				E1 = B == F && ((B != D && F != H) || B == C) ? F : E;
 				E2 = D == H && ((D != B && H != F) || D == G) ? D : E;
 				E3 = H == F && ((D != H && B != F) || H == I) ? F : E;
 				break;
 			case 3 :
-				/* version 3 ,rejected */
+				/* rejected */
 				E0 = D == B && A != E ? D : E;
 				E1 = B == F && C != E ? F : E;
 				E2 = D == H && G != E ? D : E;
@@ -106,7 +106,7 @@ void scale2x(unsigned char* dst_ptr, unsigned dst_slice, const unsigned char* sr
 	}
 }
 
-#define SCALE3X_REVISION_MAX 4
+#define SCALE3X_REVISION_MAX 7
 
 void scale3x(unsigned char* dst_ptr, unsigned dst_slice, const unsigned char* src_ptr, unsigned src_slice, unsigned pixel, unsigned width, unsigned height, int opt_tes, int opt_ver)
 {
@@ -157,7 +157,23 @@ void scale3x(unsigned char* dst_ptr, unsigned dst_slice, const unsigned char* sr
 				E8 = E;
 				break;
 			case 1 :
-				/* version 1, default */
+				/* second version, default  */
+				k0 = D == B && B != F && D != H;
+				k1 = B == F && B != D && F != H;
+				k2 = D == H && D != B && H != F;
+				k3 = H == F && D != H && B != F;
+				E0 = k0 ? D : E;
+				E1 = (k0 && E != C) || (k1 && E != A) ? B : E;
+				E2 = k1 ? F : E;
+				E3 = (k0 && E != G) || (k2 && E != A) ? D : E;
+				E4 = E;
+				E5 = (k1 && E != I) || (k3 && E != C) ? F : E;
+				E6 = k2 ? D : E;
+				E7 = (k2 && E != I) || (k3 && E != G) ? H : E;
+				E8 = k3 ? F : E;
+				break;
+			case 2 :
+				/* first version */
 				E0 = D == B && B != F && D != H ? D : E;
 				E1 = E;
 				E2 = B == F && B != D && F != H ? F : E;
@@ -168,8 +184,8 @@ void scale3x(unsigned char* dst_ptr, unsigned dst_slice, const unsigned char* sr
 				E7 = E;
 				E8 = H == F && D != H && B != F ? F : E;
 				break;
-			case 2 :
-				/* version 2, rejected */
+			case 3 :
+				/* rejected */
 				E0 = D == B && ((B != F && D != H) || D == A) ? D : E;
 				E1 = E;
 				E2 = B == F && ((B != D && F != H) || B == C) ? F : E;
@@ -180,8 +196,8 @@ void scale3x(unsigned char* dst_ptr, unsigned dst_slice, const unsigned char* sr
 				E7 = E;
 				E8 = H == F && ((D != H && B != F) || H == I) ? F : E;
 				break;
-			case 3 :
-				/* version 3, rejected */
+			case 4 :
+				/* rejected */
 				E0 = D == B && A != E ? D : E;
 				E1 = E;
 				E2 = B == F && C != E ? F : E;
@@ -192,16 +208,16 @@ void scale3x(unsigned char* dst_ptr, unsigned dst_slice, const unsigned char* sr
 				E7 = E;
 				E8 = H == F && I != E ? F : E;
 				break;
-			case 4 :
-				/* version 4, rejected */
+			case 5 :
+				/* rejected */
 				k0 = D == B && B != F && D != H;
 				k1 = B == F && B != D && F != H;
 				k2 = D == H && D != B && H != F;
 				k3 = H == F && D != H && B != F;
-				c0 = k0 && A == B;
-				c1 = k1 && C == B;
-				c2 = k2 && G == H;
-				c3 = k3 && I == H;
+				c0 = k0 && E != C;
+				c1 = k1 && E != B;
+				c2 = k2 && E != H;
+				c3 = k3 && E != H;
 				E0 = k0 ? D : E;
 				E1 = c0 || c1 ? B : E;
 				E2 = k1 ? F : E;
@@ -210,6 +226,38 @@ void scale3x(unsigned char* dst_ptr, unsigned dst_slice, const unsigned char* sr
 				E5 = c1 || c3 ? F : E;
 				E6 = k2 ? D : E;
 				E7 = c2 || c3 ? H : E;
+				E8 = k3 ? F : E;
+				break;
+			case 6 :
+				/* rejected  */
+				k0 = D == B && B != F && D != H;
+				k1 = B == F && B != D && F != H;
+				k2 = D == H && D != B && H != F;
+				k3 = H == F && D != H && B != F;
+				E0 = k0 ? D : E;
+				E1 = k0 != k1 ? B : E;
+				E2 = k1 ? F : E;
+				E3 = k0 != k2 ? D : E;
+				E4 = E;
+				E5 = k1 != k3 ? F : E;
+				E6 = k2 ? D : E;
+				E7 = k2 != k3 ? H : E;
+				E8 = k3 ? F : E;
+				break;
+			case 7 :
+				/* rejected  */
+				k0 = D == B && B != F && D != H;
+				k1 = B == F && B != D && F != H;
+				k2 = D == H && D != B && H != F;
+				k3 = H == F && D != H && B != F;
+				E0 = k0 ? D : E;
+				E1 = k0 || k1 ? B : E;
+				E2 = k1 ? F : E;
+				E3 = k0 || k2 ? D : E;
+				E4 = E;
+				E5 = k1 || k3 ? F : E;
+				E6 = k2 ? D : E;
+				E7 = k2 || k3 ? H : E;
 				E8 = k3 ? F : E;
 				break;
 			}
@@ -322,7 +370,7 @@ void usage(void) {
 	printf("\nOptions:\n");
 	printf("\t-k N\tSelect the scale factor. 2, 3 or 4 (default 2).\n");
 	printf("\t-w\tWrap around on the borders.\n");
-	printf("\t-r N\tSelect the revision of the algorithm 0-%d (default 1).\n", SCALE2X_REVISION_MAX);
+	printf("\t-r N\tSelect the revision of the algorithm 0-N (default 1).\n");
 	printf("\nMore info at http://scale2x.sourceforge.net/\n");
 	exit(EXIT_FAILURE);
 }
@@ -346,7 +394,7 @@ int main(int argc, char* argv[]) {
 	int opt_crc = 0;
 	int opt_tes = 0;
 	int opt_ver = 1;
-	int max_ver = SCALE2X_REVISION_MAX;
+	int max_ver;
 	int c;
 
 	opterr = 0;
@@ -391,6 +439,7 @@ int main(int argc, char* argv[]) {
 	case 2 : max_ver = SCALE2X_REVISION_MAX; break;
 	case 3 : max_ver = SCALE3X_REVISION_MAX; break;
 	case 4 : max_ver = SCALE4X_REVISION_MAX; break;
+	default : max_ver = 0; break;
 	}
 
 	if (opt_ver < 0 || opt_ver > max_ver) {
@@ -409,3 +458,4 @@ int main(int argc, char* argv[]) {
 
 	return EXIT_SUCCESS;
 }
+

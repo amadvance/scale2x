@@ -42,6 +42,7 @@ EXTRA_DIST = \
 	doc/history.d doc/history.txt doc/history.html \
 	doc/readme.d doc/readme.txt doc/readme.html \
 	doc/authors.d doc/authors.txt doc/authors.html \
+	doc/algorithm.d doc/algorithm.txt doc/algorithm.html \
 	contrib/readme.txt \
 	contrib/java/Scale2xImageFilter.java \
 	contrib/sdl/scale2x.c \
@@ -51,7 +52,7 @@ EXTRA_DIST = \
 man_MANS = doc/scalex.1 doc/scalerx.1
 
 scalex_SOURCES = \
-	scalex.c scalebit.c scalebit.h getopt.c portable.h file.c file.h
+	scalex.c scalebit.c scalebit.h getopt.c portable.h file.c file.h scale2x.c scale3x.c
 
 scalerx_SOURCES = \
 	scalerx.c getopt.c portable.h file.c file.h pixel.c pixel.h
@@ -95,8 +96,8 @@ DIST_WINDOWS = \
 	doc/readme.txt doc/authors.txt doc/history.txt
 
 DIST_WINDOWS_DOC = \
-	doc/scalex.html doc/scalerx.html doc/readme.txt doc/authors.html doc/history.html \
-	doc/scalex.txt doc/scalerx.txt doc/readme.html doc/authors.txt doc/history.txt
+	doc/scalex.html doc/scalerx.html doc/readme.txt doc/authors.html doc/history.html doc/algorithm.html \
+	doc/scalex.txt doc/scalerx.txt doc/readme.html doc/authors.txt doc/history.txt doc/algorithm.txt
 
 DIST_WINDOWS_EXAMPLE = \
 	example/mslug2-1.png \
@@ -141,5 +142,6 @@ check-local:
 		./scalex -k 4 -c $(srcdir)/test/basn$$i.png tx4x$$i.png >> new.lst ; \
 	done
 	cmp new.lst $(srcdir)/check.lst
+	echo Success!
 
 
