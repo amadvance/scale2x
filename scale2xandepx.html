@@ -1,0 +1,121 @@
+<!doctype html public "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html>
+<head>
+<link rel="stylesheet" type="text/css" href="style.css" />
+<title>Scale2x</title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<meta http-equiv="Pragma" content="no-cache">
+<meta name="description" content="Video scaling effect">
+<meta name="keywords" content="scale2x blit video effect">
+<meta name="author" content="Andrea Mazzoleni">
+<meta name="verify-v1" content="EGTCX12tjr/AQFREtTtASutaTlPQWf+Pkyhc/sr2M5Q=" />
+
+<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-21967501-4']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+</script>
+</head>
+<body>
+<div id="title">
+</div>
+<div id="bar">
+<a href="index.html">About</a>
+<a href="download.html">Download</a>
+<a href="algorithm.html">Algorithm</a>
+<a href="scale2xandepx.html">Scale2x &amp; EPX </a>
+<a href="snapshot1.html">Snapshots 4x</a>
+<a href="snapshot2.html">Snapshots 2x</a>
+<a href="authors.html">Authors</a><br/>
+
+</div>
+<div id="main">
+
+
+
+
+<p>
+After developing the Scale2x algorithm in the 2001 for the
+<a href="http://www.advancemame.it/">AdvanceMAME</a> project, some years later,
+I found in the Wikipedia article <a href="http://en.wikipedia.org/wiki/Pixel_art_scaling_algorithms">Pixel art scaling algorithms</a>
+that an already developed algorithm called EPX was producing the exact same result of Scale2x!
+</p>
+
+<p>
+Really a surprise, as in fact, they are producing the same graphic effect despite the Scale2x algorithm definition is slightly different and faster!
+</p>
+
+<p>
+The following is an extract of the MacTech article <a href="http://www.mactech.com/articles/mactech/Vol.15/15.06/FastBlitStrategies/index.html">Fast Blit Strategies: A Mac Programmer's Guide, vol15, issue6, 1999</a>
+describing the EPX algorithm developed by Eric Johnston in the 1992 when working for LucasArts.
+</p>
+
+<p><i>
+Another common speed-multiplying technique is pixel doubling, which is where each pixel of
+the source image (whether it's a sprite, icon, underlay image, or whatever) is drawn as a 2x2 tile onscreen.
+Essentially, you're scaling a quarter-size image up to full size - hence, the potential exists
+for a 4:1 speed boost. The downside to this technique is that it gives a "chunky pixel"
+look that can be annoying; but there happens to be a useful workaround, in the form of the 'epx' antialiasing
+technique pioneered by LucasArts' Eric Johnston. Figure 1 shows how it works.
+</p></i>
+
+<center>
+<img src="fig01.gif">
+</center>
+
+<p><i>
+The problem is this: how to scale pixel 'P' to be four times its original size, but without all four new pixels
+necessarily being the same color. (We want some antialiasing.) In Figure 1, the tic-tac-toe grid on the left
+represents the pixel 'P' and its north, south, east, and west neighbors in the source (offscreen buffer) image.
+The 2x2 tile on the right represents the new (onscreen) pixels, which will derive from P.
+The question is how to color P1, P2, P3, and P4 without giving the "chunky pixel" look.
+</p></i>
+
+<p><i>
+The answer is to base P1 on the back-buffer pixels 'A' and 'C'; base P2 on 'A' and 'B'; base P3 on 'C' and 'D';
+and base P4 on 'D' and 'B'. We say that 'A' and 'C' are the "parents" of P1, 'D' and 'B' are the parents of P4, etc.,
+and likewise, P1 is the child of 'A' and 'C', and so forth. The rule to follow is this:
+<u>
+If any two parents are equal in color, then make the child that color.
+Otherwise, let the child be the color of 'P'.
+Also, if at least three of the parents (A, B, C, D) are identical, do nothing: just let P1 = P2 = P3 = P4 = P.
+</u>
+(Johnston discusses this technique on page 692 of Tricks of the Mac Game Programming Gurus, Hayden Books, 1995.)
+</p></i>
+
+
+</div>
+
+<div id="bottombar">
+
+<div style="float: left; width: 50%;">
+<span class="bold">Donate with</span>
+<br/>
+<a href="https://sourceforge.net/project/project_donations.php?group_id=67928"><img src="paypal.png"/></a>
+
+</div>
+
+<div style="float: left; width: 50%;">
+<span class="bold">Find other resources at</span>
+<br/>
+<a href="https://github.com/amadvance/scale2x/"><img src="github.png"/></a>
+
+<a href="http://sourceforge.net/projects/scale2x/"><img src="sourceforge.png"/></a>
+</div>
+
+</div>
+</body>
+</html>
+
+
+
+
+

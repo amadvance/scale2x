@@ -1,0 +1,186 @@
+<!doctype html public "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html>
+<head>
+<link rel="stylesheet" type="text/css" href="style.css" />
+<title>Scale2x</title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<meta http-equiv="Pragma" content="no-cache">
+<meta name="description" content="Video scaling effect">
+<meta name="keywords" content="scale2x blit video effect">
+<meta name="author" content="Andrea Mazzoleni">
+<meta name="verify-v1" content="EGTCX12tjr/AQFREtTtASutaTlPQWf+Pkyhc/sr2M5Q=" />
+
+<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-21967501-4']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+</script>
+</head>
+<body>
+<div id="title">
+</div>
+<div id="bar">
+<a href="index.html">About</a>
+<a href="download.html">Download</a>
+<a href="algorithm.html">Algorithm</a>
+<a href="scale2xandepx.html">Scale2x &amp; EPX </a>
+<a href="snapshot1.html">Snapshots 4x</a>
+<a href="snapshot2.html">Snapshots 2x</a>
+<a href="authors.html">Authors</a><br/>
+
+</div>
+<div id="main">
+
+
+
+
+<h2>Scale2x Algorithm</h2>
+The effect works repeating a computation pattern for every pixel of the original
+image.
+The pattern starts from a square of 9 pixels and expands the central pixel
+computing 4 new pixels.
+<p>
+Starting from this pattern :
+<p><center><table class="algo">
+<tr><td>A</td><td>B</td><td>C</td></tr>
+<tr><td>D</td><td>E</td><td>F</td></tr>
+<tr><td>G</td><td>H</td><td>I</td></tr>
+</table></center><p>
+The central pixel <em>E</em> is expanded in 4 new pixels:
+<p><center><table class="algo">
+<tr><td>E0</td><td>E1</td></tr>
+<tr><td>E2</td><td>E3</td></tr>
+</table></center><p>
+with these rules (in C language) :
+<p>
+<pre>
+E0 = D == B && B != F && D != H ? D : E;
+E1 = B == F && B != D && F != H ? F : E;
+E2 = D == H && D != B && H != F ? D : E;
+E3 = H == F && D != H && B != F ? F : E;
+</pre>
+which can be rewritten as :
+<pre>
+E0 = D == B && B != H && D != F ? D : E;
+E1 = B == F && B != H && D != F ? F : E;
+E2 = D == H && B != H && D != F ? D : E;
+E3 = H == F && B != H && D != F ? F : E;
+</pre>
+and optimized as:
+<pre>
+if (B != H && D != F) {
+	E0 = D == B ? D : E;
+	E1 = B == F ? F : E;
+	E2 = D == H ? D : E;
+	E3 = H == F ? F : E;
+} else {
+	E0 = E;
+	E1 = E;
+	E2 = E;
+	E3 = E;
+}
+</pre>
+<p>
+The image border is computed reusing the value of the nearest pixel on the
+border when the value of a pixel over the border is required.
+
+<h2>Scale3x Algorithm</h2>
+Starting from this pattern :
+<p><center><table class="algo">
+<tr><td>A</td><td>B</td><td>C</td></tr>
+<tr><td>D</td><td>E</td><td>F</td></tr>
+<tr><td>G</td><td>H</td><td>I</td></tr>
+</table></center><p>
+The central pixel <em>E</em> is expanded in 9 new pixels:
+<p><center><table class="algo">
+<tr><td>E0</td><td>E1</td><td>E2</td></tr>
+<tr><td>E3</td><td>E4</td><td>E5</td></tr>
+<tr><td>E6</td><td>E7</td><td>E8</td></tr>
+</table></center><p>
+with these rules (in C language) :
+<p>
+<pre>
+E0 = D == B && B != F && D != H ? D : E;
+E1 = (D == B && B != F && D != H && E != C) || (B == F && B != D && F != H && E != A) ? B : E;
+E2 = B == F && B != D && F != H ? F : E;
+E3 = (D == B && B != F && D != H && E != G) || (D == H && D != B && H != F && E != A) ? D : E;
+E4 = E
+E5 = (B == F && B != D && F != H && E != I) || (H == F && D != H && B != F && E != C) ? F : E;
+E6 = D == H && D != B && H != F ? D : E;
+E7 = (D == H && D != B && H != F && E != I) || (H == F && D != H && B != F && E != G) ? H : E;
+E8 = H == F && D != H && B != F ? F : E;
+</pre>
+and optimized as:
+<pre>
+if (B != H && D != F) {
+	E0 = D == B ? D : E;
+	E1 = (D == B && E != C) || (B == F && E != A) ? B : E;
+	E2 = B == F ? F : E;
+	E3 = (D == B && E != G) || (D == H && E != A) ? D : E;
+	E4 = E;
+	E5 = (B == F && E != I) || (H == F && E != C) ? F : E;
+	E6 = D == H ? D : E;
+	E7 = (D == H && E != I) || (H == F && E != G) ? H : E;
+	E8 = H == F ? F : E;
+} else {
+	E0 = E;
+	E1 = E;
+	E2 = E;
+	E3 = E;
+	E4 = E;
+	E5 = E;
+	E6 = E;
+	E7 = E;
+	E8 = E;
+}
+</pre>
+
+<h2>Scale4x Algorithm</h2>
+The Scale4x effect is simply the Scale2x effect applied two times.
+
+<h2>Examples</h2>
+The following are some examples that show the application of the effects.
+
+<table>
+<tr>
+<tr><td align="center"><img src="snap/test-1x.png"><br>original</td></tr>
+<tr><td align="center"><img src="snap/test-2x.png"><br>scale2x</td></tr>
+<tr><td align="center"><img src="snap/test-3x.png"><br>scale3x</td></tr>
+<tr><td align="center"><img src="snap/test-4x.png"><br>scale4x</td></tr>
+</table>
+
+
+</div>
+
+<div id="bottombar">
+
+<div style="float: left; width: 50%;">
+<span class="bold">Donate with</span>
+<br/>
+<a href="https://sourceforge.net/project/project_donations.php?group_id=67928"><img src="paypal.png"/></a>
+
+</div>
+
+<div style="float: left; width: 50%;">
+<span class="bold">Find other resources at</span>
+<br/>
+<a href="https://github.com/amadvance/scale2x/"><img src="github.png"/></a>
+
+<a href="http://sourceforge.net/projects/scale2x/"><img src="sourceforge.png"/></a>
+</div>
+
+</div>
+</body>
+</html>
+
+
+
+

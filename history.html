@@ -1,0 +1,210 @@
+<!doctype html public "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html>
+<head>
+<link rel="stylesheet" type="text/css" href="style.css" />
+<title>Scale2x</title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<meta http-equiv="Pragma" content="no-cache">
+<meta name="description" content="Video scaling effect">
+<meta name="keywords" content="scale2x blit video effect">
+<meta name="author" content="Andrea Mazzoleni">
+<meta name="verify-v1" content="EGTCX12tjr/AQFREtTtASutaTlPQWf+Pkyhc/sr2M5Q=" />
+
+<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-21967501-4']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+</script>
+
+</head>
+<body>
+
+<div class="title">
+<a href="index.html"><img src="index.png" border="0"/></a>
+</div>
+
+<div class="bar">
+<a href="index.html">About</a><br/>
+<a href="history.html">History</a><br/>
+<a href="algorithm.html">Algorithm</a><br/>
+<a href="scale2xandepx.html">Scale2x &amp; EPX </a><br/>
+<a href="download.html">Download</a><br/>
+<a href="snapshot1.html">Snapshots 4x</a><br/>
+<a href="snapshot2.html">Snapshots 2x</a><br/>
+<a href="authors.html">Authors</a><br/>
+<br/>
+<span class="bold">Support</span><br/>
+<a href="https://sourceforge.net/projects/scale2x/forums/forum/230724">Forum</a><br/>
+<a href="http://sourceforge.net/projects/scale2x">SF Project</a><br/>
+<p/>
+<a href="http://sourceforge.net/projects/scale2x"><img src="http://sourceforge.net/sflogo.php?group_id=67928&amp;type=4" width="125" height="37" border="0" alt="SourceForge Project" title="SourceForge Project"></a>
+<p/>
+<a href="https://sourceforge.net/project/project_donations.php?group_id=67928"><img src="http://images.sourceforge.net/images/project-support.jpg" width="88" height="32" border="0" alt="Support This Project" /> </a>
+<p/>
+<span class="bold">Friends</span><br/>
+<a href="http://advancemame.sourceforge.net/">AdvanceMAME</a><br/>
+<a href="http://tommyds.sourceforge.net/">TommyDS</a><br/>
+<a href="http://snapraid.sourceforge.net/">SnapRAID</a><br/>
+
+<span style="font-size:50%">
+<a href="https://plus.google.com/101522679338286565067?rel=author">by am</a>
+</span>
+
+</div>
+
+<div class="main">
+
+
+
+<p>
+This is the history of <span class="bold">Scale2x</span>.
+</p>
+
+<h2>
+Scale2x v2.4 2009/07
+</h2>
+<ul>
+<li>
+Added MMX support for x86_64 [Per Øyvind Karlsen]
+</li>
+</ul>
+<h2>
+Scale2x v2.3 2005/11
+</h2>
+<ul>
+<li>
+Some additions in the contrib/ directory.
+</li>
+</ul>
+<h2>
+Scale2x v2.2 2005/03
+</h2>
+<ul>
+<li>
+Fixed a typo in the algorithm documentation of scale3x.
+Specifically the definition of the E3 point in
+the algorithm.txt file was wrong.
+</li>
+</ul>
+<h2> 
+Scale2x v2.1 2004/12
+</h2>
+<ul>
+<li>
+Added the `scale2x3' and `scale2x4' effects.
+</li>
+<li>
+Fixed the computation of the border pixels for scale3x.
+</li>
+<li>
+Fixed the scalebit.c implementation to be C++
+compatible [Max Horn]
+</li>
+</ul>
+<h2> 
+Scale2x v2.0 2004/02
+</h2>
+<ul>
+<li>
+Added a new revision of the `scale3x' effect. It now looks good as
+`scale2x'.
+</li>
+<li>
+Added a new optimized C version of the `scale2x' effect.
+</li>
+<li>
+Added a detailed algorithm specification in the `algorithm.txt' file.
+</li>
+<li>
+Minor fixes at the scalebit.c file.
+</li>
+</ul>
+<h2> 
+Scale2x v1.6 2003/07
+</h2>
+<ul>
+<li>
+Added an example of the fast implementation of the effects
+applied to a generic bitmap. There is also an
+example for the not obvious Scale4x effect.
+</li>
+<li>
+Revised the command line tools. Now they support all the
+formats of .PNG images. Also images with 16 bits per
+channel.
+</li>
+<li>
+Fixed a linking problem with some libpng installations.
+</li>
+</ul>
+<h2> 
+Scale2x v1.5 2003/05
+</h2>
+<ul>
+<li>
+Added the scale3x and scale4x command line tools.
+</li>
+</ul>
+<h2> 
+Scale2x v1.4 2003/01
+</h2>
+<ul>
+<li>
+Added in the contrib dir a VisualC MMX assembler implementation
+by VisualBoy from the VisualBoyAdvance emulator.
+</li>
+</ul>
+<h2> 
+Scale2x v1.3 2002/12
+</h2>
+<ul>
+<li>
+Added the contrib dir with some example implementations.
+Java by Randy Power and C SDL by Pete Shinners.
+</li>
+</ul>
+<h2> 
+Scale2x v1.2 2002/11
+</h2>
+<ul>
+<li>
+The new Scale2x site is now http://scale2x.sourceforge.net
+</li>
+<li>
+The MMX implementation now correctly computes the pixel on the
+left and right border.
+</li>
+<li>
+Renamed the -t option in -w.
+</li>
+</ul>
+<h2> 
+Scale2x v1.1 2002/11
+</h2>
+<ul>
+<li>
+Added the -t option at the command line converter.
+</li>
+</ul>
+<h2> 
+Scale2x v1.0 2002/11
+</h2>
+<ul>
+<li>
+First version of the library
+</li>
+</ul>
+
+</div>
+</body>
+</html>
+
+

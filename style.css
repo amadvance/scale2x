@@ -1,0 +1,188 @@
+/* Reset all white-space to 0 for consistency across browsers */
+{
+	margin:0px;
+	padding:0px;
+}
+
+/* Get some padding between paragraphs and some line spacing */
+p {
+	padding-bottom:5px;
+	line-height:1.4em;
+}
+
+/* Bye bye ugly blue border */
+a img {
+	border:0px;
+}
+
+/* No dots around clicked links */
+a, a:active {
+	outline: none;
+}
+
+/* Class to any floated elements */
+.clear {
+	clear:both;
+}
+
+/* styles */
+
+a {
+	text-decoration:none;
+}
+
+a:link {
+	color:#625d00;
+}
+
+a:visited {
+	color:#7f7900;
+}
+
+a:hover {
+	color:#7f7900;
+	text-decoration:underline;
+}
+
+hr {
+	color:#B0B0B0;
+}
+
+h1, h2, h3 {
+	color:#a69e00;
+	margin-left:-1em;
+}
+
+table, td
+{
+	border:0px;
+	border-style:none;
+}
+
+.bold {
+	color:#a69e00;
+	font-weight:bold;
+}
+
+.highlight {
+	color:#a69e00;
+	font-weight:bold;
+	font-size:150%;
+}
+
+.sg {
+	color:#B00000;
+}
+
+.nw {
+	white-space:nowrap;
+}
+
+/* structure */
+
+body {
+	background-color:#ffffff;
+	margin:0px;
+	padding:0px;
+}
+
+/* title */
+
+#title {
+	min-height: 200px;
+	background: #e0d700 url(index.png) 0 0 no-repeat;
+	padding:0px;
+}
+
+/* bar */
+
+#bar {
+	background-color:#fffa8f;
+	padding:8px;
+	padding-left:4em;
+	padding-right:4em;
+}
+
+#bar a {
+	color:#7f7900;
+	font-family:sans-serif;
+	padding-left:1em;
+	font-weight:bold;
+}
+
+#bar .bold {
+	color:#625d00;
+}
+
+/* bottombar */
+
+#bottombar {
+	background-color:#fffa8f;
+	min-height: 90px;
+	padding-top:16px;
+	padding-bottom:16px;
+	padding-left:4em;
+	padding-right:4em;
+}
+
+#bottombar a {
+	color:#7f7900;
+	font-family:sans-serif;
+	padding-left:1em;
+}
+
+#bottombar .bold {
+	color:#625d00;
+}
+
+/* main */
+
+#main {
+	padding:2px;
+	padding-left:4em;
+	padding-right:4em;
+	max-width:1024px;
+}
+
+.text {
+	margin:16px;
+	margin-left:32px
+}
+
+/* table download */
+
+.download
+{
+	border-collapse:collapse;
+}
+.download td
+{
+	border: 2px solid black;
+	text-align:left;
+	padding:5px;
+}
+.download th
+{
+	border: 2px solid black;
+	font-size:1.1em;
+	text-align:left;
+	padding:5px;
+	background-color:#fff973;
+	color:#625d00;
+}
+
+/* table algo */
+
+.algo
+{
+	border-collapse:none;
+}
+.algo td
+{
+	border: 5px solid black;
+	text-align:left;
+	padding:5px;
+}
+
+
+
