@@ -282,7 +282,7 @@ int file_process(const char* file0, const char* file1, int opt_scale, int opt_te
 		scale3x(dst_ptr, dst_slice, src_ptr, src_slice, pixel, width, height, opt_tes, opt_ver);
 		break;
 	case 4 :
-		if (scale4x(dst_ptr, dst_slice, src_ptr, src_slice, pixel, width, height, opt_tes, opt_ver) != 0);
+		if (scale4x(dst_ptr, dst_slice, src_ptr, src_slice, pixel, width, height, opt_tes, opt_ver) != 0)
 			goto err_dst;
 		break;
 	}

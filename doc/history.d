@@ -8,7 +8,7 @@ Scale2x v1.6 2003/07
 	) Revised the command line tools. Now they support all the
 		formats of .PNG images. Also images with 16 bits per
 		channel.
-	) Fixed a linking problem with some libpng installation.
+	) Fixed a linking problem with some libpng installations.
 
 Scale2x v1.5 2003/05
 	) Added the scale3x and scale4x command line tools.

@@ -93,7 +93,7 @@ err:
 	return -1;
 }
 
-int file_read(const char* file, unsigned char** ptr, unsigned* slice, unsigned* pixel, unsigned* width, unsigned* height, int* type, int* channel, png_color** palette, unsigned* palette_size, int adjust_size)
+int file_read(const char* file, unsigned char** ptr, unsigned* slice, unsigned* pixel, unsigned* width, unsigned* height, int* type, int* channel, png_color** palette, unsigned* palette_size, int allow_only124)
 {
 	png_struct* png_ptr;
 	png_info* info_ptr;
@@ -152,7 +152,7 @@ int file_read(const char* file, unsigned char** ptr, unsigned* slice, unsigned* 
 		png_set_tRNS_to_alpha(png_ptr);
 
 	/* reduce to 8 bit if the pixel size doesn't fit in 4 byte */
-	if (adjust_size && pre_channel * ((bit_depth + 7) / 8) > 4)
+	if (allow_only124 && pre_channel * ((bit_depth + 7) / 8) > 4)
 		png_set_strip_16(png_ptr);
 
 	/* normalize the pixel value after an expand */
@@ -166,7 +166,7 @@ int file_read(const char* file, unsigned char** ptr, unsigned* slice, unsigned* 
 		png_set_packing(png_ptr);
 
 	/* add alpha channel */
-	if (adjust_size != 0 && pre_type == PNG_COLOR_TYPE_RGB)
+	if (allow_only124 && pre_type == PNG_COLOR_TYPE_RGB)
 		png_set_filler(png_ptr, 0xFF, PNG_FILLER_AFTER);
 
 	png_read_update_info(png_ptr, info_ptr);

@@ -40,15 +40,12 @@
 #include "scale2x.h"
 #include "scale3x.h"
 
-#include <assert.h>
-
-#if HAVE_ALLOCA
 #if HAVE_ALLOCA_H
 #include <alloca.h>
-#else
+#endif
+
+#include <assert.h>
 #include <stdlib.h>
-#endif
-#endif
 
 /**
  * Apply the Scale2x effect on a group of rows. Used internally.

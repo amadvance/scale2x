@@ -26,10 +26,10 @@ Implementation
 	Note that the implementation of the Scale4x effect is not
 	obvious without using a big intermediate buffer.
 
-	The files scalerx.c is a simple command line processors
+	The files scalerx.c is a simple command line processors,
 	which uses the reference implementation of the effects.
 
-	The files scalex.c is another simple command line processors
+	The files scalex.c is another simple command line processors,
 	which uses the fast implementation of the effects.
 
 Tools
@@ -45,4 +45,21 @@ Tools
 
 	To compile the command line tool you need the libz and libpng
 	libraries.
+
+Examples
+	The directory example/ contains some examples of the effects applyed
+	to a generic image and to a test image.
+
+	The suffix of the images means :
+		1 - Original image.
+		2 - Scale2x effect.
+		3 - Scale3x effect.
+		4 - Scale4x effect.
+		1x - Scaled normally 12 times.
+		2x - Scale2x effect and scaled normally up to 12 times.
+		3x - Scale3x effect and scaled normally up to 12 times.
+		4x - Scale4x effect and scaled normally up to 12 times.
+
+	The `x' images have the same final size and can be used to compare
+	pixel by pixel the result of the effects.
 

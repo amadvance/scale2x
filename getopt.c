@@ -1,7 +1,7 @@
 /*
- * This file is part of the Scale2x project.
+ * This file is part of the Advance project.
  *
- * Copyright (C) 2001-2003 Andrea Mazzoleni
+ * Copyright (C) 1998-2002 Andrea Mazzoleni
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,7 +18,9 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#include "portable.h"
+#if HAVE_CONFIG_H
+#include <config.h>
+#endif
 
 #if !HAVE_GETOPT
 
@@ -108,3 +110,4 @@ int getopt(int nargc, char *const nargv[], const char *ostr)
 }
 
 #endif
+

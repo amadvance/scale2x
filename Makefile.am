@@ -21,7 +21,6 @@ EXTRA_DIST = \
 	example/test-3x.png \
 	example/test-4.png \
 	example/test-4x.png \
-	example/make-example \
 	test/basn0g01.png \
 	test/basn0g02.png \
 	test/basn0g04.png \
@@ -52,10 +51,10 @@ EXTRA_DIST = \
 man_MANS = doc/scalex.1 doc/scalerx.1
 
 scalex_SOURCES = \
-	scalex.c scalebit.c scalebit.h portable.c portable.h file.c file.h
+	scalex.c scalebit.c scalebit.h getopt.c portable.h file.c file.h
 
 scalerx_SOURCES = \
-	scalerx.c portable.c portable.h file.c file.h pixel.c pixel.h
+	scalerx.c getopt.c portable.h file.c file.h pixel.c pixel.h
 
 clean-local:
 	rm -f tx*.png tr*.png
@@ -93,10 +92,11 @@ DIST_WINDOWS = \
 	scalex.exe scalerx.exe \
 	support/zlib.dll support/libpng.dll \
 	doc/copying.txt \
-	doc/scalex.txt doc/scalerx.txt doc/readme.txt doc/authors.txt doc/history.txt
+	doc/readme.txt doc/authors.txt doc/history.txt
 
 DIST_WINDOWS_DOC = \
-	doc/scalex.html doc/scalerx.html doc/readme.html doc/authors.html doc/history.html
+	doc/scalex.html doc/scalerx.html doc/readme.txt doc/authors.html doc/history.html \
+	doc/scalex.txt doc/scalerx.txt doc/readme.html doc/authors.txt doc/history.txt
 
 DIST_WINDOWS_EXAMPLE = \
 	example/mslug2-1.png \

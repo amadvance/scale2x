@@ -14,7 +14,8 @@ AC_CHECK_LIB([z], [adler32])
 AC_CHECK_LIB([png], [png_get_IHDR])
 
 # Checks for header files.
-AC_CHECK_HEADERS([getopt.h])
+AC_HEADER_STDC
+AC_CHECK_HEADERS([unistd.h getopt.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
@@ -22,8 +23,7 @@ AC_C_INLINE
 
 # Checks for library functions.
 AC_FUNC_ALLOCA
-AC_CHECK_FUNCS([getopt])
-AC_CHECK_FUNCS([getopt_long])
+AC_CHECK_FUNCS([getopt getopt_long])
 
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT

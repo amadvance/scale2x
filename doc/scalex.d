@@ -23,9 +23,9 @@ Description
 	The fast implementation of the Scale effects is used. It imposes
 	some limitations of the type of the image usable. Specifically :
 
-	* Only the pixel size of 1, 2 and 4 bytes are supported. If the
+	* Only the pixel sizes of 1, 2 and 4 bytes are supported. If the
 		image has another pixel size it's automatically converted.
-	* The width in pixel of the image must be an exact multiplier of 8 bytes.
+	* The width of the image must be an exact multiplier of 8 bytes.
 		If the image has an odd width the conversion fails.
 
 Options
