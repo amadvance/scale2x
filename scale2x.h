@@ -19,7 +19,7 @@
  */
 
 /*
- * This file contains a C and MMX implementation of the Scale2x effect.
+ * This file contains a fast C and MMX implementation of the Scale2x effect.
  *
  * You can find an high level description of the effect at :
  *
@@ -916,6 +916,17 @@ static void scale2x_32_mmx(scale2x_uint32* dst0, scale2x_uint32* dst1, const sca
 
 	scale2x_32_mmx_single(dst0, src0, src1, src2, count);
 	scale2x_32_mmx_single(dst1, src2, src1, src0, count);
+}
+
+/**
+ * End the use of the MMX instructions.
+ * This function must be called before using any floating-point operations.
+ */
+static inline void scale2x_mmx_emms(void)
+{
+	__asm__ __volatile__ (
+		"emms"
+	);
 }
 
 #endif

@@ -1,10 +1,8 @@
 Name
-	scale2x, scale3x, scale4x - Scale a .PNG image
+	scalerx - Scale a .PNG image using the reference implementation of the Scale effects
 
 Synopsis
-	:scale2x [-w] [-r N] input.png output.png
-	:scale3x [-w] [-r N] input.png output.png
-	:scale4x [-w] [-r N] input.png output.png
+	:scalerx [-k N] [-w] [-r N] input.png output.png
 
 Description
 	Scale2x, Scale3x and Scale4x are real-time graphics effects
@@ -20,9 +18,14 @@ Description
 		+http://scale2x.sourceforge.net
 
 	These command line tools read a .PNG file and write another
-	.PNG file with the effects applied.
+	image with the effects applied.
+
+	The reference implementation of the Scale effects is used.
 
 Options
+	-k N, --scale N
+		Select the scale factor. Available values are 2, 3 and 4.
+
 	-w, --wrap
 		Compute the image border for a wraparound effect.
 
@@ -32,5 +35,5 @@ Options
 		2 and 3 are alternative versions.
 
 Copyright
-	This file is Copyright (C) 2002 Andrea Mazzoleni
+	This file is Copyright (C) 2003 Andrea Mazzoleni
 

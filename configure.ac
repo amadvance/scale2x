@@ -1,6 +1,6 @@
 # Process this file with autoconf to produce a configure script.
-AC_INIT([Scale2x],[1.5])
-AC_CONFIG_SRCDIR([scale2x.c])
+AC_INIT([Scale2x],[1.6])
+AC_CONFIG_SRCDIR([scalerx.c])
 AM_INIT_AUTOMAKE([foreign no-dependencies])
 AC_CONFIG_HEADERS([config.h])
 AC_CANONICAL_HOST
@@ -9,6 +9,7 @@ AC_CANONICAL_HOST
 AC_PROG_CC
 
 # Checks for libraries.
+AC_CHECK_LIB([m], [log])
 AC_CHECK_LIB([z], [adler32])
 AC_CHECK_LIB([png], [png_get_IHDR])
 
@@ -16,8 +17,14 @@ AC_CHECK_LIB([png], [png_get_IHDR])
 AC_CHECK_HEADERS([getopt.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
+AC_C_CONST
+AC_C_INLINE
 
 # Checks for library functions.
+AC_FUNC_ALLOCA
+AC_FUNC_MALLOC
+AC_CHECK_FUNCS([getopt])
+AC_CHECK_FUNCS([getopt_long])
 
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT

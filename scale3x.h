@@ -19,7 +19,7 @@
  */
 
 /*
- * This file contains a C implementation of the Scale3x effect.
+ * This file contains a fast C implementation of the Scale3x effect.
  *
  * You can find an high level description of the effect at :
  *

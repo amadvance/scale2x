@@ -2,7 +2,7 @@ Name
 	authors - The Scale2x, Scale3x and Scale4x Authors
 
 Authors
-	* Andrea Mazzoleni <amadvance@users.sourceforge.net>
+	* Andrea Mazzoleni
 
 Acknowledgments
 	* Randy Schnedler (Randy Power)

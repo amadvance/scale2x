@@ -1,6 +1,13 @@
 Name
 	scale2x - History For Scale2x
 
+Scale2x v1.6 2003/07
+	) Added in the scalebit.c/h files an example of a fast
+		implementation on how to apply the Scale2x/3x/4x
+		effects on a bitmap.
+	) Revised the command line tools.
+	) Fixed a linking problem with recent libpng.
+
 Scale2x v1.5 2003/05
 	) Added the scale3x and scale4x command line tools.
 
