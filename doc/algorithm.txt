@@ -3,8 +3,8 @@
                    ==========================================
 
 
-1 SCALE2X ALGORITHM
-===================
+SCALE2X ALGORITHM
+=================
 
 The effect works repeating a computation pattern for every
 pixel of the original image.
@@ -54,8 +54,8 @@ The image border is computed reusing the value of the nearest pixel
 on the border when the value of a pixel over the border is required.
 
 
-2 SCALE3X ALGORITHM
-===================
+SCALE3X ALGORITHM
+=================
 
 Starting from this pattern :
 
@@ -74,7 +74,7 @@ with these rules (in C language) :
     E0 = D == B && B != F && D != H ? D : E;
     E1 = (D == B && B != F && D != H && E != C) || (B == F && B != D && F != H && E != A) ? B : E;
     E2 = B == F && B != D && F != H ? F : E;
-    E3 = (D == B && B != F && D != H && E != G) || (D == B && B != F && D != H && E != A) ? D : E;
+    E3 = (D == B && B != F && D != H && E != G) || (D == H && D != B && H != F && E != A) ? D : E;
     E4 = E
     E5 = (B == F && B != D && F != H && E != I) || (H == F && D != H && B != F && E != C) ? F : E;
     E6 = D == H && D != B && H != F ? D : E;
@@ -87,7 +87,7 @@ and optimized as:
     	E0 = D == B ? D : E;
     	E1 = (D == B && E != C) || (B == F && E != A) ? B : E;
     	E2 = B == F ? F : E;
-    	E3 = (D == B && E != G) || (D == B && E != A) ? D : E;
+    	E3 = (D == B && E != G) || (D == H && E != A) ? D : E;
     	E4 = E;
     	E5 = (B == F && E != I) || (H == F && E != C) ? F : E;
     	E6 = D == H ? D : E;
@@ -106,7 +106,7 @@ and optimized as:
     }
 
 
-3 SCALE4X ALGORITHM
-===================
+SCALE4X ALGORITHM
+=================
 
 The Scale4x effect is simply the Scale2x effect applied two times.

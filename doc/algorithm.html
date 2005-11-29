@@ -3,8 +3,8 @@
 <title>The Scale2x, Scale3x and Scale4x algorithm</title>
 </head>
 <body>
-<h2><center>The Scale2x, Scale3x and Scale4x algorithm</center></h2>
-<h2>1 
+<center><h2>The Scale2x, Scale3x and Scale4x algorithm</h2></center>
+<h2> 
 Scale2x Algorithm
 </h2>
 The effect works repeating a computation pattern for every
@@ -73,7 +73,7 @@ if (B != H &amp;&amp; D != F) {
 <p>
 The image border is computed reusing the value of the nearest pixel
 on the border when the value of a pixel over the border is required.
-<h2>2 
+<h2> 
 Scale3x Algorithm
 </h2>
 Starting from this pattern :
@@ -103,7 +103,7 @@ with these rules (in C language) :
 E0 = D == B &amp;&amp; B != F &amp;&amp; D != H ? D : E;
 E1 = (D == B &amp;&amp; B != F &amp;&amp; D != H &amp;&amp; E != C) || (B == F &amp;&amp; B != D &amp;&amp; F != H &amp;&amp; E != A) ? B : E;
 E2 = B == F &amp;&amp; B != D &amp;&amp; F != H ? F : E;
-E3 = (D == B &amp;&amp; B != F &amp;&amp; D != H &amp;&amp; E != G) || (D == B &amp;&amp; B != F &amp;&amp; D != H &amp;&amp; E != A) ? D : E;
+E3 = (D == B &amp;&amp; B != F &amp;&amp; D != H &amp;&amp; E != G) || (D == H &amp;&amp; D != B &amp;&amp; H != F &amp;&amp; E != A) ? D : E;
 E4 = E
 E5 = (B == F &amp;&amp; B != D &amp;&amp; F != H &amp;&amp; E != I) || (H == F &amp;&amp; D != H &amp;&amp; B != F &amp;&amp; E != C) ? F : E;
 E6 = D == H &amp;&amp; D != B &amp;&amp; H != F ? D : E;
@@ -120,7 +120,7 @@ if (B != H &amp;&amp; D != F) {
 &nbsp;&nbsp;&nbsp;&nbsp;E0 = D == B ? D : E;
 &nbsp;&nbsp;&nbsp;&nbsp;E1 = (D == B &amp;&amp; E != C) || (B == F &amp;&amp; E != A) ? B : E;
 &nbsp;&nbsp;&nbsp;&nbsp;E2 = B == F ? F : E;
-&nbsp;&nbsp;&nbsp;&nbsp;E3 = (D == B &amp;&amp; E != G) || (D == B &amp;&amp; E != A) ? D : E;
+&nbsp;&nbsp;&nbsp;&nbsp;E3 = (D == B &amp;&amp; E != G) || (D == H &amp;&amp; E != A) ? D : E;
 &nbsp;&nbsp;&nbsp;&nbsp;E4 = E;
 &nbsp;&nbsp;&nbsp;&nbsp;E5 = (B == F &amp;&amp; E != I) || (H == F &amp;&amp; E != C) ? F : E;
 &nbsp;&nbsp;&nbsp;&nbsp;E6 = D == H ? D : E;
@@ -139,7 +139,7 @@ if (B != H &amp;&amp; D != F) {
 }
 </pre>
 </td></tr></table>
-<h2>3 
+<h2> 
 Scale4x Algorithm
 </h2>
 The Scale4x effect is simply the Scale2x effect applied two times.

@@ -43,11 +43,26 @@ EXTRA_DIST = \
 	doc/readme.d doc/readme.txt doc/readme.html \
 	doc/authors.d doc/authors.txt doc/authors.html \
 	doc/algorithm.d doc/algorithm.txt doc/algorithm.html \
+	test/test.lst \
 	contrib/readme.txt \
 	contrib/java/Scale2xImageFilter.java \
 	contrib/sdl/scale2x.c \
 	contrib/visualc/scale2x.cpp \
-	test/test.lst
+	contrib/freebasic/scale2x8BPP.bas \
+	contrib/freebasic/scale2x8BPP.exe \
+	contrib/ogl2/gpuPeteOGL2-rev3.slv \
+	contrib/ogl2/gpuPeteOGL2.slf \
+	contrib/ogl2/gpuPeteOGL2.slv \
+	contrib/ogl2/sl_scale2x.txt \
+	contrib/ogl2/gpuPeteOGL2-rev3.slf \
+	contrib/ps/scale2x.fx \
+	contrib/ps/scale2x_ps14.fx \
+	contrib/ps/scaling.inc \
+	contrib/perl/GD-Image-Scale2x-0.02.tar.gz \
+	contrib/java2/ImageScale2x.java \
+	contrib/java2/ImageScale3x.java \
+	contrib/java2/RawScale2x.java \
+	contrib/java2/RawScale3x.java
 
 man_MANS = doc/scalex.1 doc/scalerx.1
 

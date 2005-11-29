@@ -55,7 +55,6 @@ void scalex(unsigned char* dst_ptr, unsigned dst_slice, const unsigned char* src
 	}
 }
 
-
 #define SCALE2X_REVISION_MAX 3
 
 void scale2x(unsigned char* dst_ptr, unsigned dst_slice, const unsigned char* src_ptr, unsigned src_slice, unsigned pixel, unsigned width, unsigned height, int opt_tes, int opt_ver)
@@ -110,7 +109,7 @@ void scale2x(unsigned char* dst_ptr, unsigned dst_slice, const unsigned char* sr
 				E3 = H == F && ((D != H && B != F) || H == I) ? F : E;
 				break;
 			case 3 :
-				/* rejected */
+				/* rejected, loses isolated pixels */
 				E0 = D == B && A != E ? D : E;
 				E1 = B == F && C != E ? F : E;
 				E2 = D == H && G != E ? D : E;

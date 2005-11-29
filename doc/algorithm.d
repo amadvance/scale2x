@@ -67,7 +67,7 @@ Scale3x Algorithm
 		:E0 = D == B && B != F && D != H ? D : E;
 		:E1 = (D == B && B != F && D != H && E != C) || (B == F && B != D && F != H && E != A) ? B : E;
 		:E2 = B == F && B != D && F != H ? F : E;
-		:E3 = (D == B && B != F && D != H && E != G) || (D == B && B != F && D != H && E != A) ? D : E;
+		:E3 = (D == B && B != F && D != H && E != G) || (D == H && D != B && H != F && E != A) ? D : E;
 		:E4 = E
 		:E5 = (B == F && B != D && F != H && E != I) || (H == F && D != H && B != F && E != C) ? F : E;
 		:E6 = D == H && D != B && H != F ? D : E;
@@ -80,7 +80,7 @@ Scale3x Algorithm
 		:	E0 = D == B ? D : E;
 		:	E1 = (D == B && E != C) || (B == F && E != A) ? B : E;
 		:	E2 = B == F ? F : E;
-		:	E3 = (D == B && E != G) || (D == B && E != A) ? D : E;
+		:	E3 = (D == B && E != G) || (D == H && E != A) ? D : E;
 		:	E4 = E;
 		:	E5 = (B == F && E != I) || (H == F && E != C) ? F : E;
 		:	E6 = D == H ? D : E;

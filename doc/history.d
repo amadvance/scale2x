@@ -1,6 +1,14 @@
 Name
 	scale2x - History For Scale2x
 
+Scale2x v2.3 2005/11
+	) Some additions in the contrib/ directory.
+
+Scale2x v2.2 2005/03
+	) Fixed a typo in the algorithm documentation of scale3x.
+		Specifically the definition of the E3 point in
+		the algorithm.txt file was wrong.
+
 Scale2x v2.1 2004/12
 	) Added the `scale2x3' and `scale2x4' effects.
 	) Fixed the computation of the border pixels for scale3x.
