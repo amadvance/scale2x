@@ -671,7 +671,7 @@ void scale2x4_32_def(scale2x_uint32* dst0, scale2x_uint32* dst1, scale2x_uint32*
 /***************************************************************************/
 /* Scale2x MMX implementation */
 
-#if defined(__GNUC__) && defined(__i386__)
+#if defined(__GNUC__) && (defined(__i386__) || defined(__x86_64__))
 
 /*
  * Apply the Scale2x effect at a single row.
@@ -773,13 +773,13 @@ static inline void scale2x_8_mmx_border(scale2x_uint8* dst, const scale2x_uint8*
 		"movq %%mm3, 8(%3)\n"
 
 		/* next */
-		"addl $8, %0\n"
-		"addl $8, %1\n"
-		"addl $8, %2\n"
-		"addl $16, %3\n"
+		"add $8, %0\n"
+		"add $8, %1\n"
+		"add $8, %2\n"
+		"add $16, %3\n"
 
 /* central runs */
-		"shrl $3, %4\n"
+		"shr $3, %4\n"
 		"jz 1f\n"
 
 		"0:\n"
@@ -835,12 +835,12 @@ static inline void scale2x_8_mmx_border(scale2x_uint8* dst, const scale2x_uint8*
 		"movq %%mm3, 8(%3)\n"
 
 		/* next */
-		"addl $8, %0\n"
-		"addl $8, %1\n"
-		"addl $8, %2\n"
-		"addl $16, %3\n"
+		"add $8, %0\n"
+		"add $8, %1\n"
+		"add $8, %2\n"
+		"add $16, %3\n"
 
-		"decl %4\n"
+		"dec %4\n"
 		"jnz 0b\n"
 		"1:\n"
 
@@ -964,13 +964,13 @@ static inline void scale2x_16_mmx_border(scale2x_uint16* dst, const scale2x_uint
 		"movq %%mm3, 8(%3)\n"
 
 		/* next */
-		"addl $8, %0\n"
-		"addl $8, %1\n"
-		"addl $8, %2\n"
-		"addl $16, %3\n"
+		"add $8, %0\n"
+		"add $8, %1\n"
+		"add $8, %2\n"
+		"add $16, %3\n"
 
 /* central runs */
-		"shrl $2, %4\n"
+		"shr $2, %4\n"
 		"jz 1f\n"
 
 		"0:\n"
@@ -1026,12 +1026,12 @@ static inline void scale2x_16_mmx_border(scale2x_uint16* dst, const scale2x_uint
 		"movq %%mm3, 8(%3)\n"
 
 		/* next */
-		"addl $8, %0\n"
-		"addl $8, %1\n"
-		"addl $8, %2\n"
-		"addl $16, %3\n"
+		"add $8, %0\n"
+		"add $8, %1\n"
+		"add $8, %2\n"
+		"add $16, %3\n"
 
-		"decl %4\n"
+		"dec %4\n"
 		"jnz 0b\n"
 		"1:\n"
 
@@ -1155,13 +1155,13 @@ static inline void scale2x_32_mmx_border(scale2x_uint32* dst, const scale2x_uint
 		"movq %%mm3, 8(%3)\n"
 
 		/* next */
-		"addl $8, %0\n"
-		"addl $8, %1\n"
-		"addl $8, %2\n"
-		"addl $16, %3\n"
+		"add $8, %0\n"
+		"add $8, %1\n"
+		"add $8, %2\n"
+		"add $16, %3\n"
 
 /* central runs */
-		"shrl $1, %4\n"
+		"shr $1, %4\n"
 		"jz 1f\n"
 
 		"0:\n"
@@ -1217,12 +1217,12 @@ static inline void scale2x_32_mmx_border(scale2x_uint32* dst, const scale2x_uint
 		"movq %%mm3, 8(%3)\n"
 
 		/* next */
-		"addl $8, %0\n"
-		"addl $8, %1\n"
-		"addl $8, %2\n"
-		"addl $16, %3\n"
+		"add $8, %0\n"
+		"add $8, %1\n"
+		"add $8, %2\n"
+		"add $16, %3\n"
 
-		"decl %4\n"
+		"dec %4\n"
 		"jnz 0b\n"
 		"1:\n"
 

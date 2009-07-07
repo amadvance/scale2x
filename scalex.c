@@ -101,7 +101,7 @@ void version(void) {
 void usage(void) {
 	version();
 	printf("Fast implementation of the Scale2/3/4x effects\n");
-#if defined(__GNUC__) && defined(__i386__)
+#if defined(__GNUC__) && (defined(__i386__) || defined(__x86_64__))
 	printf("(using Pentium MMX optimization)\n");
 #endif
 	printf("\nSyntax: scalex [-k N] FROM.png TO.png\n");
