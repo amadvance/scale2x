@@ -2,7 +2,7 @@ Name
 	scale2x - History For Scale2x
 
 Scale2x v2.4 2009/7
-	) Added MMX support for x86_64 [Øyvind Karlsen]
+	) Added MMX support for x86_64 [Per Øyvind Karlsen]
 
 Scale2x v2.3 2005/11
 	) Some additions in the contrib/ directory.
