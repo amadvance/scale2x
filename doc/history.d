@@ -1,6 +1,10 @@
 Name
 	scale2x - History For Scale2x
 
+Scale2x v2.5 2011/9
+	) Fixed compilation with newer libpng.
+	) New EPX and "Depixelizing Pixel Art" documents in contrib/
+
 Scale2x v2.4 2009/7
 	) Added MMX support for x86_64 [Per Øyvind Karlsen]
 

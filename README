@@ -19,8 +19,8 @@ in C and MMX Pentium assembler, and command line tools to
 convert manually .PNG images.
 
 
-1 IMPLEMENTATION
-================
+IMPLEMENTATION
+==============
 
 The files scale2x.c and scale3x.c are the fast C and MMX
 implementations of the effects.
@@ -37,8 +37,8 @@ The files scalex.c is another simple command line processors,
 which uses the fast implementation of the effects.
 
 
-2 TOOLS
-=======
+TOOLS
+=====
 
 The command line tools "scalerx" and "scalex" read a .PNG file
 and write another .PNG file with the effect applied.
@@ -54,8 +54,8 @@ To compile the command line tool you need the libz and libpng
 libraries.
 
 
-3 EXAMPLES
-==========
+EXAMPLES
+========
 
 The directory example/ contains some examples of the effects applyed
 to a generic image and to a test image.

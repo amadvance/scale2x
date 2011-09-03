@@ -145,7 +145,7 @@ int file_read(const char* file, unsigned char** ptr, unsigned* slice, unsigned* 
 
 	/* expand grey images */
 	if (pre_type == PNG_COLOR_TYPE_GRAY && bit_depth < 8)
-		png_set_gray_1_2_4_to_8(png_ptr);
+		png_set_expand_gray_1_2_4_to_8(png_ptr);
 
 	/* convert RNS to ALPHA channel */
 	if (png_get_valid(png_ptr, info_ptr, PNG_INFO_tRNS))
