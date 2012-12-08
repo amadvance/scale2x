@@ -1,6 +1,9 @@
 Name
 	scale2x - History For Scale2x
 
+Scale2x v3.0 2012/12
+	) Now in git repository.
+
 Scale2x v2.5 2011/9
 	) Fixed compilation with newer libpng.
 	) New EPX and "Depixelizing Pixel Art" documents in contrib/
