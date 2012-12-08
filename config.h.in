@@ -117,3 +117,6 @@
 # define _Restrict
 # define __restrict__
 #endif
+
+/* Define to `unsigned int' if <sys/types.h> does not define. */
+#undef size_t
