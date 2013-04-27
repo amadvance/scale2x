@@ -31,11 +31,12 @@ Options
 		Compute the image border for a wraparound effect.
 
 	-r N
-		Select a specific revision of the Scale2x effect.
-		The standard algorithm is always 1. To scale an image
-		without any effect use the value 0. Other nunbers
-		are alternative versions. Refers at the source
-		implementation for more details.
+		Select a specific revision of the effect.
+		The default is scaleX using algorithm 'x' or '1'.
+		To select the new scaleK use algorithm 'k' or '2'.
+		To scale an image without any effect use the value '0'.
+		Other nunbers are alternative versions.
+		Refers at the source implementation for more details.
 
 Copyright
 	This file is Copyright (C) 2003, 2004 Andrea Mazzoleni

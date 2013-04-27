@@ -46,6 +46,7 @@
 
 #include <assert.h>
 #include <stdlib.h>
+#include <malloc.h>
 
 #define SSDST(bits, num) (scale2x_uint##bits *)dst##num
 #define SSSRC(bits, num) (const scale2x_uint##bits *)src##num

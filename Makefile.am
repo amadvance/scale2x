@@ -73,8 +73,8 @@ scalerx_SOURCES = \
 	scalerx.c getopt.c portable.h file.c file.h pixel.c pixel.h
 
 clean-local:
-	rm -f tx*.png tr*.png
-	rm -f check.lst checkrx.lst checkx.lst
+	rm -f tx*.png tr*.png tt*.png
+	rm -f check.lst checkrx.lst checkx.lst template.png
 
 maintainer-clean-local:
 	rm -f README AUTHORS HISTORY doc/copying.txt
@@ -106,7 +106,6 @@ doc/copying.txt: COPYING
 
 DIST_WINDOWS = \
 	scalex.exe scalerx.exe \
-	support/zlib.dll support/libpng.dll \
 	doc/copying.txt \
 	doc/readme.txt doc/authors.txt doc/history.txt
 
@@ -132,8 +131,8 @@ DIST_WINDOWS_EXAMPLE = \
 	example/test-4.png \
 	example/test-4x.png
 
-distwindows: $(DIST_WINDOWS)
-	rm -f $(PACKAGE)-$(VERSION)-windows-pentium.zip
+distwindows-x86: $(DIST_WINDOWS)
+	rm -f $(PACKAGE)-$(VERSION)-windows-x86.zip
 	mkdir tmp
 	cp $(DIST_WINDOWS) tmp
 	mkdir tmp/doc
@@ -141,7 +140,7 @@ distwindows: $(DIST_WINDOWS)
 	mkdir tmp/example
 	cp $(DIST_WINDOWS_EXAMPLE) tmp/example
 	find tmp \( -name "*.txt" \) -type f -exec utod {} \;
-	cd tmp && zip -r ../$(PACKAGE)-$(VERSION)-windows-pentium.zip *
+	cd tmp && zip -r ../$(PACKAGE)-$(VERSION)-windows-x86.zip *
 	rm -r tmp
 
 TEST = 0g01 0g02 0g04 0g16 2c08 2c16 3p01 3p02 3p04 3p08 4a08 4a16 6a08 6a16
@@ -149,58 +148,70 @@ EXAMPLE = mslug2-1 test-1
 
 check-local:
 	rm -f check.lst checkx.lst checkrx.lst
+	echo -- Generate the template.png
+	$(TESTENV) ./scalerx$(EXEEXT) -g
+	echo -- Test the template
+	$(TESTENV) ./scalerx$(EXEEXT) -k 2 -c template.png ttx22.png | fromdos >> check.lst ; \
+	$(TESTENV) ./scalerx$(EXEEXT) -k 3 -c template.png ttx33.png | fromdos >> check.lst ; \
+	$(TESTENV) ./scalerx$(EXEEXT) -k 4 -c template.png ttx44.png | fromdos >> check.lst ; \
+	$(TESTENV) ./scalerx$(EXEEXT) -k 2 -r k -c template.png ttk22.png | fromdos >> check.lst ; \
+	$(TESTENV) ./scalerx$(EXEEXT) -k 3 -r k -c template.png ttk33.png | fromdos >> check.lst ; \
+	$(TESTENV) ./scalerx$(EXEEXT) -k 4 -r k -c template.png ttk44.png | fromdos >> check.lst ; \
+	echo -- Test the basn files
 	for i in $(TEST); do \
-		./scalerx -k 2 -c $(srcdir)/test/basn$$i.png tr22$$i.png >> check.lst ; \
-		./scalerx -k 2x3 -c $(srcdir)/test/basn$$i.png tr23$$i.png >> check.lst ; \
-		./scalerx -k 2x4 -c $(srcdir)/test/basn$$i.png tr24$$i.png >> check.lst ; \
-		./scalerx -k 3 -c $(srcdir)/test/basn$$i.png tr33$$i.png >> check.lst ; \
-		./scalerx -k 4 -c $(srcdir)/test/basn$$i.png tr44$$i.png >> check.lst ; \
-		./scalex -k 2 -c $(srcdir)/test/basn$$i.png tx22$$i.png >> check.lst ; \
-		./scalex -k 2x3 -c $(srcdir)/test/basn$$i.png tr23$$i.png >> check.lst ; \
-		./scalex -k 2x4 -c $(srcdir)/test/basn$$i.png tr24$$i.png >> check.lst ; \
-		./scalex -k 3 -c $(srcdir)/test/basn$$i.png tx33$$i.png >> check.lst ; \
-		./scalex -k 4 -c $(srcdir)/test/basn$$i.png tx44$$i.png >> check.lst ; \
+		$(TESTENV) ./scalerx$(EXEEXT) -k 2 -c $(srcdir)/test/basn$$i.png tr22$$i.png | fromdos >> check.lst ; \
+		$(TESTENV) ./scalerx$(EXEEXT) -k 2x3 -c $(srcdir)/test/basn$$i.png tr23$$i.png | fromdos >> check.lst ; \
+		$(TESTENV) ./scalerx$(EXEEXT) -k 2x4 -c $(srcdir)/test/basn$$i.png tr24$$i.png | fromdos >> check.lst ; \
+		$(TESTENV) ./scalerx$(EXEEXT) -k 3 -c $(srcdir)/test/basn$$i.png tr33$$i.png | fromdos >> check.lst ; \
+		$(TESTENV) ./scalerx$(EXEEXT) -k 4 -c $(srcdir)/test/basn$$i.png tr44$$i.png | fromdos >> check.lst ; \
+		$(TESTENV) ./scalex$(EXEEXT) -k 2 -c $(srcdir)/test/basn$$i.png tx22$$i.png | fromdos >> check.lst ; \
+		$(TESTENV) ./scalex$(EXEEXT) -k 2x3 -c $(srcdir)/test/basn$$i.png tr23$$i.png | fromdos >> check.lst ; \
+		$(TESTENV) ./scalex$(EXEEXT) -k 2x4 -c $(srcdir)/test/basn$$i.png tr24$$i.png | fromdos >> check.lst ; \
+		$(TESTENV) ./scalex$(EXEEXT) -k 3 -c $(srcdir)/test/basn$$i.png tx33$$i.png | fromdos >> check.lst ; \
+		$(TESTENV) ./scalex$(EXEEXT) -k 4 -c $(srcdir)/test/basn$$i.png tx44$$i.png | fromdos >> check.lst ; \
 	done
+	echo -- Test the example files
 	for i in $(EXAMPLE); do \
-		./scalerx -k 2 -c $(srcdir)/example/$$i.png tr22$$i.png >> check.lst ; \
-		./scalerx -k 2x3 -c $(srcdir)/example/$$i.png tr23$$i.png >> check.lst ; \
-		./scalerx -k 2x4 -c $(srcdir)/example/$$i.png tr24$$i.png >> check.lst ; \
-		./scalerx -k 3 -c $(srcdir)/example/$$i.png tr33$$i.png >> check.lst ; \
-		./scalerx -k 4 -c $(srcdir)/example/$$i.png tr44$$i.png >> check.lst ; \
-		./scalex -k 2 -c $(srcdir)/example/$$i.png tx22$$i.png >> check.lst ; \
-		./scalex -k 2x3 -c $(srcdir)/example/$$i.png tr23$$i.png >> check.lst ; \
-		./scalex -k 2x4 -c $(srcdir)/example/$$i.png tr24$$i.png >> check.lst ; \
-		./scalex -k 3 -c $(srcdir)/example/$$i.png tx33$$i.png >> check.lst ; \
-		./scalex -k 4 -c $(srcdir)/example/$$i.png tx44$$i.png >> check.lst ; \
+		$(TESTENV) ./scalerx$(EXEEXT) -k 2 -c $(srcdir)/example/$$i.png tr22$$i.png | fromdos >> check.lst ; \
+		$(TESTENV) ./scalerx$(EXEEXT) -k 2x3 -c $(srcdir)/example/$$i.png tr23$$i.png | fromdos >> check.lst ; \
+		$(TESTENV) ./scalerx$(EXEEXT) -k 2x4 -c $(srcdir)/example/$$i.png tr24$$i.png | fromdos >> check.lst ; \
+		$(TESTENV) ./scalerx$(EXEEXT) -k 3 -c $(srcdir)/example/$$i.png tr33$$i.png | fromdos >> check.lst ; \
+		$(TESTENV) ./scalerx$(EXEEXT) -k 4 -c $(srcdir)/example/$$i.png tr44$$i.png | fromdos >> check.lst ; \
+		$(TESTENV) ./scalex$(EXEEXT) -k 2 -c $(srcdir)/example/$$i.png tx22$$i.png | fromdos >> check.lst ; \
+		$(TESTENV) ./scalex$(EXEEXT) -k 2x3 -c $(srcdir)/example/$$i.png tr23$$i.png | fromdos >> check.lst ; \
+		$(TESTENV) ./scalex$(EXEEXT) -k 2x4 -c $(srcdir)/example/$$i.png tr24$$i.png | fromdos >> check.lst ; \
+		$(TESTENV) ./scalex$(EXEEXT) -k 3 -c $(srcdir)/example/$$i.png tx33$$i.png | fromdos >> check.lst ; \
+		$(TESTENV) ./scalex$(EXEEXT) -k 4 -c $(srcdir)/example/$$i.png tx44$$i.png | fromdos >> check.lst ; \
 	done
 	cmp check.lst $(srcdir)/test/test.lst
+	echo -- Compare the reference and fast implementation
 	for i in $(TEST); do \
-		./scalerx -k 2 -c -o $(srcdir)/test/basn$$i.png tr22$$i.png >> checkrx.lst ; \
-		./scalerx -k 2x3 -c -o $(srcdir)/test/basn$$i.png tr23$$i.png >> checkrx.lst ; \
-		./scalerx -k 2x4 -c -o $(srcdir)/test/basn$$i.png tr24$$i.png >> checkrx.lst ; \
-		./scalerx -k 3 -c -o $(srcdir)/test/basn$$i.png tr33$$i.png >> checkrx.lst ; \
-		./scalerx -k 4 -c -o $(srcdir)/test/basn$$i.png tr43$$i.png >> checkrx.lst ; \
+		$(TESTENV) ./scalerx$(EXEEXT) -k 2 -c -o $(srcdir)/test/basn$$i.png tr22$$i.png | fromdos >> checkrx.lst ; \
+		$(TESTENV) ./scalerx$(EXEEXT) -k 2x3 -c -o $(srcdir)/test/basn$$i.png tr23$$i.png | fromdos >> checkrx.lst ; \
+		$(TESTENV) ./scalerx$(EXEEXT) -k 2x4 -c -o $(srcdir)/test/basn$$i.png tr24$$i.png | fromdos >> checkrx.lst ; \
+		$(TESTENV) ./scalerx$(EXEEXT) -k 3 -c -o $(srcdir)/test/basn$$i.png tr33$$i.png | fromdos >> checkrx.lst ; \
+		$(TESTENV) ./scalerx$(EXEEXT) -k 4 -c -o $(srcdir)/test/basn$$i.png tr43$$i.png | fromdos >> checkrx.lst ; \
 	done
 	for i in $(EXAMPLE); do \
-		./scalerx -k 2 -c -o $(srcdir)/example/$$i.png tr22$$i.png >> checkrx.lst ; \
-		./scalerx -k 2x3 -c -o $(srcdir)/example/$$i.png tr23$$i.png >> checkrx.lst ; \
-		./scalerx -k 2x4 -c -o $(srcdir)/example/$$i.png tr24$$i.png >> checkrx.lst ; \
-		./scalerx -k 3 -c -o $(srcdir)/example/$$i.png tr33$$i.png >> checkrx.lst ; \
-		./scalerx -k 4 -c -o $(srcdir)/example/$$i.png tr43$$i.png >> checkrx.lst ; \
+		$(TESTENV) ./scalerx$(EXEEXT) -k 2 -c -o $(srcdir)/example/$$i.png tr22$$i.png | fromdos >> checkrx.lst ; \
+		$(TESTENV) ./scalerx$(EXEEXT) -k 2x3 -c -o $(srcdir)/example/$$i.png tr23$$i.png | fromdos >> checkrx.lst ; \
+		$(TESTENV) ./scalerx$(EXEEXT) -k 2x4 -c -o $(srcdir)/example/$$i.png tr24$$i.png | fromdos >> checkrx.lst ; \
+		$(TESTENV) ./scalerx$(EXEEXT) -k 3 -c -o $(srcdir)/example/$$i.png tr33$$i.png | fromdos >> checkrx.lst ; \
+		$(TESTENV) ./scalerx$(EXEEXT) -k 4 -c -o $(srcdir)/example/$$i.png tr43$$i.png | fromdos >> checkrx.lst ; \
 	done
 	for i in $(TEST); do \
-		./scalex -k 2 -c $(srcdir)/test/basn$$i.png tx22$$i.png >> checkx.lst ; \
-		./scalex -k 2x3 -c $(srcdir)/test/basn$$i.png tx23$$i.png >> checkx.lst ; \
-		./scalex -k 2x4 -c $(srcdir)/test/basn$$i.png tx24$$i.png >> checkx.lst ; \
-		./scalex -k 3 -c $(srcdir)/test/basn$$i.png tx33$$i.png >> checkx.lst ; \
-		./scalex -k 4 -c $(srcdir)/test/basn$$i.png tx44$$i.png >> checkx.lst ; \
+		$(TESTENV) ./scalex$(EXEEXT) -k 2 -c $(srcdir)/test/basn$$i.png tx22$$i.png | fromdos >> checkx.lst ; \
+		$(TESTENV) ./scalex$(EXEEXT) -k 2x3 -c $(srcdir)/test/basn$$i.png tx23$$i.png | fromdos >> checkx.lst ; \
+		$(TESTENV) ./scalex$(EXEEXT) -k 2x4 -c $(srcdir)/test/basn$$i.png tx24$$i.png | fromdos >> checkx.lst ; \
+		$(TESTENV) ./scalex$(EXEEXT) -k 3 -c $(srcdir)/test/basn$$i.png tx33$$i.png | fromdos >> checkx.lst ; \
+		$(TESTENV) ./scalex$(EXEEXT) -k 4 -c $(srcdir)/test/basn$$i.png tx44$$i.png | fromdos >> checkx.lst ; \
 	done
 	for i in $(EXAMPLE); do \
-		./scalex -k 2 -c $(srcdir)/example/$$i.png tx22$$i.png >> checkx.lst ; \
-		./scalex -k 2x3 -c $(srcdir)/example/$$i.png tx23$$i.png >> checkx.lst ; \
-		./scalex -k 2x4 -c $(srcdir)/example/$$i.png tx24$$i.png >> checkx.lst ; \
-		./scalex -k 3 -c $(srcdir)/example/$$i.png tx33$$i.png >> checkx.lst ; \
-		./scalex -k 4 -c $(srcdir)/example/$$i.png tx44$$i.png >> checkx.lst ; \
+		$(TESTENV) ./scalex$(EXEEXT) -k 2 -c $(srcdir)/example/$$i.png tx22$$i.png | fromdos >> checkx.lst ; \
+		$(TESTENV) ./scalex$(EXEEXT) -k 2x3 -c $(srcdir)/example/$$i.png tx23$$i.png | fromdos >> checkx.lst ; \
+		$(TESTENV) ./scalex$(EXEEXT) -k 2x4 -c $(srcdir)/example/$$i.png tx24$$i.png | fromdos >> checkx.lst ; \
+		$(TESTENV) ./scalex$(EXEEXT) -k 3 -c $(srcdir)/example/$$i.png tx33$$i.png | fromdos >> checkx.lst ; \
+		$(TESTENV) ./scalex$(EXEEXT) -k 4 -c $(srcdir)/example/$$i.png tx44$$i.png | fromdos >> checkx.lst ; \
 	done
 	cmp checkx.lst checkrx.lst
 	echo Success!

@@ -1,5 +1,5 @@
 # Process this file with autoconf to produce a configure script.
-AC_INIT([Scale2x],[2.5])
+AC_INIT([Scale2x],[3.0])
 AC_CONFIG_SRCDIR([scalerx.c])
 AM_INIT_AUTOMAKE([foreign no-dependencies])
 AC_CONFIG_HEADERS([config.h])
@@ -7,6 +7,7 @@ AC_CANONICAL_HOST
 
 # Checks for programs.
 AC_PROG_CC
+AC_CHECK_PROG([WINE],[wine],[wine],[])
 
 # Checks for libraries.
 AC_CHECK_LIB([m], [log], [], [AC_MSG_ERROR([the libm library is missing])])
@@ -26,6 +27,20 @@ AC_C_RESTRICT
 AC_FUNC_ALLOCA
 AC_CHECK_FUNCS([getopt getopt_long])
 
+dnl Checks for architecture
+AC_C_BIGENDIAN
+
+dnl Checks for compiler
+AC_CHECK_CC_OPT([-Wall], CFLAGS="$CFLAGS -Wall", [])
+AC_CHECK_CC_OPT([-Wextra], CFLAGS="$CFLAGS -Wextra", [])
+
+dnl Checks for test environment
+AS_CASE([$host],
+	[*-*-mingw*], [TESTENV="$WINE"],
+	[]
+)
+
+AC_ARG_VAR([TESTENV], [Test environment])
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT
 

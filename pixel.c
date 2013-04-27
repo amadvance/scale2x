@@ -20,7 +20,7 @@
 
 #include "pixel.h"
 
-pixel_t pixel_get(int x, int y, const unsigned char* pix, unsigned slice, unsigned pixel, unsigned dx, unsigned dy, int opt_tes)
+pixel_t pixel_get(int x, int y, const unsigned char* pix, unsigned slice, unsigned pixel, int dx, int dy, int opt_tes)
 {
 	const unsigned char* p;
 	unsigned i;
@@ -55,10 +55,15 @@ pixel_t pixel_get(int x, int y, const unsigned char* pix, unsigned slice, unsign
 	return v;
 }
 
-void pixel_put(int x, int y, unsigned char* pix, unsigned slice, unsigned pixel, unsigned dx, unsigned dy, pixel_t v)
+void pixel_put(int x, int y, unsigned char* pix, unsigned slice, unsigned pixel, int dx, int dy, pixel_t v)
 {
 	unsigned char* p;
 	unsigned i;
+
+	if (x < 0 || x >= dx)
+		return;
+	if (y < 0 || y >= dy)
+		return;
 
 	p = pix + (y * slice) + (x * pixel);
 

@@ -1,8 +1,10 @@
 Name
 	scale2x - History For Scale2x
 
-Scale2x v3.0 2012/12
+Scale2x v3.0 2013/05
 	) Now in git repository.
+	) Preliminary scale2k support in the 'scalerx' tool. Just select the algo revision 'k'.
+	) Removed libpng.dll and zlib.dll files. They are not needed anymore.
 
 Scale2x v2.5 2011/9
 	) Fixed compilation with newer libpng.
