@@ -1,7 +1,7 @@
 /*
  * This file is part of the Scale2x project.
  *
- * Copyright (C) 2003 Andrea Mazzoleni
+ * Copyright (C) 2003, 2013 Andrea Mazzoleni
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -155,7 +155,52 @@ void scale2x(unsigned char* dst_ptr, unsigned dst_slice, const unsigned char* sr
 			case 2 :
 				/* scalek */
 
-#define SCALE2K_R0(A,B,C,D,E,F,G,H,I,E0,E1,E2,E3) \
+#define SCALE2K_BASE(A,B,C,D,E,F,G,H,I,E0,E1,E2,E3) \
+	if (D == B && B != E && D != E) { \
+		/* diagonal */ \
+		if (B == C && D == G) { \
+			/* square block */ \
+		} else if (B == C) { \
+			/* horizontal slope */ \
+			E0 = lerp(D, E0, 0.75); \
+			E1 = lerp(D, E1, 0.25); \
+		} else if (D == G) { \
+			/* vertical slope */ \
+			E0 = lerp(D, E0, 0.75); \
+			E2 = lerp(D, E2, 0.25); \
+		} else { \
+			/* pure diagonal */ \
+			E0 = lerp(E0,D,0.5); \
+		} \
+	}
+
+/* Used by AdvanceMAME */
+#define SCALE2K(A,B,C,D,E,F,G,H,I,E0,E1,E2,E3) \
+	if (D == B && B != E && D != E) { \
+		/* diagonal */ \
+		if (B == C && D == G) { \
+			/* square block */ \
+			if (A != E) { \
+				/* no star */ \
+				E0 = lerp(D, E0, 0.75); \
+				E1 = lerp(D, E1, 0.25); \
+				E2 = lerp(D, E2, 0.25); \
+			} \
+		} else if (B == C && C != F) { \
+			/* horizontal slope */ \
+			E0 = lerp(D, E0, 0.75); \
+			E1 = lerp(D, E1, 0.25); \
+		} else if (D == G && G != H) { \
+			/* vertical slope */ \
+			E0 = lerp(D, E0, 0.75); \
+			E2 = lerp(D, E2, 0.25); \
+		} else { \
+			/* pure diagonal */ \
+			E0 = lerp(E0,D,0.5); \
+		} \
+	}
+
+#define SCALE2K_SPIKE(A,B,C,D,E,F,G,H,I,E0,E1,E2,E3) \
 	if (B != E && D != E) { \
 		if (D == B) { \
 			/* diagonal */ \
@@ -173,37 +218,16 @@ void scale2x(unsigned char* dst_ptr, unsigned dst_slice, const unsigned char* sr
 				/* pure diagonal */ \
 				E0 = lerp(E0,D,0.5); \
 			} \
+		} else if (A == B && G == E) { \
+			/* horizontal spike */ \
+			E0 = lerp(D, E0, 0.5); \
+		} else if (A == D && C == E) { \
+			/* vertical spike */ \
+			E0 = lerp(B, E0, 0.5); \
 		} \
 	}
 
-#define SCALE2K_R1(A,B,C,D,E,F,G,H,I,E0,E1,E2,E3) \
-	if (B != E && D != E) { \
-		if (D == B) { \
-			/* diagonal */ \
-			if (B == C && D == G) { \
-				/* square block */ \
-				if (A != E) { \
-					/* no star */ \
-					E0 = lerp(D, E0, 0.75); \
-					E1 = lerp(D, E1, 0.25); \
-					E2 = lerp(D, E2, 0.25); \
-				} \
-			} else if (B == C && C != F) { \
-				/* horizontal slope */ \
-				E0 = lerp(D, E0, 0.75); \
-				E1 = lerp(D, E1, 0.25); \
-			} else if (D == G && G != H) { \
-				/* vertical slope */ \
-				E0 = lerp(D, E0, 0.75); \
-				E2 = lerp(D, E2, 0.25); \
-			} else { \
-				/* pure diagonal */ \
-				E0 = lerp(E0,D,0.5); \
-			} \
-		} \
-	}
-
-#define SCALE2K_R2(A,B,C,D,E,F,G,H,I,E0,E1,E2,E3) \
+#define SCALE2K_ALTERNATE(A,B,C,D,E,F,G,H,I,E0,E1,E2,E3) \
 	if (D == B && B != F && D != H) { \
 		/* diagonal */ \
 		if (B == C && D == G) { \
@@ -229,10 +253,10 @@ void scale2x(unsigned char* dst_ptr, unsigned dst_slice, const unsigned char* sr
 
 				E0 = E1 = E2 = E3 = E;
 
-				SCALE2K_R1(A,B,C,D,E,F,G,H,I,E0,E1,E2,E3);
-				SCALE2K_R1(G,D,A,H,E,B,I,F,C,E2,E0,E3,E1);
-				SCALE2K_R1(I,H,G,F,E,D,C,B,A,E3,E2,E1,E0);
-				SCALE2K_R1(C,F,I,B,E,H,A,D,G,E1,E3,E0,E2);
+				SCALE2K(A,B,C,D,E,F,G,H,I,E0,E1,E2,E3);
+				SCALE2K(G,D,A,H,E,B,I,F,C,E2,E0,E3,E1);
+				SCALE2K(I,H,G,F,E,D,C,B,A,E3,E2,E1,E0);
+				SCALE2K(C,F,I,B,E,H,A,D,G,E1,E3,E0,E2);
 
 				break;
 
@@ -340,7 +364,65 @@ void scale3x(unsigned char* dst_ptr, unsigned dst_slice, const unsigned char* sr
 				E6E7E8
 			*/
 
-#define SCALE3K_R0(A,B,C,D,E,F,G,H,I,E0,E1,E2,E3,E4,E5,E6,E7,E8) \
+#define SCALE3K_BASE(A,B,C,D,E,F,G,H,I,E0,E1,E2,E3,E4,E5,E6,E7,E8) \
+	if (D == B && B != E && D != E) { \
+		/* diagonal */ \
+		if (B == C && D == G) { \
+			/* square block */ \
+		} else if (B == C) { \
+			/* horizontal slope */ \
+			E0 = D; \
+			E1 = lerp(D, E1, 0.75); \
+			E2 = lerp(D, E2, 0.25); \
+			E3 = lerp(D, E3, 0.25); \
+		} else if (D == G) { \
+			/* vertical slope */ \
+			E0 = D; \
+			E3 = lerp(D, E3, 0.75); \
+			E6 = lerp(D, E6, 0.25); \
+			E1 = lerp(D, E1, 0.25); \
+		} else { \
+			/* pure diagonal */ \
+			E0 = lerp(D, E0, 0.875); \
+			E1 = lerp(D, E1, 0.125); \
+			E3 = lerp(D, E3, 0.125); \
+		} \
+	}
+
+/* Used by AdvanceMAME */
+#define SCALE3K(A,B,C,D,E,F,G,H,I,E0,E1,E2,E3,E4,E5,E6,E7,E8) \
+	if (D == B && B != E && D != E) { \
+		/* diagonal */ \
+		if (B == C && D == G) { \
+			/* square block */ \
+			if (A != E) { \
+				E0 = D; \
+				E1 = lerp(D, E1, 0.75); \
+				E2 = lerp(D, E2, 0.25); \
+				E3 = lerp(D, E3, 0.75); \
+				E6 = lerp(D, E6, 0.25); \
+			} \
+		} else if (B == C && C != F) { \
+			/* horizontal slope */ \
+			E0 = D; \
+			E1 = lerp(D, E1, 0.75); \
+			E2 = lerp(D, E2, 0.25); \
+			E3 = lerp(D, E3, 0.25); \
+		} else if (D == G && G != H) { \
+			/* vertical slope */ \
+			E0 = D; \
+			E3 = lerp(D, E3, 0.75); \
+			E6 = lerp(D, E6, 0.25); \
+			E1 = lerp(D, E1, 0.25); \
+		} else { \
+			/* pure diagonal */ \
+			E0 = lerp(D, E0, 0.875); \
+			E1 = lerp(D, E1, 0.125); \
+			E3 = lerp(D, E3, 0.125); \
+		} \
+	}
+
+#define SCALE3K_SPIKE(A,B,C,D,E,F,G,H,I,E0,E1,E2,E3,E4,E5,E6,E7,E8) \
 	if (B != E && D != E) { \
 		if (D == B) { \
 			/* diagonal */ \
@@ -364,44 +446,20 @@ void scale3x(unsigned char* dst_ptr, unsigned dst_slice, const unsigned char* sr
 				E1 = lerp(D, E1, 0.125); \
 				E3 = lerp(D, E3, 0.125); \
 			} \
+		} else if (A == B && G == E) { \
+			/* horizontal spike */ \
+			E0 = lerp(D, E0, 0.875); \
+			E1 = lerp(D, E1, 0.125); \
+			E3 = lerp(D, E3, 0.125); \
+		} else if (A == D && C == E) { \
+			/* vertical spike */ \
+			E0 = lerp(B, E0, 0.875); \
+			E1 = lerp(B, E1, 0.125); \
+			E3 = lerp(B, E3, 0.125); \
 		} \
 	}
 
-#define SCALE3K_R1(A,B,C,D,E,F,G,H,I,E0,E1,E2,E3,E4,E5,E6,E7,E8) \
-	if (B != E && D != E) { \
-		if (D == B) { \
-			/* diagonal */ \
-			if (B == C && D == G) { \
-				/* square block */ \
-				if (A != E) { \
-					E0 = D; \
-					E1 = lerp(D, E1, 0.75); \
-					E2 = lerp(D, E2, 0.25); \
-					E3 = lerp(D, E3, 0.75); \
-					E6 = lerp(D, E6, 0.25); \
-				} \
-			} else if (B == C && C != F) { \
-				/* horizontal slope */ \
-				E0 = D; \
-				E1 = lerp(D, E1, 0.75); \
-				E2 = lerp(D, E2, 0.25); \
-				E3 = lerp(D, E3, 0.25); \
-			} else if (D == G && G != H) { \
-				/* vertical slope */ \
-				E0 = D; \
-				E3 = lerp(D, E3, 0.75); \
-				E6 = lerp(D, E6, 0.25); \
-				E1 = lerp(D, E1, 0.25); \
-			} else { \
-				/* pure diagonal */ \
-				E0 = lerp(D, E0, 0.875); \
-				E1 = lerp(D, E1, 0.125); \
-				E3 = lerp(D, E3, 0.125); \
-			} \
-		} \
-	}
-
-#define SCALE3K_R2(A,B,C,D,E,F,G,H,I,E0,E1,E2,E3,E4,E5,E6,E7,E8) \
+#define SCALE3K_ALTERNATE(A,B,C,D,E,F,G,H,I,E0,E1,E2,E3,E4,E5,E6,E7,E8) \
 	if (D == B && B != F && D != H) { \
 		/* diagonal */ \
 		if (B == C && D == G) { \
@@ -435,10 +493,10 @@ void scale3x(unsigned char* dst_ptr, unsigned dst_slice, const unsigned char* sr
 
 				E0 = E1 = E2 = E3 = E4 = E5 = E6 = E7 = E8 = E;
 
-				SCALE3K_R1(A,B,C,D,E,F,G,H,I,E0,E1,E2,E3,E4,E5,E6,E7,E8);
-				SCALE3K_R1(G,D,A,H,E,B,I,F,C,E6,E3,E0,E7,E4,E1,E8,E5,E2);
-				SCALE3K_R1(I,H,G,F,E,D,C,B,A,E8,E7,E6,E5,E4,E3,E2,E1,E0);
-				SCALE3K_R1(C,F,I,B,E,H,A,D,G,E2,E5,E8,E1,E4,E7,E0,E3,E6);
+				SCALE3K(A,B,C,D,E,F,G,H,I,E0,E1,E2,E3,E4,E5,E6,E7,E8);
+				SCALE3K(G,D,A,H,E,B,I,F,C,E6,E3,E0,E7,E4,E1,E8,E5,E2);
+				SCALE3K(I,H,G,F,E,D,C,B,A,E8,E7,E6,E5,E4,E3,E2,E1,E0);
+				SCALE3K(C,F,I,B,E,H,A,D,G,E2,E5,E8,E1,E4,E7,E0,E3,E6);
 				break;
 
 			case 3 :
@@ -660,79 +718,76 @@ int scale4x(unsigned char* dst_ptr, unsigned dst_slice, const unsigned char* src
 			*/
 
 
-#define SCALE4K_R0(A,B,C,D,E,F,G,H,I,E0,E1,E2,E3,E4,E5,E6,E7,E8,E9,EA,EB,EC,ED,EE,EF) \
-	if (B != E && D != E) { \
-		if (D == B) { \
-			/* diagonal */ \
-			if (B == C && D == G) { \
-				/* square block */ \
-			} else if (B == C && C != F) { \
-				/* horizontal slope */ \
+#define SCALE4K_BASE(A,B,C,D,E,F,G,H,I,E0,E1,E2,E3,E4,E5,E6,E7,E8,E9,EA,EB,EC,ED,EE,EF) \
+	if (D == B && B != E && D != E) { \
+		/* diagonal */ \
+		if (B == C && D == G) { \
+			/* square block */ \
+		} else if (B == C && C != F) { \
+			/* horizontal slope */ \
+			E0 = D; \
+			E1 = D; \
+			E2 = lerp(D, E2, 0.75); \
+			E3 = lerp(D, E3, 0.25); \
+			E4 = lerp(D, E4, 0.75); \
+			E5 = lerp(D, E5, 0.25); \
+		} else if (D == G && G != H) { \
+			/* vertical slope */ \
+			E0 = D; \
+			E4 = D; \
+			E8 = lerp(D, E8, 0.75); \
+			EC = lerp(D, EC, 0.25); \
+			E1 = lerp(D, E1, 0.75); \
+			E5 = lerp(D, E5, 0.25); \
+		} else { \
+			/* pure diagonal */ \
+			E0 = D; \
+			E1 = lerp(D, E1, 0.5); \
+			E4 = lerp(D, E4, 0.5); \
+		} \
+	}
+
+/* Used by AdvanceMAME */
+#define SCALE4K(A,B,C,D,E,F,G,H,I,E0,E1,E2,E3,E4,E5,E6,E7,E8,E9,EA,EB,EC,ED,EE,EF) \
+	if (D == B && B != E && D != E) { \
+		/* diagonal */ \
+		if (B == C && D == G) { \
+			if (A != E) { \
+				/* no star */ \
 				E0 = D; \
 				E1 = D; \
 				E2 = lerp(D, E2, 0.75); \
 				E3 = lerp(D, E3, 0.25); \
-				E4 = lerp(D, E4, 0.75); \
-				E5 = lerp(D, E5, 0.25); \
-			} else if (D == G && G != H) { \
-				/* vertical slope */ \
-				E0 = D; \
 				E4 = D; \
 				E8 = lerp(D, E8, 0.75); \
 				EC = lerp(D, EC, 0.25); \
-				E1 = lerp(D, E1, 0.75); \
-				E5 = lerp(D, E5, 0.25); \
-			} else { \
-				/* pure diagonal */ \
-				E0 = D; \
-				E1 = lerp(D, E1, 0.5); \
-				E4 = lerp(D, E4, 0.5); \
+				E5 = lerp(D, E5, 0.50); \
 			} \
+		} else if (B == C && C != F) { \
+			/* horizontal slope */ \
+			E0 = D; \
+			E1 = D; \
+			E2 = lerp(D, E2, 0.75); \
+			E3 = lerp(D, E3, 0.25); \
+			E4 = lerp(D, E4, 0.75); \
+			E5 = lerp(D, E5, 0.25); \
+		} else if (D == G && G != H) { \
+			/* vertical slope */ \
+			E0 = D; \
+			E4 = D; \
+			E8 = lerp(D, E8, 0.75); \
+			EC = lerp(D, EC, 0.25); \
+			E1 = lerp(D, E1, 0.75); \
+			E5 = lerp(D, E5, 0.25); \
+		} else { \
+			/* pure diagonal */ \
+			E0 = D; \
+			E1 = lerp(D, E1, 0.5); \
+			E4 = lerp(D, E4, 0.5); \
 		} \
 	}
 
-#define SCALE4K_R1(A,B,C,D,E,F,G,H,I,E0,E1,E2,E3,E4,E5,E6,E7,E8,E9,EA,EB,EC,ED,EE,EF) \
-	if (B != E && D != E) { \
-		if (D == B) { \
-			/* diagonal */ \
-			if (B == C && D == G) { \
-				if (A != E) { \
-					/* no star */ \
-					E0 = D; \
-					E1 = D; \
-					E2 = lerp(D, E2, 0.75); \
-					E3 = lerp(D, E3, 0.25); \
-					E4 = D; \
-					E8 = lerp(D, E8, 0.75); \
-					EC = lerp(D, EC, 0.25); \
-					E5 = lerp(D, E5, 0.50); \
-				} \
-			} else if (B == C && C != F) { \
-				/* horizontal slope */ \
-				E0 = D; \
-				E1 = D; \
-				E2 = lerp(D, E2, 0.75); \
-				E3 = lerp(D, E3, 0.25); \
-				E4 = lerp(D, E4, 0.75); \
-				E5 = lerp(D, E5, 0.25); \
-			} else if (D == G && G != H) { \
-				/* vertical slope */ \
-				E0 = D; \
-				E4 = D; \
-				E8 = lerp(D, E8, 0.75); \
-				EC = lerp(D, EC, 0.25); \
-				E1 = lerp(D, E1, 0.75); \
-				E5 = lerp(D, E5, 0.25); \
-			} else { \
-				/* pure diagonal */ \
-				E0 = D; \
-				E1 = lerp(D, E1, 0.5); \
-				E4 = lerp(D, E4, 0.5); \
-			} \
-		} \
-	}
-
-#define SCALE4K_R2(A,B,C,D,E,F,G,H,I,E0,E1,E2,E3,E4,E5,E6,E7,E8,E9,EA,EB,EC,ED,EE,EF) \
+#define SCALE4K_ALTERNATE(A,B,C,D,E,F,G,H,I,E0,E1,E2,E3,E4,E5,E6,E7,E8,E9,EA,EB,EC,ED,EE,EF) \
 	if (D == B && B != F && D != H) { \
 		/* diagonal */ \
 		if (B == C && D == G) { \
@@ -771,13 +826,12 @@ int scale4x(unsigned char* dst_ptr, unsigned dst_slice, const unsigned char* src
 		} \
 	}
 
-
 				E0 = E1 = E2 = E3 = E4 = E5 = E6 = E7 = E8 = E9 = EA = EB = EC = ED = EE = EF = E;
 
-				SCALE4K_R1(A,B,C,D,E,F,G,H,I,E0,E1,E2,E3,E4,E5,E6,E7,E8,E9,EA,EB,EC,ED,EE,EF);
-				SCALE4K_R1(G,D,A,H,E,B,I,F,C,EC,E8,E4,E0,ED,E9,E5,E1,EE,EA,E6,E2,EF,EB,E7,E3);
-				SCALE4K_R1(I,H,G,F,E,D,C,B,A,EF,EE,ED,EC,EB,EA,E9,E8,E7,E6,E5,E4,E3,E2,E1,E0);
-				SCALE4K_R1(C,F,I,B,E,H,A,D,G,E3,E7,EB,EF,E2,E6,EA,EE,E1,E5,E9,ED,E0,E4,E8,EC);
+				SCALE4K(A,B,C,D,E,F,G,H,I,E0,E1,E2,E3,E4,E5,E6,E7,E8,E9,EA,EB,EC,ED,EE,EF);
+				SCALE4K(G,D,A,H,E,B,I,F,C,EC,E8,E4,E0,ED,E9,E5,E1,EE,EA,E6,E2,EF,EB,E7,E3);
+				SCALE4K(I,H,G,F,E,D,C,B,A,EF,EE,ED,EC,EB,EA,E9,E8,E7,E6,E5,E4,E3,E2,E1,E0);
+				SCALE4K(C,F,I,B,E,H,A,D,G,E3,E7,EB,EF,E2,E6,EA,EE,E1,E5,E9,ED,E0,E4,E8,EC);
 				break;
 
 			case 3:
