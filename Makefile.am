@@ -36,7 +36,7 @@ EXTRA_DIST = \
 	test/basn4a16.png \
 	test/basn6a08.png \
 	test/basn6a16.png \
-	configure.windows-x86 autogen.sh noautomake.sh \
+	configure.windows-x86 configure.windows-x64 autogen.sh noautomake.sh \
 	doc/scalex.d doc/scalex.1 doc/scalex.txt doc/scalex.html \
 	doc/scalerx.d doc/scalerx.1 doc/scalerx.txt doc/scalerx.html \
 	doc/history.d doc/history.txt doc/history.html \
