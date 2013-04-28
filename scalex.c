@@ -35,6 +35,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 
 int file_process(const char* file0, const char* file1, int opt_scale_x, int opt_scale_y, int opt_crc)
 {

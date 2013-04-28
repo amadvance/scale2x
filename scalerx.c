@@ -35,6 +35,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 
 void scalex(unsigned char* dst_ptr, unsigned dst_slice, const unsigned char* src_ptr, unsigned src_slice, unsigned pixel, int width, int height, unsigned mx, unsigned my)
 {
