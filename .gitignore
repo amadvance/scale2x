@@ -24,6 +24,8 @@ stamp-h1
 
 # objects
 *.o
+scalerx
+scalex
 
 # docs
 doc/*.hh
@@ -38,6 +40,5 @@ doc/*.txt
 # specific
 contrib/
 resource/
-scalerx
-scalex
+archive/
 
