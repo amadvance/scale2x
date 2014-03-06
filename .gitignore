@@ -8,6 +8,7 @@
 # autotools
 Makefile
 Makefile.in
+compile
 aclocal.m4
 autom4te.cache/
 config.guess
@@ -23,6 +24,12 @@ stamp-h1
 
 # objects
 *.o
+
+# docs
+doc/*.hh
+doc/*.1
+doc/*.html
+doc/*.txt
 
 # project
 *.dst

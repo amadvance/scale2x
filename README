@@ -1,6 +1,5 @@
-                           =========================
-                           Scale2x, Scale3x, Scale4x
-                           =========================
+Scale2x
+=======
 
 Scale2x, Scale3x and Scale4x are real-time graphics effects
 able to increase the size of small bitmaps guessing the
@@ -19,7 +18,7 @@ in C and MMX Pentium assembler, and command line tools to
 convert manually .PNG images.
 
 
-IMPLEMENTATION
+Implementation
 ==============
 
 The files scale2x.c and scale3x.c are the fast C and MMX
@@ -37,7 +36,7 @@ The files scalex.c is another simple command line processors,
 which uses the fast implementation of the effects.
 
 
-TOOLS
+Tools
 =====
 
 The command line tools "scalerx" and "scalex" read a .PNG file
@@ -54,7 +53,7 @@ To compile the command line tool you need the libz and libpng
 libraries.
 
 
-EXAMPLES
+Examples
 ========
 
 The directory example/ contains some examples of the effects applyed

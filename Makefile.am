@@ -1,5 +1,3 @@
-## Process this file with automake to produce Makefile.in
-
 bin_PROGRAMS = scalex scalerx
 
 EXTRA_DIST = \
@@ -36,13 +34,9 @@ EXTRA_DIST = \
 	test/basn4a16.png \
 	test/basn6a08.png \
 	test/basn6a16.png \
-	configure.windows-x86 configure.windows-x64 autogen.sh noautomake.sh \
-	doc/scalex.d doc/scalex.1 doc/scalex.txt doc/scalex.html \
-	doc/scalerx.d doc/scalerx.1 doc/scalerx.txt doc/scalerx.html \
-	doc/history.d doc/history.txt doc/history.html \
-	doc/readme.d doc/readme.txt doc/readme.html \
-	doc/authors.d doc/authors.txt doc/authors.html \
-	doc/algorithm.d doc/algorithm.txt doc/algorithm.html \
+	configure.windows-x86 configure.windows-x64 autogen.sh \
+	doc/scalex.d doc/scalex.1 doc/scalex.txt \
+	doc/scalerx.d doc/scalerx.1 doc/scalerx.txt \
 	test/test.lst \
 	contrib/readme.txt \
 	contrib/java/Scale2xImageFilter.java \
@@ -76,9 +70,6 @@ clean-local:
 	rm -f tx*.png tr*.png tt*.png
 	rm -f check.lst checkrx.lst checkx.lst template.png
 
-maintainer-clean-local:
-	rm -f README AUTHORS HISTORY doc/copying.txt
-
 # Docs
 
 %.1 : %.d
@@ -87,31 +78,13 @@ maintainer-clean-local:
 %.txt : %.d
 	advd2 txt < $(srcdir)/$< | todos > $@
 
-%.html : %.d
-	advd2 html < $(srcdir)/$< > $@
-
 # Archives
 
-README: doc/readme.txt
-	cat $< | fromdos > $@
-
-AUTHORS: doc/authors.txt
-	cat $< | fromdos > $@
-
-HISTORY: doc/history.txt
-	cat $< | fromdos > $@
-
-doc/copying.txt: COPYING
-	cat $< | todos > $@
-
 DIST_WINDOWS = \
-	scalex.exe scalerx.exe \
-	doc/copying.txt \
-	doc/readme.txt doc/authors.txt doc/history.txt
+	scalex.exe scalerx.exe
 
 DIST_WINDOWS_DOC = \
-	doc/scalex.html doc/scalerx.html doc/readme.txt doc/authors.html doc/history.html doc/algorithm.html \
-	doc/scalex.txt doc/scalerx.txt doc/readme.html doc/authors.txt doc/history.txt doc/algorithm.txt
+	doc/scalex.txt doc/scalerx.txt
 
 DIST_WINDOWS_EXAMPLE = \
 	example/mslug2-1.png \
@@ -135,8 +108,11 @@ distwindows-x86: $(DIST_WINDOWS)
 	rm -f $(PACKAGE)-$(VERSION)-windows-x86.zip
 	mkdir tmp
 	cp $(DIST_WINDOWS) tmp
-	mkdir tmp/doc
-	cp $(DIST_WINDOWS_DOC) tmp/doc
+	utod < README > tmp/readme.txt
+	utod < AUTHORS > tmp/authors.txt
+	utod < HISTORY > tmp/history.txt
+	utod < COPYING > tmp/copying.txt
+	cp $(DIST_WINDOWS_DOC) tmp
 	mkdir tmp/example
 	cp $(DIST_WINDOWS_EXAMPLE) tmp/example
 	find tmp \( -name "*.txt" \) -type f -exec utod {} \;
