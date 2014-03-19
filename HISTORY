@@ -1,6 +1,10 @@
 Scale2x HISTORY
 ===============
 
+3.2 2014/04
+===========
+ * Revised the license. Now it's only GPL2+.
+
 3.1 2014/03
 ===========
  * Updated to the new documentation/autoconf/git standard.
