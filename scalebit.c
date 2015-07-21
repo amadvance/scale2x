@@ -20,7 +20,7 @@
  *
  * You can find an high level description of the effect at :
  *
- * http://scale2x.sourceforge.net/
+ * http://www.scale2x.it/
  */
 
 #if HAVE_CONFIG_H

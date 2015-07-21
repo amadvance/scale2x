@@ -11,7 +11,7 @@ at low video resolutions.
 
 The specification of the algorithm and more details are at :
 
-    http://scale2x.sourceforge.net
+    http://www.scale2x.it
 
 This package contains some implementations of the effects
 in C and MMX Pentium assembler, and command line tools to
