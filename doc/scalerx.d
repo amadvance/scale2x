@@ -32,8 +32,8 @@ Options
 
 	-r N
 		Select a specific revision of the effect.
-		The default is scaleX using algorithm 'x' or '1'.
-		To select the new scaleK algorithm use 'k' or '2'.
+		The default is the 'scaleX' algorithm, selected with 'x' or '1'.
+		To select the new 'scaleK' algorithm use 'k' or '2'.
 		To scale an image without any effect use the value '0'.
 		Other numbers are alternative and not documented effects.
 		Refers at the source implementation for more details.
