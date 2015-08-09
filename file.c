@@ -21,12 +21,11 @@
 
 int file_write(const char* file, unsigned char* ptr, unsigned slice, unsigned pixel, unsigned width, unsigned height, int type, int channel, png_color* palette, unsigned palette_size)
 {
-	png_struct* png_ptr;
 	png_info* info_ptr;
-	png_byte** row;
 	unsigned i;
-	int bit_depth;
+	png_byte** row;
 	FILE* fp;
+	png_struct* png_ptr;
 
 	row = malloc(sizeof(void*) * height);
 	if (!row) {
@@ -54,32 +53,31 @@ int file_write(const char* file, unsigned char* ptr, unsigned slice, unsigned pi
 		goto err_close;
 	}
 
-	if (setjmp(png_jmpbuf(png_ptr))) {
-		goto err_destroy;
+	if (setjmp(png_jmpbuf(png_ptr)) == 0) {
+		int bit_depth;
+
+		png_init_io(png_ptr, fp);
+
+		bit_depth = pixel * 8 / channel;
+
+		png_set_IHDR(png_ptr, info_ptr, width, height, bit_depth, type, PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
+		if (type == PNG_COLOR_TYPE_PALETTE) {
+			png_set_PLTE(png_ptr, info_ptr, palette, palette_size);
+		}
+
+		png_write_info(png_ptr, info_ptr);
+
+		png_write_image(png_ptr, row);
+
+		png_write_end(png_ptr, info_ptr);
+
+		png_destroy_write_struct(&png_ptr, &info_ptr);
+		fclose(fp);
+		free(row);
+
+		return 0;
 	}
 
-	png_init_io(png_ptr, fp);
-
-	bit_depth = pixel * 8 / channel;
-
-	png_set_IHDR(png_ptr, info_ptr, width, height, bit_depth, type, PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
-	if (type == PNG_COLOR_TYPE_PALETTE) {
-		png_set_PLTE(png_ptr, info_ptr, palette, palette_size);
-	}
-
-	png_write_info(png_ptr, info_ptr);
-
-	png_write_image(png_ptr, row);
-
-	png_write_end(png_ptr, info_ptr);
-
-	png_destroy_write_struct(&png_ptr, &info_ptr);
-	fclose(fp);
-	free(row);
-
-	return 0;
-
-err_destroy:
 	png_destroy_write_struct(&png_ptr, &info_ptr);
 err_close:
 	fclose(fp);
@@ -91,20 +89,11 @@ err:
 
 int file_read(const char* file, unsigned char** ptr, unsigned* slice, unsigned* pixel, unsigned* width, unsigned* height, int* type, int* channel, png_color** palette, unsigned* palette_size, int allow_only124)
 {
-	png_struct* png_ptr;
-	png_info* info_ptr;
-	png_byte** row;
-	png_color* pal;
-	int size;
-	png_color_8p sig_bit;
-	int bit_depth;
-	int pre_type;
-	int pre_channel;
-	unsigned i;
 	FILE* fp;
+	png_info* info_ptr;
+	png_struct* png_ptr;
 
 	/* always freed on error */
-	row = 0;
 	*ptr = 0;
 	*palette = 0;
 
@@ -125,103 +114,111 @@ int file_read(const char* file, unsigned char** ptr, unsigned* slice, unsigned* 
 		goto err_close;
 	}
 
-	if (setjmp(png_jmpbuf(png_ptr))) {
-		goto err_destroy;
-	}
+	if (setjmp(png_jmpbuf(png_ptr)) == 0) {
+		png_byte** row;
+		png_color* pal;
+		int size;
+		png_color_8p sig_bit;
+		int bit_depth;
+		int pre_type;
+		int pre_channel;
+		unsigned i;
 
-	png_init_io(png_ptr, fp);
+		row = 0;
 
-	png_set_sig_bytes(png_ptr, 0);
+		png_init_io(png_ptr, fp);
 
-	png_read_info(png_ptr, info_ptr);
+		png_set_sig_bytes(png_ptr, 0);
 
-	bit_depth = png_get_bit_depth(png_ptr, info_ptr);
-	pre_channel = png_get_channels(png_ptr, info_ptr);
-	pre_type = png_get_color_type(png_ptr, info_ptr);
+		png_read_info(png_ptr, info_ptr);
 
-	/* expand grey images */
-	if (pre_type == PNG_COLOR_TYPE_GRAY && bit_depth < 8)
-		png_set_expand_gray_1_2_4_to_8(png_ptr);
+		bit_depth = png_get_bit_depth(png_ptr, info_ptr);
+		pre_channel = png_get_channels(png_ptr, info_ptr);
+		pre_type = png_get_color_type(png_ptr, info_ptr);
 
-	/* convert RNS to ALPHA channel */
-	if (png_get_valid(png_ptr, info_ptr, PNG_INFO_tRNS))
-		png_set_tRNS_to_alpha(png_ptr);
+		/* expand grey images */
+		if (pre_type == PNG_COLOR_TYPE_GRAY && bit_depth < 8)
+			png_set_expand_gray_1_2_4_to_8(png_ptr);
 
-	/* reduce to 8 bit if the pixel size doesn't fit in 4 byte */
-	if (allow_only124 && pre_channel * ((bit_depth + 7) / 8) > 4)
-		png_set_strip_16(png_ptr);
+		/* convert RNS to ALPHA channel */
+		if (png_get_valid(png_ptr, info_ptr, PNG_INFO_tRNS))
+			png_set_tRNS_to_alpha(png_ptr);
 
-	/* normalize the pixel value after an expand */
-	if (pre_type != PNG_COLOR_TYPE_PALETTE) {
-		if (png_get_sBIT(png_ptr, info_ptr, &sig_bit))
-			png_set_shift(png_ptr, sig_bit);
-	}
+		/* reduce to 8 bit if the pixel size doesn't fit in 4 byte */
+		if (allow_only124 && pre_channel * ((bit_depth + 7) / 8) > 4)
+			png_set_strip_16(png_ptr);
 
-	/* expand to 8 bit */
-	if (bit_depth < 8)
-		png_set_packing(png_ptr);
-
-	/* add alpha channel */
-	if (allow_only124 && pre_type == PNG_COLOR_TYPE_RGB)
-		png_set_filler(png_ptr, 0xFF, PNG_FILLER_AFTER);
-
-	png_read_update_info(png_ptr, info_ptr);
-
-	bit_depth = png_get_bit_depth(png_ptr, info_ptr);
-	*channel = png_get_channels(png_ptr, info_ptr);
-	*width = png_get_image_width(png_ptr, info_ptr);
-	*height = png_get_image_height(png_ptr, info_ptr);
-	*type = png_get_color_type(png_ptr, info_ptr);
-
-	if (*type == PNG_COLOR_TYPE_PALETTE) {
-		png_get_PLTE(png_ptr, info_ptr, &pal, &size);
-		*palette = malloc(sizeof(png_color) * size);
-		if (!*palette) {
-			fprintf(stderr,"Low memory.\n");
-			return -1;
+		/* normalize the pixel value after an expand */
+		if (pre_type != PNG_COLOR_TYPE_PALETTE) {
+			if (png_get_sBIT(png_ptr, info_ptr, &sig_bit))
+				png_set_shift(png_ptr, sig_bit);
 		}
-		*palette_size = size;
-		for(i=0;i<*palette_size;++i)
-			(*palette)[i] = pal[i];
-	} else {
-		*palette = 0;
-		*palette_size = 0;
+
+		/* expand to 8 bit */
+		if (bit_depth < 8)
+			png_set_packing(png_ptr);
+
+		/* add alpha channel */
+		if (allow_only124 && pre_type == PNG_COLOR_TYPE_RGB)
+			png_set_filler(png_ptr, 0xFF, PNG_FILLER_AFTER);
+
+		png_read_update_info(png_ptr, info_ptr);
+
+		bit_depth = png_get_bit_depth(png_ptr, info_ptr);
+		*channel = png_get_channels(png_ptr, info_ptr);
+		*width = png_get_image_width(png_ptr, info_ptr);
+		*height = png_get_image_height(png_ptr, info_ptr);
+		*type = png_get_color_type(png_ptr, info_ptr);
+
+		if (*type == PNG_COLOR_TYPE_PALETTE) {
+			png_get_PLTE(png_ptr, info_ptr, &pal, &size);
+			*palette = malloc(sizeof(png_color) * size);
+			if (!*palette) {
+				fprintf(stderr,"Low memory.\n");
+				return -1;
+			}
+			*palette_size = size;
+			for(i=0;i<*palette_size;++i)
+				(*palette)[i] = pal[i];
+		} else {
+			*palette = 0;
+			*palette_size = 0;
+		}
+
+		*pixel = *channel * ((bit_depth + 7) / 8);
+		if (*type == PNG_COLOR_TYPE_RGB && *channel == 4)
+			*type = PNG_COLOR_TYPE_RGB_ALPHA;
+
+		*slice = *width * *pixel;
+		*ptr = malloc(*height * *slice);
+		if (!*ptr) {
+			fprintf(stderr,"Low memory.\n");
+			goto err_destroy;
+		}
+
+		row = malloc(sizeof(void*) * *height);
+		if (!row) {
+			fprintf(stderr,"Low memory.\n");
+			goto err_destroy;
+		}
+		for(i=0;i<*height;++i) {
+			row[i] = *ptr + i * *slice;
+		}
+
+		png_read_image(png_ptr, row);
+
+		png_read_end(png_ptr, 0);
+
+		free(row);
+		png_destroy_read_struct(&png_ptr, &info_ptr, 0);
+		fclose(fp);
+
+		return 0;
 	}
-
-	*pixel = *channel * ((bit_depth + 7) / 8);
-	if (*type == PNG_COLOR_TYPE_RGB && *channel == 4)
-		*type = PNG_COLOR_TYPE_RGB_ALPHA;
-
-	*slice = *width * *pixel;
-	*ptr = malloc(*height * *slice);
-	if (!*ptr) {
-		fprintf(stderr,"Low memory.\n");
-		goto err_destroy;
-	}
-
-	row = malloc(sizeof(void*) * *height);
-	if (!row) {
-		fprintf(stderr,"Low memory.\n");
-		goto err_destroy;
-	}
-	for(i=0;i<*height;++i) {
-		row[i] = *ptr + i * *slice;
-	}
-
-	png_read_image(png_ptr, row);
-
-	png_read_end(png_ptr, 0);
-
-	free(row);
-	png_destroy_read_struct(&png_ptr, &info_ptr, 0);
-	fclose(fp);
-
-	return 0;
 
 err_destroy:
 	free(*palette);
 	free(*ptr);
-	free(row);
 	png_destroy_read_struct(&png_ptr, &info_ptr, 0);
 err_close:
 	fclose(fp);
