@@ -92,7 +92,7 @@ err:
 }
 
 void version(void) {
-	printf(PACKAGE " v" VERSION " by Andrea Mazzoleni\n");
+	printf(PACKAGE " v" VERSION " by Andrea Mazzoleni, " PACKAGE_URL "\n");
 }
 
 void usage(void) {
@@ -104,7 +104,7 @@ void usage(void) {
 	printf("\nSyntax: scalex [-k N] FROM.png TO.png\n");
 	printf("\nOptions:\n");
 	printf("\t-k N\tSelect the scale factor. 2, 2x3, 2x4, 3 or 4. (default 2).\n");
-	printf("\nMore info at http://www.scale2x.it/\n");
+	printf("\nMore info at " PACKAGE_URL "\n");
 	exit(EXIT_FAILURE);
 }
 

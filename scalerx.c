@@ -1232,7 +1232,7 @@ err:
 }
 
 void version(void) {
-	printf(PACKAGE " v" VERSION " by Andrea Mazzoleni\n");
+	printf(PACKAGE " v" VERSION " by Andrea Mazzoleni, " PACKAGE_URL "\n");
 }
 
 void usage(void) {
@@ -1243,7 +1243,7 @@ void usage(void) {
 	printf("\t-k N\tSelect the scale factor. 2, 2x3, 2x4, 3, 4 (default 2).\n");
 	printf("\t-w\tWrap around on the borders.\n");
 	printf("\t-r N\tSelect the revision of the algorithm 0-N (default 1).\n");
-	printf("\nMore info at http://www.scale2x.it/\n");
+	printf("\nMore info at " PACKAGE_URL "\n");
 	exit(EXIT_FAILURE);
 }
 
