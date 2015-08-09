@@ -15,7 +15,7 @@ Description
 
 	The specification of the algorithm and more details are at:
 
-		+http://scale2x.sourceforge.net
+		+http://www.scale2x.it
 
 	These command line tools read a .PNG file and write another
 	image with the effects applied.
