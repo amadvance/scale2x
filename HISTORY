@@ -4,6 +4,8 @@ Scale2x HISTORY
 3.2 2015/08
 ===========
  * Revised the license. Now it's only GPL2+.
+ * Windows binary built with gcc 4.8.1 using the MXE cross compiler 2.23,
+   with targets i686-w64-mingw32. Before the target was i686-pc-mingw32.
 
 3.1 2014/03
 ===========
