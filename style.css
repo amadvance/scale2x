@@ -91,7 +91,6 @@ body {
 #title {
 	background: #e0d700;
 	padding:0px;
-	margin:0px;
 }
 
 #title img {
@@ -103,8 +102,8 @@ body {
 #bar {
 	background-color:#fffa8f;
 	padding:8px;
-	padding-left:4em;
-	padding-right:4em;
+	padding-left:5%;
+	padding-right:5%;
 }
 
 #bar a {
@@ -125,8 +124,8 @@ body {
 	min-height: 90px;
 	padding-top:16px;
 	padding-bottom:16px;
-	padding-left:4em;
-	padding-right:4em;
+	padding-left:5%;
+	padding-right:5%;
 }
 
 #bottombar a {
@@ -143,8 +142,8 @@ body {
 
 #main {
 	padding:2px;
-	padding-left:4em;
-	padding-right:4em;
+	padding-left:5%;
+	padding-right:5%;
 	max-width:1024px;
 }
 
