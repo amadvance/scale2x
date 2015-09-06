@@ -95,11 +95,7 @@ body {
 }
 
 #title img {
-	/* on small screens, scale the image to show the full title */
-	/* the 150% is needed to cut the right part without text */
-	@media (max-width: 800px) {
-		width: 150%;
-	}
+	width: 100%;
 }
 
 /* bar */
