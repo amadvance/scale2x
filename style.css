@@ -89,9 +89,17 @@ body {
 /* title */
 
 #title {
-	min-height: 200px;
-	background: #e0d700 url(index.png) 0 0 no-repeat;
+	background: #e0d700;
 	padding:0px;
+	margin:0px;
+}
+
+#title img {
+	/* on small screens, scale the image to show the full title */
+	/* the 150% is needed to cut the right part without text */
+	@media (max-width: 800px) {
+		width: 150%;
+	}
 }
 
 /* bar */
