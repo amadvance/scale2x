@@ -1,14 +1,13 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
-<html>
+<html lang="en">
 <head>
-<link rel="stylesheet" type="text/css" href="style.css" />
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+<meta name="description" content="Video scaling effect">
+<meta name="keywords" content="scale2x blit video effect">
+<meta name="author" content="Andrea Mazzoleni">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" type="text/css" href="style.css">
 <title>Scale2x</title>
-<meta http-equiv="content-type" content="text/html; charset=iso-8859-1" />
-<meta http-equiv="cache-control" content="no-cache" />
-<meta name="description" content="Video scaling effect" />
-<meta name="keywords" content="scale2x blit video effect" />
-<meta name="author" content="Andrea Mazzoleni" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <script type="text/javascript">
 
   var _gaq = _gaq || [];
@@ -24,10 +23,10 @@
 </script>
 </head>
 <body>
-<div id="title">
-<img src="index.png" width="1200" height="150"/>
+<div id="header">
+<img src="index.png" width="1200" height="150" alt="Title">
 </div>
-<div id="bar">
+<div id="menu">
 <a href="index.html">About</a>
 <a href="download.html">Download</a>
 <a href="algorithm.html">Algorithm</a>
@@ -42,38 +41,58 @@
 
 
 <h2>Scale2x Algorithm</h2>
+<p>
 The effect works repeating a computation pattern for every pixel of the original
 image.
 The pattern starts from a square of 9 pixels and expands the central pixel
 computing 4 new pixels.
+</p>
+
 <p>
 Starting from this pattern :
-<p><center><table class="algo">
+</p>
+
+<center><table class="algo">
 <tr><td>A</td><td>B</td><td>C</td></tr>
 <tr><td>D</td><td>E</td><td>F</td></tr>
 <tr><td>G</td><td>H</td><td>I</td></tr>
-</table></center><p>
+</table></center>
+
+<p>
 The central pixel <em>E</em> is expanded in 4 new pixels:
-<p><center><table class="algo">
+</p>
+
+<center><table class="algo">
 <tr><td>E0</td><td>E1</td></tr>
 <tr><td>E2</td><td>E3</td></tr>
-</table></center><p>
-with these rules (in C language) :
+</table></center>
+
 <p>
+with these rules (in C language) :
+</p>
+
 <pre>
 E0 = D == B && B != F && D != H ? D : E;
 E1 = B == F && B != D && F != H ? F : E;
 E2 = D == H && D != B && H != F ? D : E;
 E3 = H == F && D != H && B != F ? F : E;
 </pre>
+
+<p>
 which can be rewritten as :
+</p>
+
 <pre>
 E0 = D == B && B != H && D != F ? D : E;
 E1 = B == F && B != H && D != F ? F : E;
 E2 = D == H && B != H && D != F ? D : E;
 E3 = H == F && B != H && D != F ? F : E;
 </pre>
+
+<p>
 and optimized as:
+</p>
+
 <pre>
 if (B != H && D != F) {
 	E0 = D == B ? D : E;
@@ -87,25 +106,37 @@ if (B != H && D != F) {
 	E3 = E;
 }
 </pre>
+
 <p>
 The image border is computed reusing the value of the nearest pixel on the
 border when the value of a pixel over the border is required.
+</p>
 
 <h2>Scale3x Algorithm</h2>
+<p>
 Starting from this pattern :
-<p><center><table class="algo">
+</p>
+
+<center><table class="algo">
 <tr><td>A</td><td>B</td><td>C</td></tr>
 <tr><td>D</td><td>E</td><td>F</td></tr>
 <tr><td>G</td><td>H</td><td>I</td></tr>
-</table></center><p>
+</table></center>
+
+<p>
 The central pixel <em>E</em> is expanded in 9 new pixels:
-<p><center><table class="algo">
+</p>
+
+<center><table class="algo">
 <tr><td>E0</td><td>E1</td><td>E2</td></tr>
 <tr><td>E3</td><td>E4</td><td>E5</td></tr>
 <tr><td>E6</td><td>E7</td><td>E8</td></tr>
-</table></center><p>
-with these rules (in C language) :
+</table></center>
+
 <p>
+with these rules (in C language) :
+</p>
+
 <pre>
 E0 = D == B && B != F && D != H ? D : E;
 E1 = (D == B && B != F && D != H && E != C) || (B == F && B != D && F != H && E != A) ? B : E;
@@ -117,7 +148,11 @@ E6 = D == H && D != B && H != F ? D : E;
 E7 = (D == H && D != B && H != F && E != I) || (H == F && D != H && B != F && E != G) ? H : E;
 E8 = H == F && D != H && B != F ? F : E;
 </pre>
+
+<p>
 and optimized as:
+</p>
+
 <pre>
 if (B != H && D != F) {
 	E0 = D == B ? D : E;
@@ -143,10 +178,14 @@ if (B != H && D != F) {
 </pre>
 
 <h2>Scale4x Algorithm</h2>
+<p>
 The Scale4x effect is simply the Scale2x effect applied two times.
+</p>
 
 <h2>Examples</h2>
+<p>
 The following are some examples that show the application of the effects.
+</p>
 
 <table>
 <tr>
@@ -159,27 +198,26 @@ The following are some examples that show the application of the effects.
 
 </div>
 
-<div id="bottombar">
+<div id="footer">
 
-<div id="bottomentry">
+<div class="column">
 <span class="bold">Donate with</span>
-<br/>
-<a href="http://sourceforge.net/p/scale2x/donate/"><img src="paypal.png" width="160" height="60"/></a>
+<br>
+<a href="http://sourceforge.net/p/scale2x/donate/"><img src="paypal.png" width="160" height="60" alt="PayPal"></a>
 
 </div>
 
-<div id="bottomentry">
+<div class="column">
 <span class="bold">Find other resources at</span>
-<br/>
-<a href="https://github.com/amadvance/scale2x/"><img src="github.png" width="160" height="60"/></a>
-<a href="http://sourceforge.net/projects/scale2x/"><img src="sourceforge.png" width="115" height="60"/></a>
+<br>
+<a href="https://github.com/amadvance/scale2x/"><img src="github.png" width="160" height="60" alt="GitHub"></a>
+<a href="http://sourceforge.net/projects/scale2x/"><img src="sourceforge.png" width="115" height="60" alt="SourceForge"></a>
 
 </div>
 
 </div>
 </body>
 </html>
-
 
 
 
