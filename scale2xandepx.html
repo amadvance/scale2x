@@ -64,10 +64,10 @@ Essentially, you're scaling a quarter-size image up to full size - hence, the po
 for a 4:1 speed boost. The downside to this technique is that it gives a "chunky pixel"
 look that can be annoying; but there happens to be a useful workaround, in the form of the 'epx' antialiasing
 technique pioneered by LucasArts' Eric Johnston. Figure 1 shows how it works.
-</p></i>
+</i></p>
 
 <center>
-<img src="fig01.gif">
+<img src="fig01.gif" alt="EPX">
 </center>
 
 <p><i>
@@ -76,7 +76,7 @@ necessarily being the same color. (We want some antialiasing.) In Figure 1, the 
 represents the pixel 'P' and its north, south, east, and west neighbors in the source (offscreen buffer) image.
 The 2x2 tile on the right represents the new (onscreen) pixels, which will derive from P.
 The question is how to color P1, P2, P3, and P4 without giving the "chunky pixel" look.
-</p></i>
+</i></p>
 
 <p><i>
 The answer is to base P1 on the back-buffer pixels 'A' and 'C'; base P2 on 'A' and 'B'; base P3 on 'C' and 'D';
@@ -88,7 +88,7 @@ Otherwise, let the child be the color of 'P'.
 Also, if at least three of the parents (A, B, C, D) are identical, do nothing: just let P1 = P2 = P3 = P4 = P.
 </u>
 (Johnston discusses this technique on page 692 of Tricks of the Mac Game Programming Gurus, Hayden Books, 1995.)
-</p></i>
+</i></p>
 
 
 </div>
