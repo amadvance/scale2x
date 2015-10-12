@@ -34,6 +34,7 @@ AC_C_BIGENDIAN
 dnl Checks for compiler
 AC_CHECK_CC_OPT([-Wall], CFLAGS="$CFLAGS -Wall", [])
 AC_CHECK_CC_OPT([-Wextra], CFLAGS="$CFLAGS -Wextra", [])
+AC_CHECK_CC_OPT([-ansi], CFLAGS="$CFLAGS -ansi", [])
 
 dnl Checks for test environment
 AS_CASE([$host],

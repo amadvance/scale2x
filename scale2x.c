@@ -30,6 +30,14 @@
 
 #include <assert.h>
 
+#ifndef inline
+#if defined(__GNUC__)
+#define inline __inline
+#else
+#define inline
+#endif
+#endif
+
 /***************************************************************************/
 /* Scale2x C implementation */
 
