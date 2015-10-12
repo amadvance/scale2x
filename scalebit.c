@@ -36,7 +36,14 @@
 
 #include <assert.h>
 #include <stdlib.h>
-#include <malloc.h>
+
+#ifndef inline
+#if defined(__GNUC__)
+#define inline __inline
+#else
+#define inline
+#endif
+#endif /* inline */
 
 #define SSDST(bits, num) (scale2x_uint##bits *)dst##num
 #define SSSRC(bits, num) (const scale2x_uint##bits *)src##num
