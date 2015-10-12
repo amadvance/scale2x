@@ -10,6 +10,12 @@ AC_CANONICAL_HOST
 AC_PROG_CC
 AC_CHECK_PROG([WINE],[wine],[wine],[])
 
+# include macports directories
+AS_CASE([$host],
+	[*-apple-darwin*], [CFLAGS="$CFLAGS -isystem/opt/local/include"
+	LDFLAGS="$LDFLAGS -L/opt/local/lib"],
+)
+
 # Checks for libraries.
 AC_CHECK_LIB([m], [log], [], [AC_MSG_ERROR([the libm library is missing])])
 AC_CHECK_LIB([z], [adler32], [], [AC_MSG_ERROR([the libz library is missing])])
