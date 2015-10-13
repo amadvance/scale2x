@@ -40,3 +40,8 @@ contrib/
 resource/
 archive/
 
+# check files
+check.lst
+checkrx.lst
+checkx.lst
+template.png
