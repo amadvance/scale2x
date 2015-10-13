@@ -1,0 +1,43 @@
+.TH "Scale a .PNG image using the fast implementation of the Scale effects" 1
+.SH NAME
+scalex \- Scale a .PNG image using the fast implementation of the Scale effects
+.SH SYNOPSIS 
+scalex [\-k N] input.png output.png
+.PD 0
+.PP
+.PD
+.SH DESCRIPTION 
+Scale2x, Scale3x and Scale4x are real\-time graphics effects
+able to increase the size of small bitmaps guessing the
+missing pixels without blurring the images.
+.PP
+They were originally developed for the AdvanceMAME project
+in the year 2001 to improve the quality of old games running
+at low video resolutions.
+.PP
+The specification of the algorithm and more details are at:
+.PP
+.RS 4
+http://www.scale2x.it
+.PD 0
+.PP
+.PD
+.RE
+.PP
+These command line tools read a .PNG file and write another
+image with the effects applied.
+.PP
+The fast implementation of the Scale effects is used. It imposes
+some limitations of the type of the image usable. Specifically :
+.PD 0
+.IP \(bu
+Only the pixel sizes of 1, 2 and 4 bytes are supported. If the
+image has another pixel size it\'s automatically converted.
+.PD
+.SH OPTIONS 
+.TP
+.B \-k N, \-\-scale N
+Select the scale factor. Available values are 2, 2x3,
+2x4, 3, and 4.
+.SH COPYRIGHT 
+This file is Copyright (C) 2003, 2004 Andrea Mazzoleni
