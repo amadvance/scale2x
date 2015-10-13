@@ -39,4 +39,8 @@ doc/*.html
 contrib/
 resource/
 archive/
+bench/
+
+# check files
+template.png
 
