@@ -5,6 +5,8 @@ AM_INIT_AUTOMAKE([foreign no-dependencies])
 AC_CONFIG_SRCDIR([scalerx.c])
 AC_CONFIG_HEADERS([config.h])
 AC_CANONICAL_HOST
+# override by using make V=1
+AM_SILENT_RULES([yes])
 
 # Checks for programs.
 AC_PROG_CC
