@@ -718,6 +718,12 @@ static inline void scale2x_8_sse2_border(scale2x_uint8* dst, const scale2x_uint8
 	assert(count >= 32);
 	assert(count % 16 == 0);
 
+	/* all memory must be aligned to 16 bytes */
+	assert(((unsigned)dst & 0xF) == 0);
+	assert(((unsigned)src0 & 0xF) == 0);
+	assert(((unsigned)src1 & 0xF) == 0);
+	assert(((unsigned)src2 & 0xF) == 0);
+
 	/* always do the first and last run */
 	count -= 2*16;
 
@@ -909,6 +915,12 @@ static inline void scale2x_16_sse2_border(scale2x_uint16* dst, const scale2x_uin
 	assert(count >= 16);
 	assert(count % 8 == 0);
 
+	/* all memory must be aligned to 16 bytes */
+	assert(((unsigned)dst & 0xF) == 0);
+	assert(((unsigned)src0 & 0xF) == 0);
+	assert(((unsigned)src1 & 0xF) == 0);
+	assert(((unsigned)src2 & 0xF) == 0);
+
 	/* always do the first and last run */
 	count -= 2*8;
 
@@ -1099,6 +1111,12 @@ static inline void scale2x_32_sse2_border(scale2x_uint32* dst, const scale2x_uin
 {
 	assert(count >= 8);
 	assert(count % 2 == 0);
+
+	/* all memory must be aligned to 16 bytes */
+	assert(((unsigned)dst & 0xF) == 0);
+	assert(((unsigned)src0 & 0xF) == 0);
+	assert(((unsigned)src1 & 0xF) == 0);
+	assert(((unsigned)src2 & 0xF) == 0);
 
 	/* always do the first and last run */
 	count -= 2*4;
