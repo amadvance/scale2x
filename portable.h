@@ -32,6 +32,10 @@
 #include <unistd.h>
 #endif
 
+#if HAVE_SYS_TIME_H
+#include <sys/time.h>
+#endif
+
 #if !HAVE_GETOPT
 int getopt(int argc, char * const *argv, const char *options);
 extern char *optarg;

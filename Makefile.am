@@ -192,5 +192,7 @@ check-local:
 		$(TESTENV) ./scalex$(EXEEXT) -k 4 -c $(srcdir)/example/$$i.png bench/tx44$$i.png | $(DTOU) >> bench/checkx.lst ; \
 	done
 	cmp bench/checkx.lst bench/checkrx.lst
+	echo -- Speed test
+	$(TESTENV) ./scalex$(EXEEXT) -k 2 -T template.png
 	echo Success!
 

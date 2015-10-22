@@ -38,37 +38,37 @@ int file_process(const char* file0, const char* file1, int opt_scale_x, int opt_
 	unsigned pixel;
 	unsigned width;
 	unsigned height;
-	unsigned char* src_ptr;
+	unsigned char* src_ptr = 0;
 	unsigned src_slice;
-	unsigned char* dst_ptr;
+	unsigned char* dst_ptr = 0;
 	unsigned dst_slice;
 	int type;
 	int channel;
-	png_color* palette;
+	png_color* palette = 0;
 	unsigned palette_size;
 
 	if (file_read(file0, &src_ptr, &src_slice, &pixel, &width, &height, &type, &channel, &palette, &palette_size, 1) != 0) {
-		goto err;
+		goto bail;
 	}
 
 	if (scale_precondition(opt_scale_x * 100 + opt_scale_y, pixel, width, height) != 0) {
 		fprintf(stderr, "Error in the size of the source bitmap. Generally this happen\n");
 		fprintf(stderr, "when the bitmap is too small or when the width is not an exact\n");
 		fprintf(stderr, "multiplier of 8 bytes.\n");
-		goto err_src;
+		goto bail;
 	}
 
 	dst_slice = width * pixel * opt_scale_x;
 	dst_ptr = malloc(dst_slice * height * opt_scale_y);
 	if (!dst_ptr) {
 		fprintf(stderr, "Low memory.\n");
-		goto err_src;
+		goto bail;
 	}
 
 	scale(opt_scale_x * 100 + opt_scale_y, dst_ptr, dst_slice, src_ptr, src_slice, pixel, width, height);
 
 	if (file_write(file1, dst_ptr, dst_slice, pixel, width * opt_scale_x, height * opt_scale_y, type, channel, palette, palette_size) != 0) {
-		goto err_dst;
+		goto bail;
 	}
 
 	if (opt_crc) {
@@ -87,12 +87,102 @@ int file_process(const char* file0, const char* file1, int opt_scale_x, int opt_
 
 	return 0;
 
-err_dst:
+bail:
 	free(dst_ptr);
-err_src:
 	free(src_ptr);
 	free(palette);
-err:
+	return -1;
+}
+
+/**
+ * Differential us of two timeval.
+ */
+static long long diffgettimeofday(struct timeval *start, struct timeval *stop)
+{
+	long long d;
+
+	d = 1000000LL * (stop->tv_sec - start->tv_sec);
+	d += stop->tv_usec - start->tv_usec;
+
+	return d;
+}
+
+int file_speed(const char* file0, int opt_scale_x, int opt_scale_y)
+{
+	unsigned pixel;
+	unsigned width;
+	unsigned height;
+	unsigned char* src_ptr = 0;
+	unsigned src_slice;
+	unsigned char* dst_ptr = 0;
+	unsigned dst_slice;
+	int type;
+	int channel;
+	png_color* palette = 0;
+	unsigned palette_size;
+	struct timeval start;
+	struct timeval stop;
+	long long amount;
+	long long elapsed;
+
+	if (file_read(file0, &src_ptr, &src_slice, &pixel, &width, &height, &type, &channel, &palette, &palette_size, 1) != 0) {
+		goto bail;
+	}
+
+	if (scale_precondition(opt_scale_x * 100 + opt_scale_y, pixel, width, height) != 0) {
+		fprintf(stderr, "Error in the size of the source bitmap. Generally this happen\n");
+		fprintf(stderr, "when the bitmap is too small or when the width is not an exact\n");
+		fprintf(stderr, "multiplier of 8 bytes.\n");
+		goto bail;
+	}
+
+	dst_slice = width * pixel * opt_scale_x;
+	dst_ptr = malloc(dst_slice * height * opt_scale_y);
+	if (!dst_ptr) {
+		fprintf(stderr, "Low memory.\n");
+		goto bail;
+	}
+
+	if (gettimeofday(&start, 0) != 0) {
+		fprintf(stderr, "Time error.\n");
+		goto bail;
+	}
+
+	amount = 0;
+	while (1) {
+		unsigned i;
+
+		for(i=0;i<1000;++i)
+			scale(opt_scale_x * 100 + opt_scale_y, dst_ptr, dst_slice, src_ptr, src_slice, pixel, width, height);
+
+		amount += i * width * height * pixel;
+
+		printf(".");
+		fflush(stdout);
+
+		if (gettimeofday(&stop, 0) != 0) {
+			fprintf(stderr, "Time error.\n");
+			goto bail;
+		}
+
+		elapsed = diffgettimeofday(&start, &stop);
+
+		if (elapsed > 2000000)
+			break;
+	}
+
+	printf("\nInput data processed at %g MB/s\n", amount / (double)elapsed);
+
+	free(dst_ptr);
+	free(src_ptr);
+	free(palette);
+
+	return 0;
+
+bail:
+	free(dst_ptr);
+	free(src_ptr);
+	free(palette);
 	return -1;
 }
 
@@ -116,6 +206,7 @@ void usage(void) {
 #ifdef HAVE_GETOPT_LONG
 struct option long_options[] = {
 	{"scale", 1, 0, 'k'},
+	{"speed", 0, 0, 'T'},
 	{"crc", 0, 0, 'c'},
 	{"help", 0, 0, 'h'},
 	{"version", 0, 0, 'v'},
@@ -123,12 +214,13 @@ struct option long_options[] = {
 };
 #endif
 
-#define OPTIONS "k:chv"
+#define OPTIONS "k:Tchv"
 
 int main(int argc, char* argv[]) {
 	int opt_scale_x = 2;
 	int opt_scale_y = 2;
 	int opt_crc = 0;
+	int opt_speed = 0;
 	int c;
 
 	opterr = 0;
@@ -170,19 +262,33 @@ int main(int argc, char* argv[]) {
 			case 'c' :
 				opt_crc = 1;
 				break;
+			case 'T' :
+				opt_speed = 1;
+				break;
 			default:
 				printf("Unknown option `%c'.\n", (char)optopt);
 				exit(EXIT_FAILURE);
 		} 
 	}
 
-	if (optind + 2 != argc) {
-		usage();
-		exit(EXIT_FAILURE);
-	}
+	if (opt_speed != 0) {
+		if (optind + 1 != argc) {
+			usage();
+			exit(EXIT_FAILURE);
+		}
 
-	if (file_process(argv[optind], argv[optind+1], opt_scale_x, opt_scale_y, opt_crc) != 0) {
-		exit(EXIT_FAILURE);
+		if (file_speed(argv[optind], opt_scale_x, opt_scale_y) != 0) {
+			exit(EXIT_FAILURE);
+		}
+	} else {
+		if (optind + 2 != argc) {
+			usage();
+			exit(EXIT_FAILURE);
+		}
+
+		if (file_process(argv[optind], argv[optind+1], opt_scale_x, opt_scale_y, opt_crc) != 0) {
+			exit(EXIT_FAILURE);
+		}
 	}
 
 	return EXIT_SUCCESS;

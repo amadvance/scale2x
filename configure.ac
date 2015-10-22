@@ -17,7 +17,7 @@ AC_CHECK_LIB([png], [png_get_IHDR], [], [AC_MSG_ERROR([the libpng library is mis
 
 # Checks for header files.
 AC_HEADER_STDC
-AC_CHECK_HEADERS([unistd.h getopt.h])
+AC_CHECK_HEADERS([unistd.h getopt.h sys/time.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
