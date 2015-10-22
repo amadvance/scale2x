@@ -15,6 +15,7 @@
  */
 
 #include "file.h"
+#include "scale2x.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -87,7 +88,7 @@ err:
 	return -1;
 }
 
-int file_read(const char* file, unsigned char** ptr, unsigned* slice, unsigned* pixel, unsigned* width, unsigned* height, int* type, int* channel, png_color** palette, unsigned* palette_size, int allow_only124)
+int file_read(const char* file, void** alloc, unsigned char** ptr, unsigned* slice, unsigned* pixel, unsigned* width, unsigned* height, int* type, int* channel, png_color** palette, unsigned* palette_size, int allow_only124)
 {
 	FILE* fp;
 	png_info* info_ptr;
@@ -189,12 +190,15 @@ int file_read(const char* file, unsigned char** ptr, unsigned* slice, unsigned* 
 		if (*type == PNG_COLOR_TYPE_RGB && *channel == 4)
 			*type = PNG_COLOR_TYPE_RGB_ALPHA;
 
-		*slice = *width * *pixel;
-		*ptr = malloc(*height * *slice);
-		if (!*ptr) {
+		*slice = scale2x_align_size(*width * *pixel);
+
+		*alloc = malloc(*height * *slice + SCALE2X_ALIGN_ALLOC);
+		if (!*alloc) {
 			fprintf(stderr,"Low memory.\n");
 			goto err_destroy;
 		}
+
+		*ptr = scale2x_align_ptr(*alloc);
 
 		row = malloc(sizeof(void*) * *height);
 		if (!row) {

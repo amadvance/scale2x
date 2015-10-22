@@ -673,8 +673,7 @@ void scale2x4_32_def(scale2x_uint32* dst0, scale2x_uint32* dst1, scale2x_uint32*
 /***************************************************************************/
 /* Scale2x SSE2 implementation */
 
-#if defined(__GNUC__) && (defined(__i386__) || defined(__x86_64__))
-
+#ifdef USE_SCALE2X_SSE2
 /*
  * Apply the Scale2x effect at a single row.
  * This function must be called only by the other scale2x functions.
@@ -718,11 +717,11 @@ static inline void scale2x_8_sse2_border(scale2x_uint8* dst, const scale2x_uint8
 	assert(count >= 32);
 	assert(count % 16 == 0);
 
-	/* all memory must be aligned to 16 bytes */
-	assert(((unsigned)dst & 0xF) == 0);
-	assert(((unsigned)src0 & 0xF) == 0);
-	assert(((unsigned)src1 & 0xF) == 0);
-	assert(((unsigned)src2 & 0xF) == 0);
+	/* all memory must be aligned */
+	assert(scale2x_align_ptr(dst) == dst);
+	assert(scale2x_align_ptr(src0) == src0);
+	assert(scale2x_align_ptr(src1) == src1);
+	assert(scale2x_align_ptr(src2) == src2);
 
 	/* always do the first and last run */
 	count -= 2*16;
@@ -915,11 +914,11 @@ static inline void scale2x_16_sse2_border(scale2x_uint16* dst, const scale2x_uin
 	assert(count >= 16);
 	assert(count % 8 == 0);
 
-	/* all memory must be aligned to 16 bytes */
-	assert(((unsigned)dst & 0xF) == 0);
-	assert(((unsigned)src0 & 0xF) == 0);
-	assert(((unsigned)src1 & 0xF) == 0);
-	assert(((unsigned)src2 & 0xF) == 0);
+	/* all memory must be aligned */
+	assert(scale2x_align_ptr(dst) == dst);
+	assert(scale2x_align_ptr(src0) == src0);
+	assert(scale2x_align_ptr(src1) == src1);
+	assert(scale2x_align_ptr(src2) == src2);
 
 	/* always do the first and last run */
 	count -= 2*8;
@@ -1110,13 +1109,13 @@ static inline void scale2x_16_sse2_border(scale2x_uint16* dst, const scale2x_uin
 static inline void scale2x_32_sse2_border(scale2x_uint32* dst, const scale2x_uint32* src0, const scale2x_uint32* src1, const scale2x_uint32* src2, unsigned count)
 {
 	assert(count >= 8);
-	assert(count % 2 == 0);
+	assert(count % 4 == 0);
 
-	/* all memory must be aligned to 16 bytes */
-	assert(((unsigned)dst & 0xF) == 0);
-	assert(((unsigned)src0 & 0xF) == 0);
-	assert(((unsigned)src1 & 0xF) == 0);
-	assert(((unsigned)src2 & 0xF) == 0);
+	/* all memory must be aligned */
+	assert(scale2x_align_ptr(dst) == dst);
+	assert(scale2x_align_ptr(src0) == src0);
+	assert(scale2x_align_ptr(src1) == src1);
+	assert(scale2x_align_ptr(src2) == src2);
 
 	/* always do the first and last run */
 	count -= 2*4;

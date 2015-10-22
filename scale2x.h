@@ -21,6 +21,61 @@ typedef unsigned char scale2x_uint8;
 typedef unsigned short scale2x_uint16;
 typedef unsigned scale2x_uint32;
 
+/**
+ * Enable the SSE2 implementation.
+ */
+#if defined(__GNUC__) && (defined(__i386__) || defined(__x86_64__))
+#define USE_SCALE2X_SSE2 1
+#endif
+
+/**
+ * Memory alignment required.
+ */
+#ifdef USE_SCALE2X_SSE2
+#define SCALE2X_ALIGN_SIZE 16
+#else
+#define SCALE2X_ALIGN_SIZE 1
+#endif
+
+/**
+ * Extra allocation to ensure alignment.
+ */
+#define SCALE2X_ALIGN_ALLOC (SCALE2X_ALIGN_SIZE-1)
+
+/**
+ * Align a pointer to bytes.
+ */
+static inline void* scale2x_align_ptr(const void* ptr)
+{
+#ifdef USE_SCALE2X_SSE2
+	__asm__ (
+		"add $15, %0\n"
+		"and $-16, %0\n"
+		: "+r" (ptr)
+		:
+		: "cc"
+	);
+#endif
+	return (void*)ptr;
+}
+
+/**
+ * Align a size in bytes.
+ */
+static inline unsigned scale2x_align_size(unsigned size)
+{
+#ifdef USE_SCALE2X_SSE2
+	__asm__ (
+		"add $15, %0\n"
+		"and $-16, %0\n"
+		: "+r" (size)
+		:
+		: "cc"
+	);
+#endif
+	return size;
+}
+
 void scale2x_8_def(scale2x_uint8* dst0, scale2x_uint8* dst1, const scale2x_uint8* src0, const scale2x_uint8* src1, const scale2x_uint8* src2, unsigned count);
 void scale2x_16_def(scale2x_uint16* dst0, scale2x_uint16* dst1, const scale2x_uint16* src0, const scale2x_uint16* src1, const scale2x_uint16* src2, unsigned count);
 void scale2x_32_def(scale2x_uint32* dst0, scale2x_uint32* dst1, const scale2x_uint32* src0, const scale2x_uint32* src1, const scale2x_uint32* src2, unsigned count);
@@ -33,8 +88,7 @@ void scale2x4_8_def(scale2x_uint8* dst0, scale2x_uint8* dst1, scale2x_uint8* dst
 void scale2x4_16_def(scale2x_uint16* dst0, scale2x_uint16* dst1, scale2x_uint16* dst2, scale2x_uint16* dst3, const scale2x_uint16* src0, const scale2x_uint16* src1, const scale2x_uint16* src2, unsigned count);
 void scale2x4_32_def(scale2x_uint32* dst0, scale2x_uint32* dst1, scale2x_uint32* dst2, scale2x_uint32* dst3, const scale2x_uint32* src0, const scale2x_uint32* src1, const scale2x_uint32* src2, unsigned count);
 
-#if defined(__GNUC__) && (defined(__i386__) || defined(__x86_64__))
-
+#ifdef USE_SCALE2X_SSE2
 void scale2x_8_sse2(scale2x_uint8* dst0, scale2x_uint8* dst1, const scale2x_uint8* src0, const scale2x_uint8* src1, const scale2x_uint8* src2, unsigned count);
 void scale2x_16_sse2(scale2x_uint16* dst0, scale2x_uint16* dst1, const scale2x_uint16* src0, const scale2x_uint16* src1, const scale2x_uint16* src2, unsigned count);
 void scale2x_32_sse2(scale2x_uint32* dst0, scale2x_uint32* dst1, const scale2x_uint32* src0, const scale2x_uint32* src1, const scale2x_uint32* src2, unsigned count);

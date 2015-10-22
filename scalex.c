@@ -25,6 +25,7 @@
 
 #include "scalebit.h"
 #include "file.h"
+#include "scale2x.h"
 #include "portable.h"
 
 #include <zlib.h>
@@ -38,16 +39,18 @@ int file_process(const char* file0, const char* file1, int opt_scale_x, int opt_
 	unsigned pixel;
 	unsigned width;
 	unsigned height;
-	unsigned char* src_ptr = 0;
+	void* src_alloc = 0;
+	unsigned char* src_ptr;
 	unsigned src_slice;
-	unsigned char* dst_ptr = 0;
+	void* dst_alloc = 0;
+	unsigned char* dst_ptr;
 	unsigned dst_slice;
 	int type;
 	int channel;
 	png_color* palette = 0;
 	unsigned palette_size;
 
-	if (file_read(file0, &src_ptr, &src_slice, &pixel, &width, &height, &type, &channel, &palette, &palette_size, 1) != 0) {
+	if (file_read(file0, &src_alloc, &src_ptr, &src_slice, &pixel, &width, &height, &type, &channel, &palette, &palette_size, 1) != 0) {
 		goto bail;
 	}
 
@@ -58,12 +61,13 @@ int file_process(const char* file0, const char* file1, int opt_scale_x, int opt_
 		goto bail;
 	}
 
-	dst_slice = width * pixel * opt_scale_x;
-	dst_ptr = malloc(dst_slice * height * opt_scale_y);
-	if (!dst_ptr) {
+	dst_slice = scale2x_align_size(width * pixel * opt_scale_x);
+	dst_alloc = malloc(dst_slice * height * opt_scale_y + SCALE2X_ALIGN_ALLOC);
+	if (!dst_alloc) {
 		fprintf(stderr, "Low memory.\n");
 		goto bail;
 	}
+	dst_ptr = scale2x_align_ptr(dst_alloc);
 
 	scale(opt_scale_x * 100 + opt_scale_y, dst_ptr, dst_slice, src_ptr, src_slice, pixel, width, height);
 
@@ -81,15 +85,15 @@ int file_process(const char* file0, const char* file1, int opt_scale_x, int opt_
 		printf("%08x\n", crc);
 	}
 
-	free(dst_ptr);
-	free(src_ptr);
+	free(dst_alloc);
+	free(src_alloc);
 	free(palette);
 
 	return 0;
 
 bail:
-	free(dst_ptr);
-	free(src_ptr);
+	free(dst_alloc);
+	free(src_alloc);
 	free(palette);
 	return -1;
 }
@@ -112,8 +116,10 @@ int file_speed(const char* file0, int opt_scale_x, int opt_scale_y)
 	unsigned pixel;
 	unsigned width;
 	unsigned height;
+	void* src_alloc = 0;
 	unsigned char* src_ptr = 0;
 	unsigned src_slice;
+	void* dst_alloc = 0;
 	unsigned char* dst_ptr = 0;
 	unsigned dst_slice;
 	int type;
@@ -125,7 +131,7 @@ int file_speed(const char* file0, int opt_scale_x, int opt_scale_y)
 	long long amount;
 	long long elapsed;
 
-	if (file_read(file0, &src_ptr, &src_slice, &pixel, &width, &height, &type, &channel, &palette, &palette_size, 1) != 0) {
+	if (file_read(file0, &src_alloc, &src_ptr, &src_slice, &pixel, &width, &height, &type, &channel, &palette, &palette_size, 1) != 0) {
 		goto bail;
 	}
 
@@ -136,12 +142,13 @@ int file_speed(const char* file0, int opt_scale_x, int opt_scale_y)
 		goto bail;
 	}
 
-	dst_slice = width * pixel * opt_scale_x;
-	dst_ptr = malloc(dst_slice * height * opt_scale_y);
-	if (!dst_ptr) {
+	dst_slice = scale2x_align_size(width * pixel * opt_scale_x);
+	dst_alloc = malloc(dst_slice * height * opt_scale_y + SCALE2X_ALIGN_ALLOC);
+	if (!dst_alloc) {
 		fprintf(stderr, "Low memory.\n");
 		goto bail;
 	}
+	dst_ptr = scale2x_align_ptr(dst_alloc);
 
 	if (gettimeofday(&start, 0) != 0) {
 		fprintf(stderr, "Time error.\n");
@@ -173,15 +180,15 @@ int file_speed(const char* file0, int opt_scale_x, int opt_scale_y)
 
 	printf("\nInput data processed at %g MB/s\n", amount / (double)elapsed);
 
-	free(dst_ptr);
-	free(src_ptr);
+	free(dst_alloc);
+	free(src_alloc);
 	free(palette);
 
 	return 0;
 
 bail:
-	free(dst_ptr);
-	free(src_ptr);
+	free(dst_alloc);
+	free(src_alloc);
 	free(palette);
 	return -1;
 }
@@ -193,7 +200,7 @@ void version(void) {
 void usage(void) {
 	version();
 	printf("Fast implementation of the Scale2/3/4x effects\n");
-#if defined(__GNUC__) && (defined(__i386__) || defined(__x86_64__))
+#ifdef USE_SCALE2X_SSE2
 	printf("(using SSE2 optimization)\n");
 #endif
 	printf("\nSyntax: scalex [-k N] FROM.png TO.png\n");
