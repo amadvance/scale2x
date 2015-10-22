@@ -2,6 +2,7 @@
  * This file is part of the Scale2x project.
  *
  * Copyright (C) 2001, 2002, 2003, 2004 Andrea Mazzoleni
+ * Copyright (C) 2015 Thomas Bernard
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -688,32 +689,28 @@ void scale2x4_32_def(scale2x_uint32* dst0, scale2x_uint32* dst1, scale2x_uint32*
  * like this map :
  *
  *      ab (dst)
- *
- * with these variables :
- *
- *      &current -> E
- *      &current_left -> D
- *      &current_right -> F
- *      &current_upper -> B
- *      &current_lower -> H
- *
- *      %0 -> current_upper
- *      %1 -> current
- *      %2 -> current_lower
- *      %3 -> dst
- *      %4 -> counter
- *
- *      %xmm0 -> *current_left
- *      %xmm1 -> *current_next
- *      %xmm2 -> tmp0
- *      %xmm3 -> tmp1
- *      %xmm4 -> tmp2
- *      %xmm5 -> tmp3
- *      %xmm6 -> *current_upper
- *      %xmm7 -> *current
  */
+
+#include <emmintrin.h>
+
+/**
+ * SCALE2X_SEL(A, B, cond) = cond ? A : B;
+ */
+#define SCALE2X_SEL(A, B, cond) \
+	_mm_or_si128(_mm_and_si128((cond), (A)), _mm_andnot_si128((cond), (B)))
+
 static inline void scale2x_8_sse2_border(scale2x_uint8* dst, const scale2x_uint8* src0, const scale2x_uint8* src1, const scale2x_uint8* src2, unsigned count)
 {
+	__m128i B, D, E, F, H, a, b;
+	__m128i BDeq, BFeq, BHeq, DFeq;
+	const __m128i mask_first = _mm_set_epi8(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0xff);
+	const __m128i mask_last = _mm_set_epi8(0xff,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0);
+	const __m128i* s0 = (const __m128i*)src0;
+	const __m128i* s1 = (const __m128i*)src1;
+	const __m128i* s2 = (const __m128i*)src2;
+	__m128i* d = (__m128i*)dst;
+
+	/* count must be aligned */
 	assert(count >= 32);
 	assert(count % 16 == 0);
 
@@ -723,194 +720,83 @@ static inline void scale2x_8_sse2_border(scale2x_uint8* dst, const scale2x_uint8
 	assert(scale2x_align_ptr(src1) == src1);
 	assert(scale2x_align_ptr(src2) == src2);
 
-	/* always do the first and last run */
-	count -= 2*16;
+	/* first run */
+	B = s0[0];
+	E = s1[0];
+	H = s2[0];
+	D = _mm_or_si128(_mm_and_si128(E, mask_first), _mm_slli_si128(E, 1));
+	F = _mm_or_si128(_mm_srli_si128(E, 1), _mm_slli_si128(s1[1], 15));
+	++s0;
+	++s1;
+	++s2;
 
-	__asm__ __volatile__(
-/* first run */
-		/* set the current, current_pre, current_next registers */
-		"movdqa 0(%1), %%xmm0\n"
-		"movdqa 0(%1), %%xmm7\n"
-		"movdqa 16(%1), %%xmm1\n"
-		"pslldq $15, %%xmm0\n"
-		"pslldq $15, %%xmm1\n"
-		"psrldq $15, %%xmm0\n"
-		"movdqa %%xmm7, %%xmm2\n"
-		"movdqa %%xmm7, %%xmm3\n"
-		"pslldq $1, %%xmm2\n"
-		"psrldq $1, %%xmm3\n"
-		"por %%xmm2, %%xmm0\n"
-		"por %%xmm3, %%xmm1\n"
+	BDeq = _mm_cmpeq_epi8(B, D);
+	BFeq = _mm_cmpeq_epi8(B, F);
+	BHeq = _mm_cmpeq_epi8(B, H);
+	DFeq = _mm_cmpeq_epi8(D, F);
 
-		/* current_upper */
-		"movdqa (%0), %%xmm6\n"
+	a = SCALE2X_SEL(B, E, _mm_andnot_si128(DFeq, _mm_andnot_si128(BHeq, BDeq)));
+	b = SCALE2X_SEL(B, E, _mm_andnot_si128(DFeq, _mm_andnot_si128(BHeq, BFeq)));
 
-		/* compute the upper-left pixel for dst on %%xmm2 */
-		/* compute the upper-right pixel for dst on %%xmm4 */
-		"movdqa %%xmm0, %%xmm2\n"
-		"movdqa %%xmm1, %%xmm4\n"
-		"movdqa %%xmm0, %%xmm3\n"
-		"movdqa %%xmm1, %%xmm5\n"
-		"pcmpeqb %%xmm6, %%xmm2\n"
-		"pcmpeqb %%xmm6, %%xmm4\n"
-		"pcmpeqb (%2), %%xmm3\n"
-		"pcmpeqb (%2), %%xmm5\n"
-		"pandn %%xmm2, %%xmm3\n"
-		"pandn %%xmm4, %%xmm5\n"
-		"movdqa %%xmm0, %%xmm2\n"
-		"movdqa %%xmm1, %%xmm4\n"
-		"pcmpeqb %%xmm1, %%xmm2\n"
-		"pcmpeqb %%xmm0, %%xmm4\n"
-		"pandn %%xmm3, %%xmm2\n"
-		"pandn %%xmm5, %%xmm4\n"
-		"movdqa %%xmm2, %%xmm3\n"
-		"movdqa %%xmm4, %%xmm5\n"
-		"pand %%xmm6, %%xmm2\n"
-		"pand %%xmm6, %%xmm4\n"
-		"pandn %%xmm7, %%xmm3\n"
-		"pandn %%xmm7, %%xmm5\n"
-		"por %%xmm3, %%xmm2\n"
-		"por %%xmm5, %%xmm4\n"
+	d[0] = _mm_unpacklo_epi8(a, b);
+	d[1] = _mm_unpackhi_epi8(a, b);
+	d += 2;
 
-		/* set *dst */
-		"movdqa %%xmm2, %%xmm3\n"
-		"punpcklbw %%xmm4, %%xmm2\n"
-		"punpckhbw %%xmm4, %%xmm3\n"
-		"movdqa %%xmm2, (%3)\n"
-		"movdqa %%xmm3, 16(%3)\n"
+	/* central run */
+	for (count -= 32; count > 0; count -= 16) {
+		B = s0[0];
+		E = s1[0];
+		H = s2[0];
+		D = _mm_or_si128(_mm_srli_si128(s1[-1], 15), _mm_slli_si128(E, 1));
+		F = _mm_or_si128(_mm_srli_si128(E, 1), _mm_slli_si128(s1[1], 15));
+		++s0;
+		++s1;
+		++s2;
 
-		/* next */
-		"add $16, %0\n"
-		"add $16, %1\n"
-		"add $16, %2\n"
-		"add $32, %3\n"
+		BDeq = _mm_cmpeq_epi8(B, D);
+		BFeq = _mm_cmpeq_epi8(B, F);
+		BHeq = _mm_cmpeq_epi8(B, H);
+		DFeq = _mm_cmpeq_epi8(D, F);
 
-/* central runs */
-		"shr $4, %4\n"
-		"jz 1f\n"
+		a = SCALE2X_SEL(B, E, _mm_andnot_si128(DFeq, _mm_andnot_si128(BHeq, BDeq)));
+		b = SCALE2X_SEL(B, E, _mm_andnot_si128(DFeq, _mm_andnot_si128(BHeq, BFeq)));
 
-		"0:\n"
+		d[0] = _mm_unpacklo_epi8(a, b);
+		d[1] = _mm_unpackhi_epi8(a, b);
+		d += 2;
+	}
 
-		/* set the current, current_pre, current_next registers */
-		"movdqa -16(%1), %%xmm0\n"
-		"movdqa (%1), %%xmm7\n"
-		"movdqa 16(%1), %%xmm1\n"
-		"psrldq $15, %%xmm0\n"
-		"pslldq $15, %%xmm1\n"
-		"movdqa %%xmm7, %%xmm2\n"
-		"movdqa %%xmm7, %%xmm3\n"
-		"pslldq $1, %%xmm2\n"
-		"psrldq $1, %%xmm3\n"
-		"por %%xmm2, %%xmm0\n"
-		"por %%xmm3, %%xmm1\n"
+	/* last run */
+	B = s0[0];
+	E = s1[0];
+	H = s2[0];
+	D = _mm_or_si128(_mm_srli_si128(s1[-1], 15), _mm_slli_si128(E, 1));
+	F = _mm_or_si128(_mm_srli_si128(E, 1), _mm_and_si128(E, mask_last));
 
-		/* current_upper */
-		"movdqa (%0), %%xmm6\n"
+	BDeq = _mm_cmpeq_epi8(B, D);
+	BFeq = _mm_cmpeq_epi8(B, F);
+	BHeq = _mm_cmpeq_epi8(B, H);
+	DFeq = _mm_cmpeq_epi8(D, F);
 
-		/* compute the upper-left pixel for dst on %%xmm2 */
-		/* compute the upper-right pixel for dst on %%xmm4 */
-		"movdqa %%xmm0, %%xmm2\n"
-		"movdqa %%xmm1, %%xmm4\n"
-		"movdqa %%xmm0, %%xmm3\n"
-		"movdqa %%xmm1, %%xmm5\n"
-		"pcmpeqb %%xmm6, %%xmm2\n"
-		"pcmpeqb %%xmm6, %%xmm4\n"
-		"pcmpeqb (%2), %%xmm3\n"
-		"pcmpeqb (%2), %%xmm5\n"
-		"pandn %%xmm2, %%xmm3\n"
-		"pandn %%xmm4, %%xmm5\n"
-		"movdqa %%xmm0, %%xmm2\n"
-		"movdqa %%xmm1, %%xmm4\n"
-		"pcmpeqb %%xmm1, %%xmm2\n"
-		"pcmpeqb %%xmm0, %%xmm4\n"
-		"pandn %%xmm3, %%xmm2\n"
-		"pandn %%xmm5, %%xmm4\n"
-		"movdqa %%xmm2, %%xmm3\n"
-		"movdqa %%xmm4, %%xmm5\n"
-		"pand %%xmm6, %%xmm2\n"
-		"pand %%xmm6, %%xmm4\n"
-		"pandn %%xmm7, %%xmm3\n"
-		"pandn %%xmm7, %%xmm5\n"
-		"por %%xmm3, %%xmm2\n"
-		"por %%xmm5, %%xmm4\n"
+	a = SCALE2X_SEL(B, E, _mm_andnot_si128(DFeq, _mm_andnot_si128(BHeq, BDeq)));
+	b = SCALE2X_SEL(B, E, _mm_andnot_si128(DFeq, _mm_andnot_si128(BHeq, BFeq)));
 
-		/* set *dst */
-		"movdqa %%xmm2, %%xmm3\n"
-		"punpcklbw %%xmm4, %%xmm2\n"
-		"punpckhbw %%xmm4, %%xmm3\n"
-		"movdqa %%xmm2, (%3)\n"
-		"movdqa %%xmm3, 16(%3)\n"
-
-		/* next */
-		"add $16, %0\n"
-		"add $16, %1\n"
-		"add $16, %2\n"
-		"add $32, %3\n"
-
-		"dec %4\n"
-		"jnz 0b\n"
-		"1:\n"
-
-/* final run */
-		/* set the current, current_pre, current_next registers */
-		"movdqa (%1), %%xmm1\n"
-		"movdqa (%1), %%xmm7\n"
-		"movdqa -16(%1), %%xmm0\n"
-		"psrldq $15, %%xmm1\n"
-		"psrldq $15, %%xmm0\n"
-		"pslldq $15, %%xmm1\n"
-		"movdqa %%xmm7, %%xmm2\n"
-		"movdqa %%xmm7, %%xmm3\n"
-		"pslldq $1, %%xmm2\n"
-		"psrldq $1, %%xmm3\n"
-		"por %%xmm2, %%xmm0\n"
-		"por %%xmm3, %%xmm1\n"
-
-		/* current_upper */
-		"movdqa (%0), %%xmm6\n"
-
-		/* compute the upper-left pixel for dst on %%xmm2 */
-		/* compute the upper-right pixel for dst on %%xmm4 */
-		"movdqa %%xmm0, %%xmm2\n"
-		"movdqa %%xmm1, %%xmm4\n"
-		"movdqa %%xmm0, %%xmm3\n"
-		"movdqa %%xmm1, %%xmm5\n"
-		"pcmpeqb %%xmm6, %%xmm2\n"
-		"pcmpeqb %%xmm6, %%xmm4\n"
-		"pcmpeqb (%2), %%xmm3\n"
-		"pcmpeqb (%2), %%xmm5\n"
-		"pandn %%xmm2, %%xmm3\n"
-		"pandn %%xmm4, %%xmm5\n"
-		"movdqa %%xmm0, %%xmm2\n"
-		"movdqa %%xmm1, %%xmm4\n"
-		"pcmpeqb %%xmm1, %%xmm2\n"
-		"pcmpeqb %%xmm0, %%xmm4\n"
-		"pandn %%xmm3, %%xmm2\n"
-		"pandn %%xmm5, %%xmm4\n"
-		"movdqa %%xmm2, %%xmm3\n"
-		"movdqa %%xmm4, %%xmm5\n"
-		"pand %%xmm6, %%xmm2\n"
-		"pand %%xmm6, %%xmm4\n"
-		"pandn %%xmm7, %%xmm3\n"
-		"pandn %%xmm7, %%xmm5\n"
-		"por %%xmm3, %%xmm2\n"
-		"por %%xmm5, %%xmm4\n"
-
-		/* set *dst */
-		"movdqa %%xmm2, %%xmm3\n"
-		"punpcklbw %%xmm4, %%xmm2\n"
-		"punpckhbw %%xmm4, %%xmm3\n"
-		"movdqa %%xmm2, (%3)\n"
-		"movdqa %%xmm3, 16(%3)\n"
-
-		: "+r" (src0), "+r" (src1), "+r" (src2), "+r" (dst), "+r" (count)
-		:
-		: "cc"
-	);
+	d[0] = _mm_unpacklo_epi8(a, b);
+	d[1] = _mm_unpackhi_epi8(a, b);
 }
 
 static inline void scale2x_16_sse2_border(scale2x_uint16* dst, const scale2x_uint16* src0, const scale2x_uint16* src1, const scale2x_uint16* src2, unsigned count)
 {
+	__m128i B, D, E, F, H, a, b;
+	__m128i BDeq, BFeq, BHeq, DFeq;
+	const __m128i mask_first = _mm_set_epi16(0,0,0,0,0,0,0,0xffff);
+	const __m128i mask_last = _mm_set_epi16(0xffff,0,0,0,0,0,0,0);
+	const __m128i* s0 = (const __m128i*)src0;
+	const __m128i* s1 = (const __m128i*)src1;
+	const __m128i* s2 = (const __m128i*)src2;
+	__m128i* d = (__m128i*)dst;
+
+	/* count must be aligned */
 	assert(count >= 16);
 	assert(count % 8 == 0);
 
@@ -920,387 +806,155 @@ static inline void scale2x_16_sse2_border(scale2x_uint16* dst, const scale2x_uin
 	assert(scale2x_align_ptr(src1) == src1);
 	assert(scale2x_align_ptr(src2) == src2);
 
-	/* always do the first and last run */
-	count -= 2*8;
+	/* first run */
+	B = s0[0];
+	E = s1[0];
+	H = s2[0];
+	D = _mm_or_si128(_mm_and_si128(E, mask_first), _mm_slli_si128(E, 2));
+	F = _mm_or_si128(_mm_srli_si128(E, 2), _mm_slli_si128(s1[1], 14));
+	++s0;
+	++s1;
+	++s2;
 
-	__asm__ __volatile__(
-/* first run */
-		/* set the current, current_pre, current_next registers */
-		"movdqa 0(%1), %%xmm0\n"
-		"movdqa 0(%1), %%xmm7\n"
-		"movdqa 16(%1), %%xmm1\n"
-		"pslldq $14, %%xmm0\n"
-		"pslldq $14, %%xmm1\n"
-		"psrldq $14, %%xmm0\n"
-		"movdqa %%xmm7, %%xmm2\n"
-		"movdqa %%xmm7, %%xmm3\n"
-		"pslldq $2, %%xmm2\n"
-		"psrldq $2, %%xmm3\n"
-		"por %%xmm2, %%xmm0\n"
-		"por %%xmm3, %%xmm1\n"
+	BDeq = _mm_cmpeq_epi16(B, D);
+	BFeq = _mm_cmpeq_epi16(B, F);
+	BHeq = _mm_cmpeq_epi16(B, H);
+	DFeq = _mm_cmpeq_epi16(D, F);
 
-		/* current_upper */
-		"movdqa (%0), %%xmm6\n"
+	a = SCALE2X_SEL(B, E, _mm_andnot_si128(DFeq, _mm_andnot_si128(BHeq, BDeq)));
+	b = SCALE2X_SEL(B, E, _mm_andnot_si128(DFeq, _mm_andnot_si128(BHeq, BFeq)));
 
-		/* compute the upper-left pixel for dst on %%xmm2 */
-		/* compute the upper-right pixel for dst on %%xmm4 */
-		"movdqa %%xmm0, %%xmm2\n"
-		"movdqa %%xmm1, %%xmm4\n"
-		"movdqa %%xmm0, %%xmm3\n"
-		"movdqa %%xmm1, %%xmm5\n"
-		"pcmpeqw %%xmm6, %%xmm2\n"
-		"pcmpeqw %%xmm6, %%xmm4\n"
-		"pcmpeqw (%2), %%xmm3\n"
-		"pcmpeqw (%2), %%xmm5\n"
-		"pandn %%xmm2, %%xmm3\n"
-		"pandn %%xmm4, %%xmm5\n"
-		"movdqa %%xmm0, %%xmm2\n"
-		"movdqa %%xmm1, %%xmm4\n"
-		"pcmpeqw %%xmm1, %%xmm2\n"
-		"pcmpeqw %%xmm0, %%xmm4\n"
-		"pandn %%xmm3, %%xmm2\n"
-		"pandn %%xmm5, %%xmm4\n"
-		"movdqa %%xmm2, %%xmm3\n"
-		"movdqa %%xmm4, %%xmm5\n"
-		"pand %%xmm6, %%xmm2\n"
-		"pand %%xmm6, %%xmm4\n"
-		"pandn %%xmm7, %%xmm3\n"
-		"pandn %%xmm7, %%xmm5\n"
-		"por %%xmm3, %%xmm2\n"
-		"por %%xmm5, %%xmm4\n"
+	d[0] = _mm_unpacklo_epi16(a, b);
+	d[1] = _mm_unpackhi_epi16(a, b);
+	d += 2;
 
-		/* set *dst */
-		"movdqa %%xmm2, %%xmm3\n"
-		"punpcklwd %%xmm4, %%xmm2\n"
-		"punpckhwd %%xmm4, %%xmm3\n"
-		"movdqa %%xmm2, (%3)\n"
-		"movdqa %%xmm3, 16(%3)\n"
+	/* central run */
+	for (count -= 16; count > 0; count -= 8) {
+		B = s0[0];
+		E = s1[0];
+		H = s2[0];
+		D = _mm_or_si128(_mm_srli_si128(s1[-1], 14), _mm_slli_si128(E, 2));
+		F = _mm_or_si128(_mm_srli_si128(E, 2), _mm_slli_si128(s1[1], 14));
+		++s0;
+		++s1;
+		++s2;
 
-		/* next */
-		"add $16, %0\n"
-		"add $16, %1\n"
-		"add $16, %2\n"
-		"add $32, %3\n"
+		BDeq = _mm_cmpeq_epi16(B, D);
+		BFeq = _mm_cmpeq_epi16(B, F);
+		BHeq = _mm_cmpeq_epi16(B, H);
+		DFeq = _mm_cmpeq_epi16(D, F);
 
-/* central runs */
-		"shr $3, %4\n"
-		"jz 1f\n"
+		a = SCALE2X_SEL(B, E, _mm_andnot_si128(DFeq, _mm_andnot_si128(BHeq, BDeq)));
+		b = SCALE2X_SEL(B, E, _mm_andnot_si128(DFeq, _mm_andnot_si128(BHeq, BFeq)));
 
-		"0:\n"
+		d[0] = _mm_unpacklo_epi16(a, b);
+		d[1] = _mm_unpackhi_epi16(a, b);
+		d += 2;
+	}
 
-		/* set the current, current_pre, current_next registers */
-		"movdqa -16(%1), %%xmm0\n"
-		"movdqa (%1), %%xmm7\n"
-		"movdqa 16(%1), %%xmm1\n"
-		"psrldq $14, %%xmm0\n"
-		"pslldq $14, %%xmm1\n"
-		"movdqa %%xmm7, %%xmm2\n"
-		"movdqa %%xmm7, %%xmm3\n"
-		"pslldq $2, %%xmm2\n"
-		"psrldq $2, %%xmm3\n"
-		"por %%xmm2, %%xmm0\n"
-		"por %%xmm3, %%xmm1\n"
+	/* last run */
+	B = s0[0];
+	E = s1[0];
+	H = s2[0];
+	D = _mm_or_si128(_mm_srli_si128(s1[-1], 14), _mm_slli_si128(E, 2));
+	F = _mm_or_si128(_mm_srli_si128(E, 2), _mm_and_si128(E, mask_last));
 
-		/* current_upper */
-		"movdqa (%0), %%xmm6\n"
+	BDeq = _mm_cmpeq_epi16(B, D);
+	BFeq = _mm_cmpeq_epi16(B, F);
+	BHeq = _mm_cmpeq_epi16(B, H);
+	DFeq = _mm_cmpeq_epi16(D, F);
 
-		/* compute the upper-left pixel for dst on %%xmm2 */
-		/* compute the upper-right pixel for dst on %%xmm4 */
-		"movdqa %%xmm0, %%xmm2\n"
-		"movdqa %%xmm1, %%xmm4\n"
-		"movdqa %%xmm0, %%xmm3\n"
-		"movdqa %%xmm1, %%xmm5\n"
-		"pcmpeqw %%xmm6, %%xmm2\n"
-		"pcmpeqw %%xmm6, %%xmm4\n"
-		"pcmpeqw (%2), %%xmm3\n"
-		"pcmpeqw (%2), %%xmm5\n"
-		"pandn %%xmm2, %%xmm3\n"
-		"pandn %%xmm4, %%xmm5\n"
-		"movdqa %%xmm0, %%xmm2\n"
-		"movdqa %%xmm1, %%xmm4\n"
-		"pcmpeqw %%xmm1, %%xmm2\n"
-		"pcmpeqw %%xmm0, %%xmm4\n"
-		"pandn %%xmm3, %%xmm2\n"
-		"pandn %%xmm5, %%xmm4\n"
-		"movdqa %%xmm2, %%xmm3\n"
-		"movdqa %%xmm4, %%xmm5\n"
-		"pand %%xmm6, %%xmm2\n"
-		"pand %%xmm6, %%xmm4\n"
-		"pandn %%xmm7, %%xmm3\n"
-		"pandn %%xmm7, %%xmm5\n"
-		"por %%xmm3, %%xmm2\n"
-		"por %%xmm5, %%xmm4\n"
+	a = SCALE2X_SEL(B, E, _mm_andnot_si128(DFeq, _mm_andnot_si128(BHeq, BDeq)));
+	b = SCALE2X_SEL(B, E, _mm_andnot_si128(DFeq, _mm_andnot_si128(BHeq, BFeq)));
 
-		/* set *dst */
-		"movdqa %%xmm2, %%xmm3\n"
-		"punpcklwd %%xmm4, %%xmm2\n"
-		"punpckhwd %%xmm4, %%xmm3\n"
-		"movdqa %%xmm2, (%3)\n"
-		"movdqa %%xmm3, 16(%3)\n"
-
-		/* next */
-		"add $16, %0\n"
-		"add $16, %1\n"
-		"add $16, %2\n"
-		"add $32, %3\n"
-
-		"dec %4\n"
-		"jnz 0b\n"
-		"1:\n"
-
-/* final run */
-		/* set the current, current_pre, current_next registers */
-		"movdqa (%1), %%xmm1\n"
-		"movdqa (%1), %%xmm7\n"
-		"movdqa -16(%1), %%xmm0\n"
-		"psrldq $14, %%xmm1\n"
-		"psrldq $14, %%xmm0\n"
-		"pslldq $14, %%xmm1\n"
-		"movdqa %%xmm7, %%xmm2\n"
-		"movdqa %%xmm7, %%xmm3\n"
-		"pslldq $2, %%xmm2\n"
-		"psrldq $2, %%xmm3\n"
-		"por %%xmm2, %%xmm0\n"
-		"por %%xmm3, %%xmm1\n"
-
-		/* current_upper */
-		"movdqa (%0), %%xmm6\n"
-
-		/* compute the upper-left pixel for dst on %%xmm2 */
-		/* compute the upper-right pixel for dst on %%xmm4 */
-		"movdqa %%xmm0, %%xmm2\n"
-		"movdqa %%xmm1, %%xmm4\n"
-		"movdqa %%xmm0, %%xmm3\n"
-		"movdqa %%xmm1, %%xmm5\n"
-		"pcmpeqw %%xmm6, %%xmm2\n"
-		"pcmpeqw %%xmm6, %%xmm4\n"
-		"pcmpeqw (%2), %%xmm3\n"
-		"pcmpeqw (%2), %%xmm5\n"
-		"pandn %%xmm2, %%xmm3\n"
-		"pandn %%xmm4, %%xmm5\n"
-		"movdqa %%xmm0, %%xmm2\n"
-		"movdqa %%xmm1, %%xmm4\n"
-		"pcmpeqw %%xmm1, %%xmm2\n"
-		"pcmpeqw %%xmm0, %%xmm4\n"
-		"pandn %%xmm3, %%xmm2\n"
-		"pandn %%xmm5, %%xmm4\n"
-		"movdqa %%xmm2, %%xmm3\n"
-		"movdqa %%xmm4, %%xmm5\n"
-		"pand %%xmm6, %%xmm2\n"
-		"pand %%xmm6, %%xmm4\n"
-		"pandn %%xmm7, %%xmm3\n"
-		"pandn %%xmm7, %%xmm5\n"
-		"por %%xmm3, %%xmm2\n"
-		"por %%xmm5, %%xmm4\n"
-
-		/* set *dst */
-		"movdqa %%xmm2, %%xmm3\n"
-		"punpcklwd %%xmm4, %%xmm2\n"
-		"punpckhwd %%xmm4, %%xmm3\n"
-		"movdqa %%xmm2, (%3)\n"
-		"movdqa %%xmm3, 16(%3)\n"
-
-		: "+r" (src0), "+r" (src1), "+r" (src2), "+r" (dst), "+r" (count)
-		:
-		: "cc"
-	);
+	d[0] = _mm_unpacklo_epi16(a, b);
+	d[1] = _mm_unpackhi_epi16(a, b);
 }
 
 static inline void scale2x_32_sse2_border(scale2x_uint32* dst, const scale2x_uint32* src0, const scale2x_uint32* src1, const scale2x_uint32* src2, unsigned count)
 {
+	__m128i B, D, E, F, H, a, b;
+	__m128i BDeq, BFeq, BHeq, DFeq;
+	const __m128i mask_first = _mm_set_epi32(0,0,0,0xffffffff);
+	const __m128i mask_last = _mm_set_epi32(0xffffffff,0,0,0);
+	const __m128i* s0 = (const __m128i*)src0;
+	const __m128i* s1 = (const __m128i*)src1;
+	const __m128i* s2 = (const __m128i*)src2;
+	__m128i* d = (__m128i*)dst;
+
+	/* count must be aligned */
 	assert(count >= 8);
 	assert(count % 4 == 0);
 
-	/* all memory must be aligned */
+	/* memory must be aligned */
 	assert(scale2x_align_ptr(dst) == dst);
 	assert(scale2x_align_ptr(src0) == src0);
 	assert(scale2x_align_ptr(src1) == src1);
 	assert(scale2x_align_ptr(src2) == src2);
 
-	/* always do the first and last run */
-	count -= 2*4;
+	/* first run */
+	B = s0[0];
+	E = s1[0];
+	H = s2[0];
+	D = _mm_or_si128(_mm_and_si128(E, mask_first), _mm_slli_si128(E, 4));
+	F = _mm_or_si128(_mm_srli_si128(E, 4), _mm_slli_si128(s1[1], 12));
+	++s0;
+	++s1;
+	++s2;
 
-	__asm__ __volatile__(
-/* first run */
-		/* set the current, current_pre, current_next registers */
-		"movdqa 0(%1), %%xmm0\n"
-		"movdqa 0(%1), %%xmm7\n"
-		"movdqa 16(%1), %%xmm1\n"
-		"pslldq $12, %%xmm0\n"
-		"pslldq $12, %%xmm1\n"
-		"psrldq $12, %%xmm0\n"
-		"movdqa %%xmm7, %%xmm2\n"
-		"movdqa %%xmm7, %%xmm3\n"
-		"pslldq $4, %%xmm2\n"
-		"psrldq $4, %%xmm3\n"
-		"por %%xmm2, %%xmm0\n"
-		"por %%xmm3, %%xmm1\n"
+	BDeq = _mm_cmpeq_epi32(B, D);
+	BFeq = _mm_cmpeq_epi32(B, F);
+	BHeq = _mm_cmpeq_epi32(B, H);
+	DFeq = _mm_cmpeq_epi32(D, F);
 
-		/* current_upper */
-		"movdqa (%0), %%xmm6\n"
+	a = SCALE2X_SEL(B, E, _mm_andnot_si128(DFeq, _mm_andnot_si128(BHeq, BDeq)));
+	b = SCALE2X_SEL(B, E, _mm_andnot_si128(DFeq, _mm_andnot_si128(BHeq, BFeq)));
 
-		/* compute the upper-left pixel for dst on %%xmm2 */
-		/* compute the upper-right pixel for dst on %%xmm4 */
-		"movdqa %%xmm0, %%xmm2\n"
-		"movdqa %%xmm1, %%xmm4\n"
-		"movdqa %%xmm0, %%xmm3\n"
-		"movdqa %%xmm1, %%xmm5\n"
-		"pcmpeqd %%xmm6, %%xmm2\n"
-		"pcmpeqd %%xmm6, %%xmm4\n"
-		"pcmpeqd (%2), %%xmm3\n"
-		"pcmpeqd (%2), %%xmm5\n"
-		"pandn %%xmm2, %%xmm3\n"
-		"pandn %%xmm4, %%xmm5\n"
-		"movdqa %%xmm0, %%xmm2\n"
-		"movdqa %%xmm1, %%xmm4\n"
-		"pcmpeqd %%xmm1, %%xmm2\n"
-		"pcmpeqd %%xmm0, %%xmm4\n"
-		"pandn %%xmm3, %%xmm2\n"
-		"pandn %%xmm5, %%xmm4\n"
-		"movdqa %%xmm2, %%xmm3\n"
-		"movdqa %%xmm4, %%xmm5\n"
-		"pand %%xmm6, %%xmm2\n"
-		"pand %%xmm6, %%xmm4\n"
-		"pandn %%xmm7, %%xmm3\n"
-		"pandn %%xmm7, %%xmm5\n"
-		"por %%xmm3, %%xmm2\n"
-		"por %%xmm5, %%xmm4\n"
+	d[0] = _mm_unpacklo_epi32(a, b);
+	d[1] = _mm_unpackhi_epi32(a, b);
+	d += 2;
 
-		/* set *dst */
-		"movdqa %%xmm2, %%xmm3\n"
-		"punpckldq %%xmm4, %%xmm2\n"
-		"punpckhdq %%xmm4, %%xmm3\n"
-		"movdqa %%xmm2, (%3)\n"
-		"movdqa %%xmm3, 16(%3)\n"
+	/* central run */
+	for (count -= 8; count > 0; count -= 4) {
+		B = s0[0];
+		E = s1[0];
+		H = s2[0];
+		D = _mm_or_si128(_mm_srli_si128(s1[-1], 12), _mm_slli_si128(E, 4));
+		F = _mm_or_si128(_mm_srli_si128(E, 4), _mm_slli_si128(s1[1], 12));
+		++s0;
+		++s1;
+		++s2;
 
-		/* next */
-		"add $16, %0\n"
-		"add $16, %1\n"
-		"add $16, %2\n"
-		"add $32, %3\n"
+		BDeq = _mm_cmpeq_epi32(B, D);
+		BFeq = _mm_cmpeq_epi32(B, F);
+		BHeq = _mm_cmpeq_epi32(B, H);
+		DFeq = _mm_cmpeq_epi32(D, F);
 
-/* central runs */
-		"shr $2, %4\n"
-		"jz 1f\n"
+		a = SCALE2X_SEL(B, E, _mm_andnot_si128(DFeq, _mm_andnot_si128(BHeq, BDeq)));
+		b = SCALE2X_SEL(B, E, _mm_andnot_si128(DFeq, _mm_andnot_si128(BHeq, BFeq)));
 
-		"0:\n"
+		d[0] = _mm_unpacklo_epi32(a, b);
+		d[1] = _mm_unpackhi_epi32(a, b);
+		d += 2;
+	}
 
-		/* set the current, current_pre, current_next registers */
-		"movdqa -16(%1), %%xmm0\n"
-		"movdqa (%1), %%xmm7\n"
-		"movdqa 16(%1), %%xmm1\n"
-		"psrldq $12, %%xmm0\n"
-		"pslldq $12, %%xmm1\n"
-		"movdqa %%xmm7, %%xmm2\n"
-		"movdqa %%xmm7, %%xmm3\n"
-		"pslldq $4, %%xmm2\n"
-		"psrldq $4, %%xmm3\n"
-		"por %%xmm2, %%xmm0\n"
-		"por %%xmm3, %%xmm1\n"
+	/* last run */
+	B = s0[0];
+	E = s1[0];
+	H = s2[0];
+	D = _mm_or_si128(_mm_srli_si128(s1[-1], 12), _mm_slli_si128(E, 4));
+	F = _mm_or_si128(_mm_srli_si128(E, 4), _mm_and_si128(E, mask_last));
 
-		/* current_upper */
-		"movdqa (%0), %%xmm6\n"
+	BDeq = _mm_cmpeq_epi32(B, D);
+	BFeq = _mm_cmpeq_epi32(B, F);
+	BHeq = _mm_cmpeq_epi32(B, H);
+	DFeq = _mm_cmpeq_epi32(D, F);
 
-		/* compute the upper-left pixel for dst on %%xmm2 */
-		/* compute the upper-right pixel for dst on %%xmm4 */
-		"movdqa %%xmm0, %%xmm2\n"
-		"movdqa %%xmm1, %%xmm4\n"
-		"movdqa %%xmm0, %%xmm3\n"
-		"movdqa %%xmm1, %%xmm5\n"
-		"pcmpeqd %%xmm6, %%xmm2\n"
-		"pcmpeqd %%xmm6, %%xmm4\n"
-		"pcmpeqd (%2), %%xmm3\n"
-		"pcmpeqd (%2), %%xmm5\n"
-		"pandn %%xmm2, %%xmm3\n"
-		"pandn %%xmm4, %%xmm5\n"
-		"movdqa %%xmm0, %%xmm2\n"
-		"movdqa %%xmm1, %%xmm4\n"
-		"pcmpeqd %%xmm1, %%xmm2\n"
-		"pcmpeqd %%xmm0, %%xmm4\n"
-		"pandn %%xmm3, %%xmm2\n"
-		"pandn %%xmm5, %%xmm4\n"
-		"movdqa %%xmm2, %%xmm3\n"
-		"movdqa %%xmm4, %%xmm5\n"
-		"pand %%xmm6, %%xmm2\n"
-		"pand %%xmm6, %%xmm4\n"
-		"pandn %%xmm7, %%xmm3\n"
-		"pandn %%xmm7, %%xmm5\n"
-		"por %%xmm3, %%xmm2\n"
-		"por %%xmm5, %%xmm4\n"
+	a = SCALE2X_SEL(B, E, _mm_andnot_si128(DFeq, _mm_andnot_si128(BHeq, BDeq)));
+	b = SCALE2X_SEL(B, E, _mm_andnot_si128(DFeq, _mm_andnot_si128(BHeq, BFeq)));
 
-		/* set *dst */
-		"movdqa %%xmm2, %%xmm3\n"
-		"punpckldq %%xmm4, %%xmm2\n"
-		"punpckhdq %%xmm4, %%xmm3\n"
-		"movdqa %%xmm2, (%3)\n"
-		"movdqa %%xmm3, 16(%3)\n"
-
-		/* next */
-		"add $16, %0\n"
-		"add $16, %1\n"
-		"add $16, %2\n"
-		"add $32, %3\n"
-
-		"dec %4\n"
-		"jnz 0b\n"
-		"1:\n"
-
-/* final run */
-		/* set the current, current_pre, current_next registers */
-		"movdqa (%1), %%xmm1\n"
-		"movdqa (%1), %%xmm7\n"
-		"movdqa -16(%1), %%xmm0\n"
-		"psrldq $12, %%xmm1\n"
-		"psrldq $12, %%xmm0\n"
-		"pslldq $12, %%xmm1\n"
-		"movdqa %%xmm7, %%xmm2\n"
-		"movdqa %%xmm7, %%xmm3\n"
-		"pslldq $4, %%xmm2\n"
-		"psrldq $4, %%xmm3\n"
-		"por %%xmm2, %%xmm0\n"
-		"por %%xmm3, %%xmm1\n"
-
-		/* current_upper */
-		"movdqa (%0), %%xmm6\n"
-
-		/* compute the upper-left pixel for dst on %%xmm2 */
-		/* compute the upper-right pixel for dst on %%xmm4 */
-		"movdqa %%xmm0, %%xmm2\n"
-		"movdqa %%xmm1, %%xmm4\n"
-		"movdqa %%xmm0, %%xmm3\n"
-		"movdqa %%xmm1, %%xmm5\n"
-		"pcmpeqd %%xmm6, %%xmm2\n"
-		"pcmpeqd %%xmm6, %%xmm4\n"
-		"pcmpeqd (%2), %%xmm3\n"
-		"pcmpeqd (%2), %%xmm5\n"
-		"pandn %%xmm2, %%xmm3\n"
-		"pandn %%xmm4, %%xmm5\n"
-		"movdqa %%xmm0, %%xmm2\n"
-		"movdqa %%xmm1, %%xmm4\n"
-		"pcmpeqd %%xmm1, %%xmm2\n"
-		"pcmpeqd %%xmm0, %%xmm4\n"
-		"pandn %%xmm3, %%xmm2\n"
-		"pandn %%xmm5, %%xmm4\n"
-		"movdqa %%xmm2, %%xmm3\n"
-		"movdqa %%xmm4, %%xmm5\n"
-		"pand %%xmm6, %%xmm2\n"
-		"pand %%xmm6, %%xmm4\n"
-		"pandn %%xmm7, %%xmm3\n"
-		"pandn %%xmm7, %%xmm5\n"
-		"por %%xmm3, %%xmm2\n"
-		"por %%xmm5, %%xmm4\n"
-
-		/* set *dst */
-		"movdqa %%xmm2, %%xmm3\n"
-		"punpckldq %%xmm4, %%xmm2\n"
-		"punpckhdq %%xmm4, %%xmm3\n"
-		"movdqa %%xmm2, (%3)\n"
-		"movdqa %%xmm3, 16(%3)\n"
-
-		: "+r" (src0), "+r" (src1), "+r" (src2), "+r" (dst), "+r" (count)
-		:
-		: "cc"
-	);
+	d[0] = _mm_unpacklo_epi32(a, b);
+	d[1] = _mm_unpackhi_epi32(a, b);
 }
 
 /**
@@ -1312,8 +966,8 @@ static inline void scale2x_32_sse2_border(scale2x_uint32* dst, const scale2x_uin
  * Also, using the 16 bytes SSE2 registers more than one pixel are computed
  * at the same time.
  * Before calling this function you must ensure that the currenct CPU supports
- * the SSE2 instruction set. After calling it you must be sure to call the EMMS
- * instruction before any floating-point operation.
+ * the SSE2 instruction set.
+ * All the memory buffer passed must be aligned at 16 bytes.
  * The pixels over the left and right borders are assumed of the same color of
  * the pixels on the border.
  * Note that the implementation is optimized to write data sequentially to
