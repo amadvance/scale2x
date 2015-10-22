@@ -1179,11 +1179,14 @@ int file_gen(void)
 	unsigned channel;
 	unsigned char* ptr;
 	unsigned x,y,i,j;
-	unsigned delta = 5;
+	unsigned delta;
+	unsigned skew;
 
+	delta = 5;
+	skew = 1;
 	pixel = 3;
-	width = 32 * delta + delta/2;
-	height = 16 * delta + delta/2;
+	width = 32 * delta;
+	height = 16 * delta;
 	type = PNG_COLOR_TYPE_RGB;
 	channel = 3;
 
@@ -1213,7 +1216,7 @@ int file_gen(void)
 					} else {
 						color = 0x000000;
 					}
-					pixel_put(x*delta+delta/2+i, y*delta+delta/2+j, ptr, slice, pixel, width, height, color);
+					pixel_put(x*delta+skew+i, y*delta+skew+j, ptr, slice, pixel, width, height, color);
 				}
 			}
 		}

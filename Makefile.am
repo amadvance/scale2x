@@ -3,14 +3,14 @@ bin_PROGRAMS = scalex scalerx
 EXTRA_DIST = \
 	scale2x.h scale3x.h \
 	README AUTHORS COPYING HISTORY \
-	example/mslug2-1.png \
-	example/mslug2-1x.png \
-	example/mslug2-2.png \
-	example/mslug2-2x.png \
-	example/mslug2-3.png \
-	example/mslug2-3x.png \
-	example/mslug2-4.png \
-	example/mslug2-4x.png \
+	example/pengo-1.png \
+	example/pengo-1x.png \
+	example/pengo-2.png \
+	example/pengo-2x.png \
+	example/pengo-3.png \
+	example/pengo-3x.png \
+	example/pengo-4.png \
+	example/pengo-4x.png \
 	example/test-1.png \
 	example/test-1x.png \
 	example/test-2.png \
@@ -87,14 +87,14 @@ DIST_WINDOWS_DOC = \
 	doc/scalex.txt doc/scalerx.txt
 
 DIST_WINDOWS_EXAMPLE = \
-	example/mslug2-1.png \
-	example/mslug2-1x.png \
-	example/mslug2-2.png \
-	example/mslug2-2x.png \
-	example/mslug2-3.png \
-	example/mslug2-3x.png \
-	example/mslug2-4.png \
-	example/mslug2-4x.png \
+	example/pengo-1.png \
+	example/pengo-1x.png \
+	example/pengo-2.png \
+	example/pengo-2x.png \
+	example/pengo-3.png \
+	example/pengo-3x.png \
+	example/pengo-4.png \
+	example/pengo-4x.png \
 	example/test-1.png \
 	example/test-1x.png \
 	example/test-2.png \
@@ -120,7 +120,7 @@ distwindows-x86: $(DIST_WINDOWS)
 	rm -r tmp
 
 TEST = 0g01 0g02 0g04 0g16 2c08 2c16 3p01 3p02 3p04 3p08 4a08 4a16 6a08 6a16
-EXAMPLE = mslug2-1 test-1
+EXAMPLE = pengo-1 test-1
 DTOU = tr -d '\015'
 
 check-local:
