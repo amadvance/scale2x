@@ -1150,7 +1150,12 @@ int file_process(const char* file0, const char* file1, int opt_scale_x, int opt_
 	}
 
 	if (opt_crc) {
-		unsigned crc = crc32(0, dst_ptr, dst_slice * height * opt_scale_y);
+		unsigned dst_width = width * opt_scale_x;
+		unsigned dst_height = height * opt_scale_y;
+		unsigned y;
+		unsigned crc = 0;
+		for(y=0;y<dst_height;++y)
+			crc = crc32(crc, dst_ptr + y * dst_slice, dst_width * pixel);
 		printf("%08x\n", crc);
 	}
 
