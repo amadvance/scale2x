@@ -37,8 +37,8 @@
 #include <assert.h>
 #include <stdlib.h>
 
-#define SSDST(bits, num) (scale2x_uint##bits *)dst##num
-#define SSSRC(bits, num) (const scale2x_uint##bits *)src##num
+#define SSDST(bits, num) (scale2x_uint ## bits *)dst ## num
+#define SSSRC(bits, num) (const scale2x_uint ## bits *)src ## num
 
 /**
  * Apply the Scale2x effect on a group of rows. Used internally.
@@ -47,13 +47,13 @@ static inline void stage_scale2x(void* dst0, void* dst1, const void* src0, const
 {
 	switch (pixel) {
 #ifdef USE_SCALE2X_SSE2
-		case 1 : scale2x_8_sse2(SSDST(8,0), SSDST(8,1), SSSRC(8,0), SSSRC(8,1), SSSRC(8,2), pixel_per_row); break;
-		case 2 : scale2x_16_sse2(SSDST(16,0), SSDST(16,1), SSSRC(16,0), SSSRC(16,1), SSSRC(16,2), pixel_per_row); break;
-		case 4 : scale2x_32_sse2(SSDST(32,0), SSDST(32,1), SSSRC(32,0), SSSRC(32,1), SSSRC(32,2), pixel_per_row); break;
+	case 1 : scale2x_8_sse2(SSDST(8, 0), SSDST(8, 1), SSSRC(8, 0), SSSRC(8, 1), SSSRC(8, 2), pixel_per_row); break;
+	case 2 : scale2x_16_sse2(SSDST(16, 0), SSDST(16, 1), SSSRC(16, 0), SSSRC(16, 1), SSSRC(16, 2), pixel_per_row); break;
+	case 4 : scale2x_32_sse2(SSDST(32, 0), SSDST(32, 1), SSSRC(32, 0), SSSRC(32, 1), SSSRC(32, 2), pixel_per_row); break;
 #else
-		case 1 : scale2x_8_def(SSDST(8,0), SSDST(8,1), SSSRC(8,0), SSSRC(8,1), SSSRC(8,2), pixel_per_row); break;
-		case 2 : scale2x_16_def(SSDST(16,0), SSDST(16,1), SSSRC(16,0), SSSRC(16,1), SSSRC(16,2), pixel_per_row); break;
-		case 4 : scale2x_32_def(SSDST(32,0), SSDST(32,1), SSSRC(32,0), SSSRC(32,1), SSSRC(32,2), pixel_per_row); break;
+	case 1 : scale2x_8_def(SSDST(8, 0), SSDST(8, 1), SSSRC(8, 0), SSSRC(8, 1), SSSRC(8, 2), pixel_per_row); break;
+	case 2 : scale2x_16_def(SSDST(16, 0), SSDST(16, 1), SSSRC(16, 0), SSSRC(16, 1), SSSRC(16, 2), pixel_per_row); break;
+	case 4 : scale2x_32_def(SSDST(32, 0), SSDST(32, 1), SSSRC(32, 0), SSSRC(32, 1), SSSRC(32, 2), pixel_per_row); break;
 #endif
 	}
 }
@@ -65,13 +65,13 @@ static inline void stage_scale2x3(void* dst0, void* dst1, void* dst2, const void
 {
 	switch (pixel) {
 #ifdef USE_SCALE2X_SSE2
-		case 1 : scale2x3_8_sse2(SSDST(8,0), SSDST(8,1), SSDST(8,2), SSSRC(8,0), SSSRC(8,1), SSSRC(8,2), pixel_per_row); break;
-		case 2 : scale2x3_16_sse2(SSDST(16,0), SSDST(16,1), SSDST(16,2), SSSRC(16,0), SSSRC(16,1), SSSRC(16,2), pixel_per_row); break;
-		case 4 : scale2x3_32_sse2(SSDST(32,0), SSDST(32,1), SSDST(32,2), SSSRC(32,0), SSSRC(32,1), SSSRC(32,2), pixel_per_row); break;
+	case 1 : scale2x3_8_sse2(SSDST(8, 0), SSDST(8, 1), SSDST(8, 2), SSSRC(8, 0), SSSRC(8, 1), SSSRC(8, 2), pixel_per_row); break;
+	case 2 : scale2x3_16_sse2(SSDST(16, 0), SSDST(16, 1), SSDST(16, 2), SSSRC(16, 0), SSSRC(16, 1), SSSRC(16, 2), pixel_per_row); break;
+	case 4 : scale2x3_32_sse2(SSDST(32, 0), SSDST(32, 1), SSDST(32, 2), SSSRC(32, 0), SSSRC(32, 1), SSSRC(32, 2), pixel_per_row); break;
 #else
-		case 1 : scale2x3_8_def(SSDST(8,0), SSDST(8,1), SSDST(8,2), SSSRC(8,0), SSSRC(8,1), SSSRC(8,2), pixel_per_row); break;
-		case 2 : scale2x3_16_def(SSDST(16,0), SSDST(16,1), SSDST(16,2), SSSRC(16,0), SSSRC(16,1), SSSRC(16,2), pixel_per_row); break;
-		case 4 : scale2x3_32_def(SSDST(32,0), SSDST(32,1), SSDST(32,2), SSSRC(32,0), SSSRC(32,1), SSSRC(32,2), pixel_per_row); break;
+	case 1 : scale2x3_8_def(SSDST(8, 0), SSDST(8, 1), SSDST(8, 2), SSSRC(8, 0), SSSRC(8, 1), SSSRC(8, 2), pixel_per_row); break;
+	case 2 : scale2x3_16_def(SSDST(16, 0), SSDST(16, 1), SSDST(16, 2), SSSRC(16, 0), SSSRC(16, 1), SSSRC(16, 2), pixel_per_row); break;
+	case 4 : scale2x3_32_def(SSDST(32, 0), SSDST(32, 1), SSDST(32, 2), SSSRC(32, 0), SSSRC(32, 1), SSSRC(32, 2), pixel_per_row); break;
 #endif
 	}
 }
@@ -83,13 +83,13 @@ static inline void stage_scale2x4(void* dst0, void* dst1, void* dst2, void* dst3
 {
 	switch (pixel) {
 #ifdef USE_SCALE2X_SSE2
-		case 1 : scale2x4_8_sse2(SSDST(8,0), SSDST(8,1), SSDST(8,2), SSDST(8,3), SSSRC(8,0), SSSRC(8,1), SSSRC(8,2), pixel_per_row); break;
-		case 2 : scale2x4_16_sse2(SSDST(16,0), SSDST(16,1), SSDST(16,2), SSDST(16,3), SSSRC(16,0), SSSRC(16,1), SSSRC(16,2), pixel_per_row); break;
-		case 4 : scale2x4_32_sse2(SSDST(32,0), SSDST(32,1), SSDST(32,2), SSDST(32,3), SSSRC(32,0), SSSRC(32,1), SSSRC(32,2), pixel_per_row); break;
+	case 1 : scale2x4_8_sse2(SSDST(8, 0), SSDST(8, 1), SSDST(8, 2), SSDST(8, 3), SSSRC(8, 0), SSSRC(8, 1), SSSRC(8, 2), pixel_per_row); break;
+	case 2 : scale2x4_16_sse2(SSDST(16, 0), SSDST(16, 1), SSDST(16, 2), SSDST(16, 3), SSSRC(16, 0), SSSRC(16, 1), SSSRC(16, 2), pixel_per_row); break;
+	case 4 : scale2x4_32_sse2(SSDST(32, 0), SSDST(32, 1), SSDST(32, 2), SSDST(32, 3), SSSRC(32, 0), SSSRC(32, 1), SSSRC(32, 2), pixel_per_row); break;
 #else
-		case 1 : scale2x4_8_def(SSDST(8,0), SSDST(8,1), SSDST(8,2), SSDST(8,3), SSSRC(8,0), SSSRC(8,1), SSSRC(8,2), pixel_per_row); break;
-		case 2 : scale2x4_16_def(SSDST(16,0), SSDST(16,1), SSDST(16,2), SSDST(16,3), SSSRC(16,0), SSSRC(16,1), SSSRC(16,2), pixel_per_row); break;
-		case 4 : scale2x4_32_def(SSDST(32,0), SSDST(32,1), SSDST(32,2), SSDST(32,3), SSSRC(32,0), SSSRC(32,1), SSSRC(32,2), pixel_per_row); break;
+	case 1 : scale2x4_8_def(SSDST(8, 0), SSDST(8, 1), SSDST(8, 2), SSDST(8, 3), SSSRC(8, 0), SSSRC(8, 1), SSSRC(8, 2), pixel_per_row); break;
+	case 2 : scale2x4_16_def(SSDST(16, 0), SSDST(16, 1), SSDST(16, 2), SSDST(16, 3), SSSRC(16, 0), SSSRC(16, 1), SSSRC(16, 2), pixel_per_row); break;
+	case 4 : scale2x4_32_def(SSDST(32, 0), SSDST(32, 1), SSDST(32, 2), SSDST(32, 3), SSSRC(32, 0), SSSRC(32, 1), SSSRC(32, 2), pixel_per_row); break;
 #endif
 	}
 }
@@ -100,9 +100,9 @@ static inline void stage_scale2x4(void* dst0, void* dst1, void* dst2, void* dst3
 static inline void stage_scale3x(void* dst0, void* dst1, void* dst2, const void* src0, const void* src1, const void* src2, unsigned pixel, unsigned pixel_per_row)
 {
 	switch (pixel) {
-		case 1 : scale3x_8_def(SSDST(8,0), SSDST(8,1), SSDST(8,2), SSSRC(8,0), SSSRC(8,1), SSSRC(8,2), pixel_per_row); break;
-		case 2 : scale3x_16_def(SSDST(16,0), SSDST(16,1), SSDST(16,2), SSSRC(16,0), SSSRC(16,1), SSSRC(16,2), pixel_per_row); break;
-		case 4 : scale3x_32_def(SSDST(32,0), SSDST(32,1), SSDST(32,2), SSSRC(32,0), SSSRC(32,1), SSSRC(32,2), pixel_per_row); break;
+	case 1 : scale3x_8_def(SSDST(8, 0), SSDST(8, 1), SSDST(8, 2), SSSRC(8, 0), SSSRC(8, 1), SSSRC(8, 2), pixel_per_row); break;
+	case 2 : scale3x_16_def(SSDST(16, 0), SSDST(16, 1), SSDST(16, 2), SSSRC(16, 0), SSSRC(16, 1), SSSRC(16, 2), pixel_per_row); break;
+	case 4 : scale3x_32_def(SSDST(32, 0), SSDST(32, 1), SSDST(32, 2), SSSRC(32, 0), SSSRC(32, 1), SSSRC(32, 2), pixel_per_row); break;
 	}
 }
 
@@ -115,8 +115,8 @@ static inline void stage_scale4x(void* dst0, void* dst1, void* dst2, void* dst3,
 	stage_scale2x(dst2, dst3, src1, src2, src3, pixel, 2 * pixel_per_row);
 }
 
-#define SCDST(i) (dst+(i)*dst_slice)
-#define SCSRC(i) (src+(i)*src_slice)
+#define SCDST(i) (dst + (i) * dst_slice)
+#define SCSRC(i) (src + (i) * src_slice)
 #define SCMID(i) (mid[(i)])
 
 /**
@@ -323,14 +323,14 @@ static void scale4x_buf(void* void_dst, unsigned dst_slice, void* void_mid, unsi
 	mid[4] = mid[3] + mid_slice;
 	mid[5] = mid[4] + mid_slice;
 
-	stage_scale2x(SCMID(-2+6), SCMID(-1+6), SCSRC(0), SCSRC(0), SCSRC(1), pixel, width);
+	stage_scale2x(SCMID(-2 + 6), SCMID(-1 + 6), SCSRC(0), SCSRC(0), SCSRC(1), pixel, width);
 	stage_scale2x(SCMID(0), SCMID(1), SCSRC(0), SCSRC(1), SCSRC(2), pixel, width);
 	stage_scale2x(SCMID(2), SCMID(3), SCSRC(1), SCSRC(2), SCSRC(3), pixel, width);
-	stage_scale4x(SCDST(0), SCDST(1), SCDST(2), SCDST(3), SCMID(-2+6), SCMID(-2+6), SCMID(-1+6), SCMID(0), pixel, width);
+	stage_scale4x(SCDST(0), SCDST(1), SCDST(2), SCDST(3), SCMID(-2 + 6), SCMID(-2 + 6), SCMID(-1 + 6), SCMID(0), pixel, width);
 
 	dst = SCDST(4);
 
-	stage_scale4x(SCDST(0), SCDST(1), SCDST(2), SCDST(3), SCMID(-1+6), SCMID(0), SCMID(1), SCMID(2), pixel, width);
+	stage_scale4x(SCDST(0), SCDST(1), SCDST(2), SCDST(3), SCMID(-1 + 6), SCMID(0), SCMID(1), SCMID(2), pixel, width);
 
 	dst = SCDST(4);
 
@@ -439,7 +439,7 @@ int scale_precondition(unsigned scale, unsigned pixel, unsigned width, unsigned 
 		if (height < 4)
 			return -1;
 		break;
-	default:
+	default :
 		return -1;
 	}
 

@@ -703,8 +703,8 @@ static inline void scale2x_8_sse2_border(scale2x_uint8* dst, const scale2x_uint8
 {
 	__m128i B, D, E, F, H, a, b;
 	__m128i BDeq, BFeq, BHeq, DFeq;
-	const __m128i mask_first = _mm_set_epi8(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0xff);
-	const __m128i mask_last = _mm_set_epi8(0xff,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0);
+	const __m128i mask_first = _mm_set_epi8(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xff);
+	const __m128i mask_last = _mm_set_epi8(0xff, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
 	const __m128i* s0 = (const __m128i*)src0;
 	const __m128i* s1 = (const __m128i*)src1;
 	const __m128i* s2 = (const __m128i*)src2;
@@ -789,8 +789,8 @@ static inline void scale2x_16_sse2_border(scale2x_uint16* dst, const scale2x_uin
 {
 	__m128i B, D, E, F, H, a, b;
 	__m128i BDeq, BFeq, BHeq, DFeq;
-	const __m128i mask_first = _mm_set_epi16(0,0,0,0,0,0,0,0xffff);
-	const __m128i mask_last = _mm_set_epi16(0xffff,0,0,0,0,0,0,0);
+	const __m128i mask_first = _mm_set_epi16(0, 0, 0, 0, 0, 0, 0, 0xffff);
+	const __m128i mask_last = _mm_set_epi16(0xffff, 0, 0, 0, 0, 0, 0, 0);
 	const __m128i* s0 = (const __m128i*)src0;
 	const __m128i* s1 = (const __m128i*)src1;
 	const __m128i* s2 = (const __m128i*)src2;
@@ -875,8 +875,8 @@ static inline void scale2x_32_sse2_border(scale2x_uint32* dst, const scale2x_uin
 {
 	__m128i B, D, E, F, H, a, b;
 	__m128i BDeq, BFeq, BHeq, DFeq;
-	const __m128i mask_first = _mm_set_epi32(0,0,0,0xffffffff);
-	const __m128i mask_last = _mm_set_epi32(0xffffffff,0,0,0);
+	const __m128i mask_first = _mm_set_epi32(0, 0, 0, 0xffffffff);
+	const __m128i mask_last = _mm_set_epi32(0xffffffff, 0, 0, 0);
 	const __m128i* s0 = (const __m128i*)src0;
 	const __m128i* s1 = (const __m128i*)src1;
 	const __m128i* s2 = (const __m128i*)src2;

@@ -30,16 +30,16 @@ int file_write(const char* file, unsigned char* ptr, unsigned slice, unsigned pi
 
 	row = malloc(sizeof(void*) * height);
 	if (!row) {
-		fprintf(stderr,"Low memory.\n");
+		fprintf(stderr, "Low memory.\n");
 		goto err;
 	}
-	for(i=0;i<height;++i) {
+	for (i = 0; i < height; ++i) {
 		row[i] = ptr + i * slice;
 	}
 
 	fp = fopen(file, "wb");
 	if (!fp) {
-		fprintf(stderr,"Error creating file %s.\n", file);
+		fprintf(stderr, "Error creating file %s.\n", file);
 		goto err_free;
 	}
 
@@ -100,7 +100,7 @@ int file_read(const char* file, void** alloc, unsigned char** ptr, unsigned* sli
 
 	fp = fopen(file, "rb");
 	if (!fp) {
-		fprintf(stderr,"Error opening file %s.\n", file);
+		fprintf(stderr, "Error opening file %s.\n", file);
 		goto err;
 	}
 
@@ -175,11 +175,11 @@ int file_read(const char* file, void** alloc, unsigned char** ptr, unsigned* sli
 			png_get_PLTE(png_ptr, info_ptr, &pal, &size);
 			*palette = malloc(sizeof(png_color) * size);
 			if (!*palette) {
-				fprintf(stderr,"Low memory.\n");
+				fprintf(stderr, "Low memory.\n");
 				return -1;
 			}
 			*palette_size = size;
-			for(i=0;i<*palette_size;++i)
+			for (i = 0; i < *palette_size; ++i)
 				(*palette)[i] = pal[i];
 		} else {
 			*palette = 0;
@@ -194,7 +194,7 @@ int file_read(const char* file, void** alloc, unsigned char** ptr, unsigned* sli
 
 		*alloc = malloc(*height * *slice + SCALE2X_ALIGN_ALLOC);
 		if (!*alloc) {
-			fprintf(stderr,"Low memory.\n");
+			fprintf(stderr, "Low memory.\n");
 			goto err_destroy;
 		}
 
@@ -202,10 +202,10 @@ int file_read(const char* file, void** alloc, unsigned char** ptr, unsigned* sli
 
 		row = malloc(sizeof(void*) * *height);
 		if (!row) {
-			fprintf(stderr,"Low memory.\n");
+			fprintf(stderr, "Low memory.\n");
 			goto err_destroy;
 		}
-		for(i=0;i<*height;++i) {
+		for (i = 0; i < *height; ++i) {
 			row[i] = *ptr + i * *slice;
 		}
 

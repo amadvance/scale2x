@@ -40,7 +40,7 @@ typedef unsigned scale2x_uint32;
 /**
  * Extra allocation to ensure alignment.
  */
-#define SCALE2X_ALIGN_ALLOC (SCALE2X_ALIGN_SIZE-1)
+#define SCALE2X_ALIGN_ALLOC (SCALE2X_ALIGN_SIZE - 1)
 
 /**
  * Align a pointer to bytes.
@@ -48,7 +48,7 @@ typedef unsigned scale2x_uint32;
 static inline void* scale2x_align_ptr(const void* ptr)
 {
 #ifdef USE_SCALE2X_SSE2
-	__asm__ (
+	__asm__(
 		"add $15, %0\n"
 		"and $-16, %0\n"
 		: "+r" (ptr)
@@ -65,7 +65,7 @@ static inline void* scale2x_align_ptr(const void* ptr)
 static inline unsigned scale2x_align_size(unsigned size)
 {
 #ifdef USE_SCALE2X_SSE2
-	__asm__ (
+	__asm__(
 		"add $15, %0\n"
 		"and $-16, %0\n"
 		: "+r" (size)

@@ -45,8 +45,8 @@ pixel_t pixel_get(int x, int y, const unsigned char* pix, unsigned slice, unsign
 	p = pix + (y * slice) + (x * pixel);
 
 	v = 0;
-	for(i=0;i<pixel;++i)
-		v |= ((pixel_t)p[i]) << (i*8);
+	for (i = 0; i < pixel; ++i)
+		v |= ((pixel_t)p[i]) << (i * 8);
 
 	return v;
 }
@@ -63,7 +63,8 @@ void pixel_put(int x, int y, unsigned char* pix, unsigned slice, unsigned pixel,
 
 	p = pix + (y * slice) + (x * pixel);
 
-	for(i=0;i<pixel;++i) {
-		p[i] = v >> (i*8);
+	for (i = 0; i < pixel; ++i) {
+		p[i] = v >> (i * 8);
 	}
 }
+

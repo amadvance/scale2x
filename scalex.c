@@ -11,7 +11,7 @@
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details. 
+ * GNU General Public License for more details.
  */
 
 /*
@@ -80,7 +80,7 @@ int file_process(const char* file0, const char* file1, int opt_scale_x, int opt_
 		unsigned dst_height = height * opt_scale_y;
 		unsigned y;
 		unsigned crc = 0;
-		for(y=0;y<dst_height;++y)
+		for (y = 0; y < dst_height; ++y)
 			crc = crc32(crc, dst_ptr + y * dst_slice, dst_width * pixel);
 		printf("%08x\n", crc);
 	}
@@ -159,7 +159,7 @@ int file_speed(const char* file0, int opt_scale_x, int opt_scale_y)
 	while (1) {
 		unsigned i;
 
-		for(i=0;i<1000;++i)
+		for (i = 0; i < 1000; ++i)
 			scale(opt_scale_x * 100 + opt_scale_y, dst_ptr, dst_slice, src_ptr, src_slice, pixel, width, height);
 
 		amount += i * width * height * pixel;
@@ -193,11 +193,13 @@ bail:
 	return -1;
 }
 
-void version(void) {
+void version(void)
+{
 	printf(PACKAGE " v" VERSION " by Andrea Mazzoleni, " PACKAGE_URL "\n");
 }
 
-void usage(void) {
+void usage(void)
+{
 	version();
 	printf("Fast implementation of the Scale2/3/4x effects\n");
 #ifdef USE_SCALE2X_SSE2
@@ -212,18 +214,19 @@ void usage(void) {
 
 #ifdef HAVE_GETOPT_LONG
 struct option long_options[] = {
-	{"scale", 1, 0, 'k'},
-	{"speed", 0, 0, 'T'},
-	{"crc", 0, 0, 'c'},
-	{"help", 0, 0, 'h'},
-	{"version", 0, 0, 'v'},
-	{0, 0, 0, 0}
+	{ "scale", 1, 0, 'k' },
+	{ "speed", 0, 0, 'T' },
+	{ "crc", 0, 0, 'c' },
+	{ "help", 0, 0, 'h' },
+	{ "version", 0, 0, 'v' },
+	{ 0, 0, 0, 0 }
 };
 #endif
 
 #define OPTIONS "k:Tchv"
 
-int main(int argc, char* argv[]) {
+int main(int argc, char* argv[])
+{
 	int opt_scale_x = 2;
 	int opt_scale_y = 2;
 	int opt_crc = 0;
@@ -238,44 +241,44 @@ int main(int argc, char* argv[]) {
 #else
 		getopt(argc, argv, OPTIONS))
 #endif
-	!= EOF) {
+		!= EOF) {
 		switch (c) {
-			case 'h' :
-				usage();
-				exit(EXIT_SUCCESS);
-			case 'v' :
-				version();
-				exit(EXIT_SUCCESS);
-			case 'k' :
-				if (strcmp(optarg, "2") == 0) {
-					opt_scale_x = 2;
-					opt_scale_y = 2;
-				} else if (strcmp(optarg, "3") == 0) {
-					opt_scale_x = 3;
-					opt_scale_y = 3;
-				} else if (strcmp(optarg, "4") == 0) {
-					opt_scale_x = 4;
-					opt_scale_y = 4;
-				} else {
-					if (sscanf(optarg, "%dx%d", &opt_scale_x, &opt_scale_y) != 2
-						|| opt_scale_x < 1
-						|| opt_scale_y < 1
-					) {
-						printf("Invalid -k option. Valid values are 2, 2x3, 2x4, 3 and 4.\n");
-						exit(EXIT_FAILURE);
-					}
+		case 'h' :
+			usage();
+			exit(EXIT_SUCCESS);
+		case 'v' :
+			version();
+			exit(EXIT_SUCCESS);
+		case 'k' :
+			if (strcmp(optarg, "2") == 0) {
+				opt_scale_x = 2;
+				opt_scale_y = 2;
+			} else if (strcmp(optarg, "3") == 0) {
+				opt_scale_x = 3;
+				opt_scale_y = 3;
+			} else if (strcmp(optarg, "4") == 0) {
+				opt_scale_x = 4;
+				opt_scale_y = 4;
+			} else {
+				if (sscanf(optarg, "%dx%d", &opt_scale_x, &opt_scale_y) != 2
+					|| opt_scale_x < 1
+					|| opt_scale_y < 1
+				) {
+					printf("Invalid -k option. Valid values are 2, 2x3, 2x4, 3 and 4.\n");
+					exit(EXIT_FAILURE);
 				}
-				break;
-			case 'c' :
-				opt_crc = 1;
-				break;
-			case 'T' :
-				opt_speed = 1;
-				break;
-			default:
-				printf("Unknown option `%c'.\n", (char)optopt);
-				exit(EXIT_FAILURE);
-		} 
+			}
+			break;
+		case 'c' :
+			opt_crc = 1;
+			break;
+		case 'T' :
+			opt_speed = 1;
+			break;
+		default :
+			printf("Unknown option `%c'.\n", (char)optopt);
+			exit(EXIT_FAILURE);
+		}
 	}
 
 	if (opt_speed != 0) {
@@ -293,7 +296,7 @@ int main(int argc, char* argv[]) {
 			exit(EXIT_FAILURE);
 		}
 
-		if (file_process(argv[optind], argv[optind+1], opt_scale_x, opt_scale_y, opt_crc) != 0) {
+		if (file_process(argv[optind], argv[optind + 1], opt_scale_x, opt_scale_y, opt_crc) != 0) {
 			exit(EXIT_FAILURE);
 		}
 	}
