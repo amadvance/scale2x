@@ -24,7 +24,7 @@ typedef unsigned scale2x_uint32;
 /**
  * Enable the SSE2 implementation.
  */
-#if defined(__GNUC__) && (defined(__i386__) || defined(__x86_64__))
+#if defined(__GNUC__) && defined(__SSE2__)
 #define USE_SCALE2X_SSE2 1
 #endif
 
