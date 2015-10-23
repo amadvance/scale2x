@@ -691,6 +691,12 @@ void scale2x4_32_def(scale2x_uint32* dst0, scale2x_uint32* dst1, scale2x_uint32*
  *      ab (dst)
  */
 
+/**
+ * Include SSE2 intrinsics.
+ *
+ * A nice reference is available at:
+ * https://software.intel.com/sites/landingpage/IntrinsicsGuide/
+ */
 #include <emmintrin.h>
 
 /**
