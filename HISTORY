@@ -1,9 +1,10 @@
 Scale2x HISTORY
 ===============
 
-3.3 2015/10
+4.0 2015/10
 ===========
- * Made source ANSI C compliant [Thomas Bernard]
+ * Added a new SSE2 implementation [Thomas Bernard].
+ * Made source ANSI C compliant [Thomas Bernard].
 
 3.2 2015/08
 ===========

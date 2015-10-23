@@ -1,6 +1,6 @@
 # Process this file with autoconf to produce a configure script.
 AC_PREREQ([2.65])
-AC_INIT([Scale2x], [3.3], [], [], [http://www.scale2x.it])
+AC_INIT([Scale2x], [4.0], [], [], [http://www.scale2x.it])
 AM_INIT_AUTOMAKE([foreign no-dependencies])
 AC_CONFIG_SRCDIR([scalerx.c])
 AC_CONFIG_HEADERS([config.h])
