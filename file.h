@@ -19,7 +19,7 @@
 
 #include <png.h>
 
-int file_read(const char* file, unsigned char** ptr, unsigned* slice, unsigned* pixel, unsigned* width, unsigned* height, int* type, int* channel, png_color** palette, unsigned* palette_size, int allow_only124);
+int file_read(const char* file, void** alloc, unsigned char** ptr, unsigned* slice, unsigned* pixel, unsigned* width, unsigned* height, int* type, int* channel, png_color** palette, unsigned* palette_size, int allow_only124);
 int file_write(const char* file, unsigned char* ptr, unsigned slice, unsigned pixel, unsigned width, unsigned height, int type, int channel, png_color* palette, unsigned palette_size);
 
 #endif

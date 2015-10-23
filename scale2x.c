@@ -2,6 +2,7 @@
  * This file is part of the Scale2x project.
  *
  * Copyright (C) 2001, 2002, 2003, 2004 Andrea Mazzoleni
+ * Copyright (C) 2015 Thomas Bernard
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,7 +16,7 @@
  */
 
 /*
- * This file contains a C and MMX implementation of the Scale2x effect.
+ * This file contains a C and SSE2 implementation of the Scale2x effect.
  *
  * You can find an high level description of the effect at :
  *
@@ -671,10 +672,9 @@ void scale2x4_32_def(scale2x_uint32* dst0, scale2x_uint32* dst1, scale2x_uint32*
 }
 
 /***************************************************************************/
-/* Scale2x MMX implementation */
+/* Scale2x SSE2 implementation */
 
-#if defined(__GNUC__) && (defined(__i386__) || defined(__x86_64__))
-
+#ifdef USE_SCALE2X_SSE2
 /*
  * Apply the Scale2x effect at a single row.
  * This function must be called only by the other scale2x functions.
@@ -689,614 +689,285 @@ void scale2x4_32_def(scale2x_uint32* dst0, scale2x_uint32* dst1, scale2x_uint32*
  * like this map :
  *
  *      ab (dst)
- *
- * with these variables :
- *
- *      &current -> E
- *      &current_left -> D
- *      &current_right -> F
- *      &current_upper -> B
- *      &current_lower -> H
- *
- *      %0 -> current_upper
- *      %1 -> current
- *      %2 -> current_lower
- *      %3 -> dst
- *      %4 -> counter
- *
- *      %mm0 -> *current_left
- *      %mm1 -> *current_next
- *      %mm2 -> tmp0
- *      %mm3 -> tmp1
- *      %mm4 -> tmp2
- *      %mm5 -> tmp3
- *      %mm6 -> *current_upper
- *      %mm7 -> *current
  */
-static inline void scale2x_8_mmx_border(scale2x_uint8* dst, const scale2x_uint8* src0, const scale2x_uint8* src1, const scale2x_uint8* src2, unsigned count)
+
+#include <emmintrin.h>
+
+/**
+ * SCALE2X_SEL(A, B, cond) = cond ? A : B;
+ */
+#define SCALE2X_SEL(A, B, cond) \
+	_mm_or_si128(_mm_and_si128((cond), (A)), _mm_andnot_si128((cond), (B)))
+
+static inline void scale2x_8_sse2_border(scale2x_uint8* dst, const scale2x_uint8* src0, const scale2x_uint8* src1, const scale2x_uint8* src2, unsigned count)
 {
+	__m128i B, D, E, F, H, a, b;
+	__m128i BDeq, BFeq, BHeq, DFeq;
+	const __m128i mask_first = _mm_set_epi8(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0xff);
+	const __m128i mask_last = _mm_set_epi8(0xff,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0);
+	const __m128i* s0 = (const __m128i*)src0;
+	const __m128i* s1 = (const __m128i*)src1;
+	const __m128i* s2 = (const __m128i*)src2;
+	__m128i* d = (__m128i*)dst;
+
+	/* count must be aligned */
+	assert(count >= 32);
+	assert(count % 16 == 0);
+
+	/* all memory must be aligned */
+	assert(scale2x_align_ptr(dst) == dst);
+	assert(scale2x_align_ptr(src0) == src0);
+	assert(scale2x_align_ptr(src1) == src1);
+	assert(scale2x_align_ptr(src2) == src2);
+
+	/* first run */
+	B = s0[0];
+	E = s1[0];
+	H = s2[0];
+	D = _mm_or_si128(_mm_and_si128(E, mask_first), _mm_slli_si128(E, 1));
+	F = _mm_or_si128(_mm_srli_si128(E, 1), _mm_slli_si128(s1[1], 15));
+	++s0;
+	++s1;
+	++s2;
+
+	BDeq = _mm_cmpeq_epi8(B, D);
+	BFeq = _mm_cmpeq_epi8(B, F);
+	BHeq = _mm_cmpeq_epi8(B, H);
+	DFeq = _mm_cmpeq_epi8(D, F);
+
+	a = SCALE2X_SEL(B, E, _mm_andnot_si128(DFeq, _mm_andnot_si128(BHeq, BDeq)));
+	b = SCALE2X_SEL(B, E, _mm_andnot_si128(DFeq, _mm_andnot_si128(BHeq, BFeq)));
+
+	d[0] = _mm_unpacklo_epi8(a, b);
+	d[1] = _mm_unpackhi_epi8(a, b);
+	d += 2;
+
+	/* central run */
+	for (count -= 32; count > 0; count -= 16) {
+		B = s0[0];
+		E = s1[0];
+		H = s2[0];
+		D = _mm_or_si128(_mm_srli_si128(s1[-1], 15), _mm_slli_si128(E, 1));
+		F = _mm_or_si128(_mm_srli_si128(E, 1), _mm_slli_si128(s1[1], 15));
+		++s0;
+		++s1;
+		++s2;
+
+		BDeq = _mm_cmpeq_epi8(B, D);
+		BFeq = _mm_cmpeq_epi8(B, F);
+		BHeq = _mm_cmpeq_epi8(B, H);
+		DFeq = _mm_cmpeq_epi8(D, F);
+
+		a = SCALE2X_SEL(B, E, _mm_andnot_si128(DFeq, _mm_andnot_si128(BHeq, BDeq)));
+		b = SCALE2X_SEL(B, E, _mm_andnot_si128(DFeq, _mm_andnot_si128(BHeq, BFeq)));
+
+		d[0] = _mm_unpacklo_epi8(a, b);
+		d[1] = _mm_unpackhi_epi8(a, b);
+		d += 2;
+	}
+
+	/* last run */
+	B = s0[0];
+	E = s1[0];
+	H = s2[0];
+	D = _mm_or_si128(_mm_srli_si128(s1[-1], 15), _mm_slli_si128(E, 1));
+	F = _mm_or_si128(_mm_srli_si128(E, 1), _mm_and_si128(E, mask_last));
+
+	BDeq = _mm_cmpeq_epi8(B, D);
+	BFeq = _mm_cmpeq_epi8(B, F);
+	BHeq = _mm_cmpeq_epi8(B, H);
+	DFeq = _mm_cmpeq_epi8(D, F);
+
+	a = SCALE2X_SEL(B, E, _mm_andnot_si128(DFeq, _mm_andnot_si128(BHeq, BDeq)));
+	b = SCALE2X_SEL(B, E, _mm_andnot_si128(DFeq, _mm_andnot_si128(BHeq, BFeq)));
+
+	d[0] = _mm_unpacklo_epi8(a, b);
+	d[1] = _mm_unpackhi_epi8(a, b);
+}
+
+static inline void scale2x_16_sse2_border(scale2x_uint16* dst, const scale2x_uint16* src0, const scale2x_uint16* src1, const scale2x_uint16* src2, unsigned count)
+{
+	__m128i B, D, E, F, H, a, b;
+	__m128i BDeq, BFeq, BHeq, DFeq;
+	const __m128i mask_first = _mm_set_epi16(0,0,0,0,0,0,0,0xffff);
+	const __m128i mask_last = _mm_set_epi16(0xffff,0,0,0,0,0,0,0);
+	const __m128i* s0 = (const __m128i*)src0;
+	const __m128i* s1 = (const __m128i*)src1;
+	const __m128i* s2 = (const __m128i*)src2;
+	__m128i* d = (__m128i*)dst;
+
+	/* count must be aligned */
 	assert(count >= 16);
 	assert(count % 8 == 0);
 
-	/* always do the first and last run */
-	count -= 2*8;
+	/* all memory must be aligned */
+	assert(scale2x_align_ptr(dst) == dst);
+	assert(scale2x_align_ptr(src0) == src0);
+	assert(scale2x_align_ptr(src1) == src1);
+	assert(scale2x_align_ptr(src2) == src2);
 
-	__asm__ __volatile__(
-/* first run */
-		/* set the current, current_pre, current_next registers */
-		"movq 0(%1), %%mm0\n"
-		"movq 0(%1), %%mm7\n"
-		"movq 8(%1), %%mm1\n"
-		"psllq $56, %%mm0\n"
-		"psllq $56, %%mm1\n"
-		"psrlq $56, %%mm0\n"
-		"movq %%mm7, %%mm2\n"
-		"movq %%mm7, %%mm3\n"
-		"psllq $8, %%mm2\n"
-		"psrlq $8, %%mm3\n"
-		"por %%mm2, %%mm0\n"
-		"por %%mm3, %%mm1\n"
+	/* first run */
+	B = s0[0];
+	E = s1[0];
+	H = s2[0];
+	D = _mm_or_si128(_mm_and_si128(E, mask_first), _mm_slli_si128(E, 2));
+	F = _mm_or_si128(_mm_srli_si128(E, 2), _mm_slli_si128(s1[1], 14));
+	++s0;
+	++s1;
+	++s2;
 
-		/* current_upper */
-		"movq (%0), %%mm6\n"
+	BDeq = _mm_cmpeq_epi16(B, D);
+	BFeq = _mm_cmpeq_epi16(B, F);
+	BHeq = _mm_cmpeq_epi16(B, H);
+	DFeq = _mm_cmpeq_epi16(D, F);
 
-		/* compute the upper-left pixel for dst on %%mm2 */
-		/* compute the upper-right pixel for dst on %%mm4 */
-		"movq %%mm0, %%mm2\n"
-		"movq %%mm1, %%mm4\n"
-		"movq %%mm0, %%mm3\n"
-		"movq %%mm1, %%mm5\n"
-		"pcmpeqb %%mm6, %%mm2\n"
-		"pcmpeqb %%mm6, %%mm4\n"
-		"pcmpeqb (%2), %%mm3\n"
-		"pcmpeqb (%2), %%mm5\n"
-		"pandn %%mm2, %%mm3\n"
-		"pandn %%mm4, %%mm5\n"
-		"movq %%mm0, %%mm2\n"
-		"movq %%mm1, %%mm4\n"
-		"pcmpeqb %%mm1, %%mm2\n"
-		"pcmpeqb %%mm0, %%mm4\n"
-		"pandn %%mm3, %%mm2\n"
-		"pandn %%mm5, %%mm4\n"
-		"movq %%mm2, %%mm3\n"
-		"movq %%mm4, %%mm5\n"
-		"pand %%mm6, %%mm2\n"
-		"pand %%mm6, %%mm4\n"
-		"pandn %%mm7, %%mm3\n"
-		"pandn %%mm7, %%mm5\n"
-		"por %%mm3, %%mm2\n"
-		"por %%mm5, %%mm4\n"
+	a = SCALE2X_SEL(B, E, _mm_andnot_si128(DFeq, _mm_andnot_si128(BHeq, BDeq)));
+	b = SCALE2X_SEL(B, E, _mm_andnot_si128(DFeq, _mm_andnot_si128(BHeq, BFeq)));
 
-		/* set *dst */
-		"movq %%mm2, %%mm3\n"
-		"punpcklbw %%mm4, %%mm2\n"
-		"punpckhbw %%mm4, %%mm3\n"
-		"movq %%mm2, (%3)\n"
-		"movq %%mm3, 8(%3)\n"
+	d[0] = _mm_unpacklo_epi16(a, b);
+	d[1] = _mm_unpackhi_epi16(a, b);
+	d += 2;
 
-		/* next */
-		"add $8, %0\n"
-		"add $8, %1\n"
-		"add $8, %2\n"
-		"add $16, %3\n"
+	/* central run */
+	for (count -= 16; count > 0; count -= 8) {
+		B = s0[0];
+		E = s1[0];
+		H = s2[0];
+		D = _mm_or_si128(_mm_srli_si128(s1[-1], 14), _mm_slli_si128(E, 2));
+		F = _mm_or_si128(_mm_srli_si128(E, 2), _mm_slli_si128(s1[1], 14));
+		++s0;
+		++s1;
+		++s2;
 
-/* central runs */
-		"shr $3, %4\n"
-		"jz 1f\n"
+		BDeq = _mm_cmpeq_epi16(B, D);
+		BFeq = _mm_cmpeq_epi16(B, F);
+		BHeq = _mm_cmpeq_epi16(B, H);
+		DFeq = _mm_cmpeq_epi16(D, F);
 
-		"0:\n"
+		a = SCALE2X_SEL(B, E, _mm_andnot_si128(DFeq, _mm_andnot_si128(BHeq, BDeq)));
+		b = SCALE2X_SEL(B, E, _mm_andnot_si128(DFeq, _mm_andnot_si128(BHeq, BFeq)));
 
-		/* set the current, current_pre, current_next registers */
-		"movq -8(%1), %%mm0\n"
-		"movq (%1), %%mm7\n"
-		"movq 8(%1), %%mm1\n"
-		"psrlq $56, %%mm0\n"
-		"psllq $56, %%mm1\n"
-		"movq %%mm7, %%mm2\n"
-		"movq %%mm7, %%mm3\n"
-		"psllq $8, %%mm2\n"
-		"psrlq $8, %%mm3\n"
-		"por %%mm2, %%mm0\n"
-		"por %%mm3, %%mm1\n"
+		d[0] = _mm_unpacklo_epi16(a, b);
+		d[1] = _mm_unpackhi_epi16(a, b);
+		d += 2;
+	}
 
-		/* current_upper */
-		"movq (%0), %%mm6\n"
+	/* last run */
+	B = s0[0];
+	E = s1[0];
+	H = s2[0];
+	D = _mm_or_si128(_mm_srli_si128(s1[-1], 14), _mm_slli_si128(E, 2));
+	F = _mm_or_si128(_mm_srli_si128(E, 2), _mm_and_si128(E, mask_last));
 
-		/* compute the upper-left pixel for dst on %%mm2 */
-		/* compute the upper-right pixel for dst on %%mm4 */
-		"movq %%mm0, %%mm2\n"
-		"movq %%mm1, %%mm4\n"
-		"movq %%mm0, %%mm3\n"
-		"movq %%mm1, %%mm5\n"
-		"pcmpeqb %%mm6, %%mm2\n"
-		"pcmpeqb %%mm6, %%mm4\n"
-		"pcmpeqb (%2), %%mm3\n"
-		"pcmpeqb (%2), %%mm5\n"
-		"pandn %%mm2, %%mm3\n"
-		"pandn %%mm4, %%mm5\n"
-		"movq %%mm0, %%mm2\n"
-		"movq %%mm1, %%mm4\n"
-		"pcmpeqb %%mm1, %%mm2\n"
-		"pcmpeqb %%mm0, %%mm4\n"
-		"pandn %%mm3, %%mm2\n"
-		"pandn %%mm5, %%mm4\n"
-		"movq %%mm2, %%mm3\n"
-		"movq %%mm4, %%mm5\n"
-		"pand %%mm6, %%mm2\n"
-		"pand %%mm6, %%mm4\n"
-		"pandn %%mm7, %%mm3\n"
-		"pandn %%mm7, %%mm5\n"
-		"por %%mm3, %%mm2\n"
-		"por %%mm5, %%mm4\n"
+	BDeq = _mm_cmpeq_epi16(B, D);
+	BFeq = _mm_cmpeq_epi16(B, F);
+	BHeq = _mm_cmpeq_epi16(B, H);
+	DFeq = _mm_cmpeq_epi16(D, F);
 
-		/* set *dst */
-		"movq %%mm2, %%mm3\n"
-		"punpcklbw %%mm4, %%mm2\n"
-		"punpckhbw %%mm4, %%mm3\n"
-		"movq %%mm2, (%3)\n"
-		"movq %%mm3, 8(%3)\n"
+	a = SCALE2X_SEL(B, E, _mm_andnot_si128(DFeq, _mm_andnot_si128(BHeq, BDeq)));
+	b = SCALE2X_SEL(B, E, _mm_andnot_si128(DFeq, _mm_andnot_si128(BHeq, BFeq)));
 
-		/* next */
-		"add $8, %0\n"
-		"add $8, %1\n"
-		"add $8, %2\n"
-		"add $16, %3\n"
-
-		"dec %4\n"
-		"jnz 0b\n"
-		"1:\n"
-
-/* final run */
-		/* set the current, current_pre, current_next registers */
-		"movq (%1), %%mm1\n"
-		"movq (%1), %%mm7\n"
-		"movq -8(%1), %%mm0\n"
-		"psrlq $56, %%mm1\n"
-		"psrlq $56, %%mm0\n"
-		"psllq $56, %%mm1\n"
-		"movq %%mm7, %%mm2\n"
-		"movq %%mm7, %%mm3\n"
-		"psllq $8, %%mm2\n"
-		"psrlq $8, %%mm3\n"
-		"por %%mm2, %%mm0\n"
-		"por %%mm3, %%mm1\n"
-
-		/* current_upper */
-		"movq (%0), %%mm6\n"
-
-		/* compute the upper-left pixel for dst on %%mm2 */
-		/* compute the upper-right pixel for dst on %%mm4 */
-		"movq %%mm0, %%mm2\n"
-		"movq %%mm1, %%mm4\n"
-		"movq %%mm0, %%mm3\n"
-		"movq %%mm1, %%mm5\n"
-		"pcmpeqb %%mm6, %%mm2\n"
-		"pcmpeqb %%mm6, %%mm4\n"
-		"pcmpeqb (%2), %%mm3\n"
-		"pcmpeqb (%2), %%mm5\n"
-		"pandn %%mm2, %%mm3\n"
-		"pandn %%mm4, %%mm5\n"
-		"movq %%mm0, %%mm2\n"
-		"movq %%mm1, %%mm4\n"
-		"pcmpeqb %%mm1, %%mm2\n"
-		"pcmpeqb %%mm0, %%mm4\n"
-		"pandn %%mm3, %%mm2\n"
-		"pandn %%mm5, %%mm4\n"
-		"movq %%mm2, %%mm3\n"
-		"movq %%mm4, %%mm5\n"
-		"pand %%mm6, %%mm2\n"
-		"pand %%mm6, %%mm4\n"
-		"pandn %%mm7, %%mm3\n"
-		"pandn %%mm7, %%mm5\n"
-		"por %%mm3, %%mm2\n"
-		"por %%mm5, %%mm4\n"
-
-		/* set *dst */
-		"movq %%mm2, %%mm3\n"
-		"punpcklbw %%mm4, %%mm2\n"
-		"punpckhbw %%mm4, %%mm3\n"
-		"movq %%mm2, (%3)\n"
-		"movq %%mm3, 8(%3)\n"
-
-		: "+r" (src0), "+r" (src1), "+r" (src2), "+r" (dst), "+r" (count)
-		:
-		: "cc"
-	);
+	d[0] = _mm_unpacklo_epi16(a, b);
+	d[1] = _mm_unpackhi_epi16(a, b);
 }
 
-static inline void scale2x_16_mmx_border(scale2x_uint16* dst, const scale2x_uint16* src0, const scale2x_uint16* src1, const scale2x_uint16* src2, unsigned count)
+static inline void scale2x_32_sse2_border(scale2x_uint32* dst, const scale2x_uint32* src0, const scale2x_uint32* src1, const scale2x_uint32* src2, unsigned count)
 {
+	__m128i B, D, E, F, H, a, b;
+	__m128i BDeq, BFeq, BHeq, DFeq;
+	const __m128i mask_first = _mm_set_epi32(0,0,0,0xffffffff);
+	const __m128i mask_last = _mm_set_epi32(0xffffffff,0,0,0);
+	const __m128i* s0 = (const __m128i*)src0;
+	const __m128i* s1 = (const __m128i*)src1;
+	const __m128i* s2 = (const __m128i*)src2;
+	__m128i* d = (__m128i*)dst;
+
+	/* count must be aligned */
 	assert(count >= 8);
 	assert(count % 4 == 0);
 
-	/* always do the first and last run */
-	count -= 2*4;
+	/* memory must be aligned */
+	assert(scale2x_align_ptr(dst) == dst);
+	assert(scale2x_align_ptr(src0) == src0);
+	assert(scale2x_align_ptr(src1) == src1);
+	assert(scale2x_align_ptr(src2) == src2);
 
-	__asm__ __volatile__(
-/* first run */
-		/* set the current, current_pre, current_next registers */
-		"movq 0(%1), %%mm0\n"
-		"movq 0(%1), %%mm7\n"
-		"movq 8(%1), %%mm1\n"
-		"psllq $48, %%mm0\n"
-		"psllq $48, %%mm1\n"
-		"psrlq $48, %%mm0\n"
-		"movq %%mm7, %%mm2\n"
-		"movq %%mm7, %%mm3\n"
-		"psllq $16, %%mm2\n"
-		"psrlq $16, %%mm3\n"
-		"por %%mm2, %%mm0\n"
-		"por %%mm3, %%mm1\n"
+	/* first run */
+	B = s0[0];
+	E = s1[0];
+	H = s2[0];
+	D = _mm_or_si128(_mm_and_si128(E, mask_first), _mm_slli_si128(E, 4));
+	F = _mm_or_si128(_mm_srli_si128(E, 4), _mm_slli_si128(s1[1], 12));
+	++s0;
+	++s1;
+	++s2;
 
-		/* current_upper */
-		"movq (%0), %%mm6\n"
+	BDeq = _mm_cmpeq_epi32(B, D);
+	BFeq = _mm_cmpeq_epi32(B, F);
+	BHeq = _mm_cmpeq_epi32(B, H);
+	DFeq = _mm_cmpeq_epi32(D, F);
 
-		/* compute the upper-left pixel for dst on %%mm2 */
-		/* compute the upper-right pixel for dst on %%mm4 */
-		"movq %%mm0, %%mm2\n"
-		"movq %%mm1, %%mm4\n"
-		"movq %%mm0, %%mm3\n"
-		"movq %%mm1, %%mm5\n"
-		"pcmpeqw %%mm6, %%mm2\n"
-		"pcmpeqw %%mm6, %%mm4\n"
-		"pcmpeqw (%2), %%mm3\n"
-		"pcmpeqw (%2), %%mm5\n"
-		"pandn %%mm2, %%mm3\n"
-		"pandn %%mm4, %%mm5\n"
-		"movq %%mm0, %%mm2\n"
-		"movq %%mm1, %%mm4\n"
-		"pcmpeqw %%mm1, %%mm2\n"
-		"pcmpeqw %%mm0, %%mm4\n"
-		"pandn %%mm3, %%mm2\n"
-		"pandn %%mm5, %%mm4\n"
-		"movq %%mm2, %%mm3\n"
-		"movq %%mm4, %%mm5\n"
-		"pand %%mm6, %%mm2\n"
-		"pand %%mm6, %%mm4\n"
-		"pandn %%mm7, %%mm3\n"
-		"pandn %%mm7, %%mm5\n"
-		"por %%mm3, %%mm2\n"
-		"por %%mm5, %%mm4\n"
+	a = SCALE2X_SEL(B, E, _mm_andnot_si128(DFeq, _mm_andnot_si128(BHeq, BDeq)));
+	b = SCALE2X_SEL(B, E, _mm_andnot_si128(DFeq, _mm_andnot_si128(BHeq, BFeq)));
 
-		/* set *dst */
-		"movq %%mm2, %%mm3\n"
-		"punpcklwd %%mm4, %%mm2\n"
-		"punpckhwd %%mm4, %%mm3\n"
-		"movq %%mm2, (%3)\n"
-		"movq %%mm3, 8(%3)\n"
+	d[0] = _mm_unpacklo_epi32(a, b);
+	d[1] = _mm_unpackhi_epi32(a, b);
+	d += 2;
 
-		/* next */
-		"add $8, %0\n"
-		"add $8, %1\n"
-		"add $8, %2\n"
-		"add $16, %3\n"
+	/* central run */
+	for (count -= 8; count > 0; count -= 4) {
+		B = s0[0];
+		E = s1[0];
+		H = s2[0];
+		D = _mm_or_si128(_mm_srli_si128(s1[-1], 12), _mm_slli_si128(E, 4));
+		F = _mm_or_si128(_mm_srli_si128(E, 4), _mm_slli_si128(s1[1], 12));
+		++s0;
+		++s1;
+		++s2;
 
-/* central runs */
-		"shr $2, %4\n"
-		"jz 1f\n"
+		BDeq = _mm_cmpeq_epi32(B, D);
+		BFeq = _mm_cmpeq_epi32(B, F);
+		BHeq = _mm_cmpeq_epi32(B, H);
+		DFeq = _mm_cmpeq_epi32(D, F);
 
-		"0:\n"
+		a = SCALE2X_SEL(B, E, _mm_andnot_si128(DFeq, _mm_andnot_si128(BHeq, BDeq)));
+		b = SCALE2X_SEL(B, E, _mm_andnot_si128(DFeq, _mm_andnot_si128(BHeq, BFeq)));
 
-		/* set the current, current_pre, current_next registers */
-		"movq -8(%1), %%mm0\n"
-		"movq (%1), %%mm7\n"
-		"movq 8(%1), %%mm1\n"
-		"psrlq $48, %%mm0\n"
-		"psllq $48, %%mm1\n"
-		"movq %%mm7, %%mm2\n"
-		"movq %%mm7, %%mm3\n"
-		"psllq $16, %%mm2\n"
-		"psrlq $16, %%mm3\n"
-		"por %%mm2, %%mm0\n"
-		"por %%mm3, %%mm1\n"
+		d[0] = _mm_unpacklo_epi32(a, b);
+		d[1] = _mm_unpackhi_epi32(a, b);
+		d += 2;
+	}
 
-		/* current_upper */
-		"movq (%0), %%mm6\n"
+	/* last run */
+	B = s0[0];
+	E = s1[0];
+	H = s2[0];
+	D = _mm_or_si128(_mm_srli_si128(s1[-1], 12), _mm_slli_si128(E, 4));
+	F = _mm_or_si128(_mm_srli_si128(E, 4), _mm_and_si128(E, mask_last));
 
-		/* compute the upper-left pixel for dst on %%mm2 */
-		/* compute the upper-right pixel for dst on %%mm4 */
-		"movq %%mm0, %%mm2\n"
-		"movq %%mm1, %%mm4\n"
-		"movq %%mm0, %%mm3\n"
-		"movq %%mm1, %%mm5\n"
-		"pcmpeqw %%mm6, %%mm2\n"
-		"pcmpeqw %%mm6, %%mm4\n"
-		"pcmpeqw (%2), %%mm3\n"
-		"pcmpeqw (%2), %%mm5\n"
-		"pandn %%mm2, %%mm3\n"
-		"pandn %%mm4, %%mm5\n"
-		"movq %%mm0, %%mm2\n"
-		"movq %%mm1, %%mm4\n"
-		"pcmpeqw %%mm1, %%mm2\n"
-		"pcmpeqw %%mm0, %%mm4\n"
-		"pandn %%mm3, %%mm2\n"
-		"pandn %%mm5, %%mm4\n"
-		"movq %%mm2, %%mm3\n"
-		"movq %%mm4, %%mm5\n"
-		"pand %%mm6, %%mm2\n"
-		"pand %%mm6, %%mm4\n"
-		"pandn %%mm7, %%mm3\n"
-		"pandn %%mm7, %%mm5\n"
-		"por %%mm3, %%mm2\n"
-		"por %%mm5, %%mm4\n"
+	BDeq = _mm_cmpeq_epi32(B, D);
+	BFeq = _mm_cmpeq_epi32(B, F);
+	BHeq = _mm_cmpeq_epi32(B, H);
+	DFeq = _mm_cmpeq_epi32(D, F);
 
-		/* set *dst */
-		"movq %%mm2, %%mm3\n"
-		"punpcklwd %%mm4, %%mm2\n"
-		"punpckhwd %%mm4, %%mm3\n"
-		"movq %%mm2, (%3)\n"
-		"movq %%mm3, 8(%3)\n"
+	a = SCALE2X_SEL(B, E, _mm_andnot_si128(DFeq, _mm_andnot_si128(BHeq, BDeq)));
+	b = SCALE2X_SEL(B, E, _mm_andnot_si128(DFeq, _mm_andnot_si128(BHeq, BFeq)));
 
-		/* next */
-		"add $8, %0\n"
-		"add $8, %1\n"
-		"add $8, %2\n"
-		"add $16, %3\n"
-
-		"dec %4\n"
-		"jnz 0b\n"
-		"1:\n"
-
-/* final run */
-		/* set the current, current_pre, current_next registers */
-		"movq (%1), %%mm1\n"
-		"movq (%1), %%mm7\n"
-		"movq -8(%1), %%mm0\n"
-		"psrlq $48, %%mm1\n"
-		"psrlq $48, %%mm0\n"
-		"psllq $48, %%mm1\n"
-		"movq %%mm7, %%mm2\n"
-		"movq %%mm7, %%mm3\n"
-		"psllq $16, %%mm2\n"
-		"psrlq $16, %%mm3\n"
-		"por %%mm2, %%mm0\n"
-		"por %%mm3, %%mm1\n"
-
-		/* current_upper */
-		"movq (%0), %%mm6\n"
-
-		/* compute the upper-left pixel for dst on %%mm2 */
-		/* compute the upper-right pixel for dst on %%mm4 */
-		"movq %%mm0, %%mm2\n"
-		"movq %%mm1, %%mm4\n"
-		"movq %%mm0, %%mm3\n"
-		"movq %%mm1, %%mm5\n"
-		"pcmpeqw %%mm6, %%mm2\n"
-		"pcmpeqw %%mm6, %%mm4\n"
-		"pcmpeqw (%2), %%mm3\n"
-		"pcmpeqw (%2), %%mm5\n"
-		"pandn %%mm2, %%mm3\n"
-		"pandn %%mm4, %%mm5\n"
-		"movq %%mm0, %%mm2\n"
-		"movq %%mm1, %%mm4\n"
-		"pcmpeqw %%mm1, %%mm2\n"
-		"pcmpeqw %%mm0, %%mm4\n"
-		"pandn %%mm3, %%mm2\n"
-		"pandn %%mm5, %%mm4\n"
-		"movq %%mm2, %%mm3\n"
-		"movq %%mm4, %%mm5\n"
-		"pand %%mm6, %%mm2\n"
-		"pand %%mm6, %%mm4\n"
-		"pandn %%mm7, %%mm3\n"
-		"pandn %%mm7, %%mm5\n"
-		"por %%mm3, %%mm2\n"
-		"por %%mm5, %%mm4\n"
-
-		/* set *dst */
-		"movq %%mm2, %%mm3\n"
-		"punpcklwd %%mm4, %%mm2\n"
-		"punpckhwd %%mm4, %%mm3\n"
-		"movq %%mm2, (%3)\n"
-		"movq %%mm3, 8(%3)\n"
-
-		: "+r" (src0), "+r" (src1), "+r" (src2), "+r" (dst), "+r" (count)
-		:
-		: "cc"
-	);
-}
-
-static inline void scale2x_32_mmx_border(scale2x_uint32* dst, const scale2x_uint32* src0, const scale2x_uint32* src1, const scale2x_uint32* src2, unsigned count)
-{
-	assert(count >= 4);
-	assert(count % 2 == 0);
-
-	/* always do the first and last run */
-	count -= 2*2;
-
-	__asm__ __volatile__(
-/* first run */
-		/* set the current, current_pre, current_next registers */
-		"movq 0(%1), %%mm0\n"
-		"movq 0(%1), %%mm7\n"
-		"movq 8(%1), %%mm1\n"
-		"psllq $32, %%mm0\n"
-		"psllq $32, %%mm1\n"
-		"psrlq $32, %%mm0\n"
-		"movq %%mm7, %%mm2\n"
-		"movq %%mm7, %%mm3\n"
-		"psllq $32, %%mm2\n"
-		"psrlq $32, %%mm3\n"
-		"por %%mm2, %%mm0\n"
-		"por %%mm3, %%mm1\n"
-
-		/* current_upper */
-		"movq (%0), %%mm6\n"
-
-		/* compute the upper-left pixel for dst on %%mm2 */
-		/* compute the upper-right pixel for dst on %%mm4 */
-		"movq %%mm0, %%mm2\n"
-		"movq %%mm1, %%mm4\n"
-		"movq %%mm0, %%mm3\n"
-		"movq %%mm1, %%mm5\n"
-		"pcmpeqd %%mm6, %%mm2\n"
-		"pcmpeqd %%mm6, %%mm4\n"
-		"pcmpeqd (%2), %%mm3\n"
-		"pcmpeqd (%2), %%mm5\n"
-		"pandn %%mm2, %%mm3\n"
-		"pandn %%mm4, %%mm5\n"
-		"movq %%mm0, %%mm2\n"
-		"movq %%mm1, %%mm4\n"
-		"pcmpeqd %%mm1, %%mm2\n"
-		"pcmpeqd %%mm0, %%mm4\n"
-		"pandn %%mm3, %%mm2\n"
-		"pandn %%mm5, %%mm4\n"
-		"movq %%mm2, %%mm3\n"
-		"movq %%mm4, %%mm5\n"
-		"pand %%mm6, %%mm2\n"
-		"pand %%mm6, %%mm4\n"
-		"pandn %%mm7, %%mm3\n"
-		"pandn %%mm7, %%mm5\n"
-		"por %%mm3, %%mm2\n"
-		"por %%mm5, %%mm4\n"
-
-		/* set *dst */
-		"movq %%mm2, %%mm3\n"
-		"punpckldq %%mm4, %%mm2\n"
-		"punpckhdq %%mm4, %%mm3\n"
-		"movq %%mm2, (%3)\n"
-		"movq %%mm3, 8(%3)\n"
-
-		/* next */
-		"add $8, %0\n"
-		"add $8, %1\n"
-		"add $8, %2\n"
-		"add $16, %3\n"
-
-/* central runs */
-		"shr $1, %4\n"
-		"jz 1f\n"
-
-		"0:\n"
-
-		/* set the current, current_pre, current_next registers */
-		"movq -8(%1), %%mm0\n"
-		"movq (%1), %%mm7\n"
-		"movq 8(%1), %%mm1\n"
-		"psrlq $32, %%mm0\n"
-		"psllq $32, %%mm1\n"
-		"movq %%mm7, %%mm2\n"
-		"movq %%mm7, %%mm3\n"
-		"psllq $32, %%mm2\n"
-		"psrlq $32, %%mm3\n"
-		"por %%mm2, %%mm0\n"
-		"por %%mm3, %%mm1\n"
-
-		/* current_upper */
-		"movq (%0), %%mm6\n"
-
-		/* compute the upper-left pixel for dst on %%mm2 */
-		/* compute the upper-right pixel for dst on %%mm4 */
-		"movq %%mm0, %%mm2\n"
-		"movq %%mm1, %%mm4\n"
-		"movq %%mm0, %%mm3\n"
-		"movq %%mm1, %%mm5\n"
-		"pcmpeqd %%mm6, %%mm2\n"
-		"pcmpeqd %%mm6, %%mm4\n"
-		"pcmpeqd (%2), %%mm3\n"
-		"pcmpeqd (%2), %%mm5\n"
-		"pandn %%mm2, %%mm3\n"
-		"pandn %%mm4, %%mm5\n"
-		"movq %%mm0, %%mm2\n"
-		"movq %%mm1, %%mm4\n"
-		"pcmpeqd %%mm1, %%mm2\n"
-		"pcmpeqd %%mm0, %%mm4\n"
-		"pandn %%mm3, %%mm2\n"
-		"pandn %%mm5, %%mm4\n"
-		"movq %%mm2, %%mm3\n"
-		"movq %%mm4, %%mm5\n"
-		"pand %%mm6, %%mm2\n"
-		"pand %%mm6, %%mm4\n"
-		"pandn %%mm7, %%mm3\n"
-		"pandn %%mm7, %%mm5\n"
-		"por %%mm3, %%mm2\n"
-		"por %%mm5, %%mm4\n"
-
-		/* set *dst */
-		"movq %%mm2, %%mm3\n"
-		"punpckldq %%mm4, %%mm2\n"
-		"punpckhdq %%mm4, %%mm3\n"
-		"movq %%mm2, (%3)\n"
-		"movq %%mm3, 8(%3)\n"
-
-		/* next */
-		"add $8, %0\n"
-		"add $8, %1\n"
-		"add $8, %2\n"
-		"add $16, %3\n"
-
-		"dec %4\n"
-		"jnz 0b\n"
-		"1:\n"
-
-/* final run */
-		/* set the current, current_pre, current_next registers */
-		"movq (%1), %%mm1\n"
-		"movq (%1), %%mm7\n"
-		"movq -8(%1), %%mm0\n"
-		"psrlq $32, %%mm1\n"
-		"psrlq $32, %%mm0\n"
-		"psllq $32, %%mm1\n"
-		"movq %%mm7, %%mm2\n"
-		"movq %%mm7, %%mm3\n"
-		"psllq $32, %%mm2\n"
-		"psrlq $32, %%mm3\n"
-		"por %%mm2, %%mm0\n"
-		"por %%mm3, %%mm1\n"
-
-		/* current_upper */
-		"movq (%0), %%mm6\n"
-
-		/* compute the upper-left pixel for dst on %%mm2 */
-		/* compute the upper-right pixel for dst on %%mm4 */
-		"movq %%mm0, %%mm2\n"
-		"movq %%mm1, %%mm4\n"
-		"movq %%mm0, %%mm3\n"
-		"movq %%mm1, %%mm5\n"
-		"pcmpeqd %%mm6, %%mm2\n"
-		"pcmpeqd %%mm6, %%mm4\n"
-		"pcmpeqd (%2), %%mm3\n"
-		"pcmpeqd (%2), %%mm5\n"
-		"pandn %%mm2, %%mm3\n"
-		"pandn %%mm4, %%mm5\n"
-		"movq %%mm0, %%mm2\n"
-		"movq %%mm1, %%mm4\n"
-		"pcmpeqd %%mm1, %%mm2\n"
-		"pcmpeqd %%mm0, %%mm4\n"
-		"pandn %%mm3, %%mm2\n"
-		"pandn %%mm5, %%mm4\n"
-		"movq %%mm2, %%mm3\n"
-		"movq %%mm4, %%mm5\n"
-		"pand %%mm6, %%mm2\n"
-		"pand %%mm6, %%mm4\n"
-		"pandn %%mm7, %%mm3\n"
-		"pandn %%mm7, %%mm5\n"
-		"por %%mm3, %%mm2\n"
-		"por %%mm5, %%mm4\n"
-
-		/* set *dst */
-		"movq %%mm2, %%mm3\n"
-		"punpckldq %%mm4, %%mm2\n"
-		"punpckhdq %%mm4, %%mm3\n"
-		"movq %%mm2, (%3)\n"
-		"movq %%mm3, 8(%3)\n"
-
-		: "+r" (src0), "+r" (src1), "+r" (src2), "+r" (dst), "+r" (count)
-		:
-		: "cc"
-	);
+	d[0] = _mm_unpacklo_epi32(a, b);
+	d[1] = _mm_unpackhi_epi32(a, b);
 }
 
 /**
  * Scale by a factor of 2 a row of pixels of 8 bits.
- * This is a very fast MMX implementation.
+ * This is a very fast SSE2 implementation.
  * The implementation uses a combination of cmp/and/not operations to
  * completly remove the need of conditional jumps. This trick give the
  * major speed improvement.
- * Also, using the 8 bytes MMX registers more than one pixel are computed
+ * Also, using the 16 bytes SSE2 registers more than one pixel are computed
  * at the same time.
  * Before calling this function you must ensure that the currenct CPU supports
- * the MMX instruction set. After calling it you must be sure to call the EMMS
- * instruction before any floating-point operation.
+ * the SSE2 instruction set.
+ * All the memory buffer passed must be aligned at 16 bytes.
  * The pixels over the left and right borders are assumed of the same color of
  * the pixels on the border.
  * Note that the implementation is optimized to write data sequentially to
@@ -1309,19 +980,19 @@ static inline void scale2x_32_mmx_border(scale2x_uint32* dst, const scale2x_uint
  * \param dst0 First destination row, double length in pixels.
  * \param dst1 Second destination row, double length in pixels.
  */
-void scale2x_8_mmx(scale2x_uint8* dst0, scale2x_uint8* dst1, const scale2x_uint8* src0, const scale2x_uint8* src1, const scale2x_uint8* src2, unsigned count)
+void scale2x_8_sse2(scale2x_uint8* dst0, scale2x_uint8* dst1, const scale2x_uint8* src0, const scale2x_uint8* src1, const scale2x_uint8* src2, unsigned count)
 {
-	if (count % 8 != 0 || count < 16) {
+	if (count % 16 != 0 || count < 32) {
 		scale2x_8_def(dst0, dst1, src0, src1, src2, count);
 	} else {
-		scale2x_8_mmx_border(dst0, src0, src1, src2, count);
-		scale2x_8_mmx_border(dst1, src2, src1, src0, count);
+		scale2x_8_sse2_border(dst0, src0, src1, src2, count);
+		scale2x_8_sse2_border(dst1, src2, src1, src0, count);
 	}
 }
 
 /**
  * Scale by a factor of 2 a row of pixels of 16 bits.
- * This function operates like scale2x_8_mmx() but for 16 bits pixels.
+ * This function operates like scale2x_8_sse2() but for 16 bits pixels.
  * \param src0 Pointer at the first pixel of the previous row.
  * \param src1 Pointer at the first pixel of the current row.
  * \param src2 Pointer at the first pixel of the next row.
@@ -1330,19 +1001,19 @@ void scale2x_8_mmx(scale2x_uint8* dst0, scale2x_uint8* dst1, const scale2x_uint8
  * \param dst0 First destination row, double length in pixels.
  * \param dst1 Second destination row, double length in pixels.
  */
-void scale2x_16_mmx(scale2x_uint16* dst0, scale2x_uint16* dst1, const scale2x_uint16* src0, const scale2x_uint16* src1, const scale2x_uint16* src2, unsigned count)
+void scale2x_16_sse2(scale2x_uint16* dst0, scale2x_uint16* dst1, const scale2x_uint16* src0, const scale2x_uint16* src1, const scale2x_uint16* src2, unsigned count)
 {
-	if (count % 4 != 0 || count < 8) {
+	if (count % 8 != 0 || count < 16) {
 		scale2x_16_def(dst0, dst1, src0, src1, src2, count);
 	} else {
-		scale2x_16_mmx_border(dst0, src0, src1, src2, count);
-		scale2x_16_mmx_border(dst1, src2, src1, src0, count);
+		scale2x_16_sse2_border(dst0, src0, src1, src2, count);
+		scale2x_16_sse2_border(dst1, src2, src1, src0, count);
 	}
 }
 
 /**
  * Scale by a factor of 2 a row of pixels of 32 bits.
- * This function operates like scale2x_8_mmx() but for 32 bits pixels.
+ * This function operates like scale2x_8_sse2() but for 32 bits pixels.
  * \param src0 Pointer at the first pixel of the previous row.
  * \param src1 Pointer at the first pixel of the current row.
  * \param src2 Pointer at the first pixel of the next row.
@@ -1351,112 +1022,112 @@ void scale2x_16_mmx(scale2x_uint16* dst0, scale2x_uint16* dst1, const scale2x_ui
  * \param dst0 First destination row, double length in pixels.
  * \param dst1 Second destination row, double length in pixels.
  */
-void scale2x_32_mmx(scale2x_uint32* dst0, scale2x_uint32* dst1, const scale2x_uint32* src0, const scale2x_uint32* src1, const scale2x_uint32* src2, unsigned count)
+void scale2x_32_sse2(scale2x_uint32* dst0, scale2x_uint32* dst1, const scale2x_uint32* src0, const scale2x_uint32* src1, const scale2x_uint32* src2, unsigned count)
 {
-	if (count % 2 != 0 || count < 4) {
+	if (count % 4 != 0 || count < 8) {
 		scale2x_32_def(dst0, dst1, src0, src1, src2, count);
 	} else {
-		scale2x_32_mmx_border(dst0, src0, src1, src2, count);
-		scale2x_32_mmx_border(dst1, src2, src1, src0, count);
+		scale2x_32_sse2_border(dst0, src0, src1, src2, count);
+		scale2x_32_sse2_border(dst1, src2, src1, src0, count);
 	}
 }
 
 /**
  * Scale by a factor of 2x3 a row of pixels of 8 bits.
- * This function operates like scale2x_8_mmx() but with an expansion
+ * This function operates like scale2x_8_sse2() but with an expansion
  * factor of 2x3 instead of 2x2.
  */
-void scale2x3_8_mmx(scale2x_uint8* dst0, scale2x_uint8* dst1, scale2x_uint8* dst2, const scale2x_uint8* src0, const scale2x_uint8* src1, const scale2x_uint8* src2, unsigned count)
+void scale2x3_8_sse2(scale2x_uint8* dst0, scale2x_uint8* dst1, scale2x_uint8* dst2, const scale2x_uint8* src0, const scale2x_uint8* src1, const scale2x_uint8* src2, unsigned count)
 {
-	if (count % 8 != 0 || count < 16) {
+	if (count % 16 != 0 || count < 32) {
 		scale2x3_8_def(dst0, dst1, dst2, src0, src1, src2, count);
 	} else {
-		scale2x_8_mmx_border(dst0, src0, src1, src2, count);
+		scale2x_8_sse2_border(dst0, src0, src1, src2, count);
 		scale2x_8_def_center(dst1, src0, src1, src2, count);
-		scale2x_8_mmx_border(dst2, src2, src1, src0, count);
+		scale2x_8_sse2_border(dst2, src2, src1, src0, count);
 	}
 }
 
 /**
  * Scale by a factor of 2x3 a row of pixels of 16 bits.
- * This function operates like scale2x_16_mmx() but with an expansion
+ * This function operates like scale2x_16_sse2() but with an expansion
  * factor of 2x3 instead of 2x2.
  */
-void scale2x3_16_mmx(scale2x_uint16* dst0, scale2x_uint16* dst1, scale2x_uint16* dst2, const scale2x_uint16* src0, const scale2x_uint16* src1, const scale2x_uint16* src2, unsigned count)
+void scale2x3_16_sse2(scale2x_uint16* dst0, scale2x_uint16* dst1, scale2x_uint16* dst2, const scale2x_uint16* src0, const scale2x_uint16* src1, const scale2x_uint16* src2, unsigned count)
 {
-	if (count % 4 != 0 || count < 8) {
+	if (count % 8 != 0 || count < 16) {
 		scale2x3_16_def(dst0, dst1, dst2, src0, src1, src2, count);
 	} else {
-		scale2x_16_mmx_border(dst0, src0, src1, src2, count);
+		scale2x_16_sse2_border(dst0, src0, src1, src2, count);
 		scale2x_16_def_center(dst1, src0, src1, src2, count);
-		scale2x_16_mmx_border(dst2, src2, src1, src0, count);
+		scale2x_16_sse2_border(dst2, src2, src1, src0, count);
 	}
 }
 
 /**
  * Scale by a factor of 2x3 a row of pixels of 32 bits.
- * This function operates like scale2x_32_mmx() but with an expansion
+ * This function operates like scale2x_32_sse2() but with an expansion
  * factor of 2x3 instead of 2x2.
  */
-void scale2x3_32_mmx(scale2x_uint32* dst0, scale2x_uint32* dst1, scale2x_uint32* dst2, const scale2x_uint32* src0, const scale2x_uint32* src1, const scale2x_uint32* src2, unsigned count)
+void scale2x3_32_sse2(scale2x_uint32* dst0, scale2x_uint32* dst1, scale2x_uint32* dst2, const scale2x_uint32* src0, const scale2x_uint32* src1, const scale2x_uint32* src2, unsigned count)
 {
-	if (count % 2 != 0 || count < 4) {
+	if (count % 4 != 0 || count < 8) {
 		scale2x3_32_def(dst0, dst1, dst2, src0, src1, src2, count);
 	} else {
-		scale2x_32_mmx_border(dst0, src0, src1, src2, count);
+		scale2x_32_sse2_border(dst0, src0, src1, src2, count);
 		scale2x_32_def_center(dst1, src0, src1, src2, count);
-		scale2x_32_mmx_border(dst2, src2, src1, src0, count);
+		scale2x_32_sse2_border(dst2, src2, src1, src0, count);
 	}
 }
 
 /**
  * Scale by a factor of 2x4 a row of pixels of 8 bits.
- * This function operates like scale2x_8_mmx() but with an expansion
+ * This function operates like scale2x_8_sse2() but with an expansion
  * factor of 2x4 instead of 2x2.
  */
-void scale2x4_8_mmx(scale2x_uint8* dst0, scale2x_uint8* dst1, scale2x_uint8* dst2, scale2x_uint8* dst3, const scale2x_uint8* src0, const scale2x_uint8* src1, const scale2x_uint8* src2, unsigned count)
+void scale2x4_8_sse2(scale2x_uint8* dst0, scale2x_uint8* dst1, scale2x_uint8* dst2, scale2x_uint8* dst3, const scale2x_uint8* src0, const scale2x_uint8* src1, const scale2x_uint8* src2, unsigned count)
 {
-	if (count % 8 != 0 || count < 16) {
+	if (count % 16 != 0 || count < 32) {
 		scale2x4_8_def(dst0, dst1, dst2, dst3, src0, src1, src2, count);
 	} else {
-		scale2x_8_mmx_border(dst0, src0, src1, src2, count);
+		scale2x_8_sse2_border(dst0, src0, src1, src2, count);
 		scale2x_8_def_center(dst1, src0, src1, src2, count);
 		scale2x_8_def_center(dst2, src0, src1, src2, count);
-		scale2x_8_mmx_border(dst3, src2, src1, src0, count);
+		scale2x_8_sse2_border(dst3, src2, src1, src0, count);
 	}
 }
 
 /**
  * Scale by a factor of 2x4 a row of pixels of 16 bits.
- * This function operates like scale2x_16_mmx() but with an expansion
+ * This function operates like scale2x_16_sse2() but with an expansion
  * factor of 2x4 instead of 2x2.
  */
-void scale2x4_16_mmx(scale2x_uint16* dst0, scale2x_uint16* dst1, scale2x_uint16* dst2, scale2x_uint16* dst3, const scale2x_uint16* src0, const scale2x_uint16* src1, const scale2x_uint16* src2, unsigned count)
+void scale2x4_16_sse2(scale2x_uint16* dst0, scale2x_uint16* dst1, scale2x_uint16* dst2, scale2x_uint16* dst3, const scale2x_uint16* src0, const scale2x_uint16* src1, const scale2x_uint16* src2, unsigned count)
 {
-	if (count % 4 != 0 || count < 8) {
+	if (count % 8 != 0 || count < 16) {
 		scale2x4_16_def(dst0, dst1, dst2, dst3, src0, src1, src2, count);
 	} else {
-		scale2x_16_mmx_border(dst0, src0, src1, src2, count);
+		scale2x_16_sse2_border(dst0, src0, src1, src2, count);
 		scale2x_16_def_center(dst1, src0, src1, src2, count);
 		scale2x_16_def_center(dst2, src0, src1, src2, count);
-		scale2x_16_mmx_border(dst3, src2, src1, src0, count);
+		scale2x_16_sse2_border(dst3, src2, src1, src0, count);
 	}
 }
 
 /**
  * Scale by a factor of 2x4 a row of pixels of 32 bits.
- * This function operates like scale2x_32_mmx() but with an expansion
+ * This function operates like scale2x_32_sse2() but with an expansion
  * factor of 2x4 instead of 2x2.
  */
-void scale2x4_32_mmx(scale2x_uint32* dst0, scale2x_uint32* dst1, scale2x_uint32* dst2, scale2x_uint32* dst3, const scale2x_uint32* src0, const scale2x_uint32* src1, const scale2x_uint32* src2, unsigned count)
+void scale2x4_32_sse2(scale2x_uint32* dst0, scale2x_uint32* dst1, scale2x_uint32* dst2, scale2x_uint32* dst3, const scale2x_uint32* src0, const scale2x_uint32* src1, const scale2x_uint32* src2, unsigned count)
 {
-	if (count % 2 != 0 || count < 4) {
+	if (count % 4 != 0 || count < 8) {
 		scale2x4_32_def(dst0, dst1, dst2, dst3, src0, src1, src2, count);
 	} else {
-		scale2x_32_mmx_border(dst0, src0, src1, src2, count);
+		scale2x_32_sse2_border(dst0, src0, src1, src2, count);
 		scale2x_32_def_center(dst1, src0, src1, src2, count);
 		scale2x_32_def_center(dst2, src0, src1, src2, count);
-		scale2x_32_mmx_border(dst3, src2, src1, src0, count);
+		scale2x_32_sse2_border(dst3, src2, src1, src0, count);
 	}
 }
 

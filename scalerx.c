@@ -1103,6 +1103,7 @@ int file_process(const char* file0, const char* file1, int opt_scale_x, int opt_
 	unsigned pixel;
 	unsigned width;
 	unsigned height;
+	void* src_alloc;
 	unsigned char* src_ptr;
 	unsigned src_slice;
 	unsigned char* dst_ptr;
@@ -1112,7 +1113,7 @@ int file_process(const char* file0, const char* file1, int opt_scale_x, int opt_
 	png_color* palette;
 	unsigned palette_size;
 
-	if (file_read(file0, &src_ptr, &src_slice, &pixel, &width, &height, &type, &channel, &palette, &palette_size, opt_only124 ? 1 : 0) != 0) {
+	if (file_read(file0, &src_alloc, &src_ptr, &src_slice, &pixel, &width, &height, &type, &channel, &palette, &palette_size, opt_only124 ? 1 : 0) != 0) {
 		goto err;
 	}
 
@@ -1160,7 +1161,7 @@ int file_process(const char* file0, const char* file1, int opt_scale_x, int opt_
 	}
 
 	free(dst_ptr);
-	free(src_ptr);
+	free(src_alloc);
 	free(palette);
 
 	return 0;
