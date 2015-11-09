@@ -5,10 +5,16 @@ AM_INIT_AUTOMAKE([foreign no-dependencies])
 AC_CONFIG_SRCDIR([scalerx.c])
 AC_CONFIG_HEADERS([config.h])
 AC_CANONICAL_HOST
+# override by using make V=1
+AM_SILENT_RULES([yes])
 
 # Checks for programs.
 AC_PROG_CC
 AC_CHECK_PROG([WINE],[wine],[wine],[])
+
+# use pkg-config to set CFLAGS / LDFLAGS for libpng
+[CFLAGS="$CFLAGS $(pkg-config libpng --cflags)"]
+[LDFLAGS="$LDFLAGS $(pkg-config libpng --libs-only-L)"]
 
 # Checks for libraries.
 AC_CHECK_LIB([m], [log], [], [AC_MSG_ERROR([the libm library is missing])])
