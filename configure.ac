@@ -13,7 +13,12 @@ AC_CHECK_PROG([WINE],[wine],[wine],[])
 # Checks for libraries.
 AC_CHECK_LIB([m], [log], [], [AC_MSG_ERROR([the libm library is missing])])
 AC_CHECK_LIB([z], [adler32], [], [AC_MSG_ERROR([the libz library is missing])])
-AC_CHECK_LIB([png], [png_get_IHDR], [], [AC_MSG_ERROR([the libpng library is missing])])
+AC_CHECK_LIB([png], [png_get_IHDR],
+	[],
+	# If not found, try finding it with pkg-config
+	[CFLAGS="$CFLAGS $(pkg-config libpng --cflags)"]
+	[LDFLAGS="$LDFLAGS $(pkg-config libpng --libs)"]
+)
 
 # Checks for header files.
 AC_HEADER_STDC
