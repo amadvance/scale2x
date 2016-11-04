@@ -14,14 +14,14 @@ The specification of the algorithm and more details are at :
     http://www.scale2x.it
 
 This package contains some implementations of the effects
-in C and MMX Pentium assembler, and command line tools to
-convert manually .PNG images.
+in C and SSE2 intrinsics, and command line tools to convert
+manually .PNG images.
 
 
 IMPLEMENTATION
 ==============
 
-The files scale2x.c and scale3x.c are the fast C and MMX
+The files scale2x.c and scale3x.c are the fast C and SSE2
 implementations of the effects.
 
 The files scalebit.c and scalebit.h are the fast C implementations

@@ -1,14 +1,19 @@
 Scale2x HISTORY
 ===============
 
-4.0 2015/10
+4.0 2016/11
 ===========
- * Added a new SSE2 implementation [Thomas Bernard].
+ * Added a new SSE2 implementation using intrinsics that replaces the old
+   MMX one [Thomas Bernard].
+   To enable it, you must build with the -msse2 option.
  * Made source ANSI C compliant [Thomas Bernard].
+ * Windows binaries built with gcc 4.9.3 using the MXE cross compiler at
+   commit 62bcdbee56e87c81f1faa105b8777a5879d4e2e with targets
+   i686-w64-mingw32 and x86_64-w64-mingw32.
 
 3.2 2015/08
 ===========
- * Revised the license. Now it's only GPL2+.
+ * Revised the license. Now it's only GPLv2+.
  * Windows binary built with gcc 4.8.1 using the MXE cross compiler 2.23,
    with targets i686-w64-mingw32. Before the target was i686-pc-mingw32.
 
@@ -19,8 +24,8 @@ Scale2x HISTORY
 3.0 2013/05
 ===========
  * Now in git repository.
- * Preliminary scale2k support in the 'scalerx' tool. Just select the algo revision 'k'.
-   It's the new effect used by AdvanceMAME.
+ * Preliminary scale2k support in the 'scalerx' tool. Just select the algo
+   revision 'k'. It's the new effect used by AdvanceMAME.
  * Removed libpng.dll and zlib.dll files. They are not needed anymore.
 
 2.5 2011/9
