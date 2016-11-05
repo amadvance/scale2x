@@ -40,6 +40,7 @@ contrib/
 resource/
 archive/
 bench/
+www/
 
 # check files
 template.png
