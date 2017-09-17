@@ -405,7 +405,7 @@ static void scale4x(void* void_dst, unsigned dst_slice, const void* void_src, un
 	scale4x_buf(void_dst, dst_slice, mid_ptr, mid_slice, void_src, src_slice, pixel, width, height);
 
 #if !HAVE_ALLOCA
-	free(mid_ptr);
+	free(mid_alloc);
 #endif
 }
 
