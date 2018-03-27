@@ -44,26 +44,22 @@ typedef void (*stage_scale2x4_t)(void* dst0, void* dst1, void* dst2, void* dst3,
 /**
  * Apply the Scale2x effect on a group of rows. Used internally.
  */
-#define stage_scale2x(dst0, dst1, src0, src1, src2, pixel, pixel_per_row) stage_scale2x_impl(dst0, dst1, src0, src1, src2, pixel_per_row)
-stage_scale2x_t stage_scale2x_impl = NULL;
+static stage_scale2x_t stage_scale2x_impl = NULL;
 
 /**
  * Apply the Scale2x3 effect on a group of rows. Used internally.
  */
-#define stage_scale2x3(dst0, dst1, dst2, src0, src1, src2, pixel, pixel_per_row) stage_scale2x3_impl(dst0, dst1, dst2, src0, src1, src2, pixel_per_row)
-stage_scale3x_t stage_scale2x3_impl = NULL;
+static stage_scale3x_t stage_scale2x3_impl = NULL;
 
 /**
  * Apply the Scale2x4 effect on a group of rows. Used internally.
  */
-#define stage_scale2x4(dst0, dst1, dst2, dst3, src0, src1, src2, pixel, pixel_per_row) stage_scale2x4_impl(dst0, dst1, dst2, dst3, src0, src1, src2, pixel_per_row)
-stage_scale2x4_t stage_scale2x4_impl = NULL;
+static stage_scale2x4_t stage_scale2x4_impl = NULL;
 
 /**
  * Apply the Scale3x effect on a group of rows. Used internally.
  */
-#define stage_scale3x(dst0, dst1, dst2, src0, src1, src2, pixel, pixel_per_row) stage_scale3x_impl(dst0, dst1, dst2, src0, src1, src2, pixel_per_row)
-stage_scale3x_t stage_scale3x_impl = NULL;
+static stage_scale3x_t stage_scale3x_impl = NULL;
 
 /**
  * Apply the Scale4x effect on a group of rows. Used internally.
@@ -101,13 +97,13 @@ static void scale2x(void* void_dst, unsigned dst_slice, const void* void_src, un
 
 	count = height;
 
-	stage_scale2x(SCDST(0), SCDST(1), SCSRC(0), SCSRC(0), SCSRC(1), pixel, width);
+	stage_scale2x_impl(SCDST(0), SCDST(1), SCSRC(0), SCSRC(0), SCSRC(1), width);
 
 	dst = SCDST(2);
 
 	count -= 2;
 	while (count) {
-		stage_scale2x(SCDST(0), SCDST(1), SCSRC(0), SCSRC(1), SCSRC(2), pixel, width);
+		stage_scale2x_impl(SCDST(0), SCDST(1), SCSRC(0), SCSRC(1), SCSRC(2), width);
 
 		dst = SCDST(2);
 		src = SCSRC(1);
@@ -115,7 +111,7 @@ static void scale2x(void* void_dst, unsigned dst_slice, const void* void_src, un
 		--count;
 	}
 
-	stage_scale2x(SCDST(0), SCDST(1), SCSRC(0), SCSRC(1), SCSRC(1), pixel, width);
+	stage_scale2x_impl(SCDST(0), SCDST(1), SCSRC(0), SCSRC(1), SCSRC(1), width);
 }
 
 /**
@@ -141,13 +137,13 @@ static void scale2x3(void* void_dst, unsigned dst_slice, const void* void_src, u
 
 	count = height;
 
-	stage_scale2x3(SCDST(0), SCDST(1), SCDST(2), SCSRC(0), SCSRC(0), SCSRC(1), pixel, width);
+	stage_scale2x3_impl(SCDST(0), SCDST(1), SCDST(2), SCSRC(0), SCSRC(0), SCSRC(1), width);
 
 	dst = SCDST(3);
 
 	count -= 2;
 	while (count) {
-		stage_scale2x3(SCDST(0), SCDST(1), SCDST(2), SCSRC(0), SCSRC(1), SCSRC(2), pixel, width);
+		stage_scale2x3_impl(SCDST(0), SCDST(1), SCDST(2), SCSRC(0), SCSRC(1), SCSRC(2), width);
 
 		dst = SCDST(3);
 		src = SCSRC(1);
@@ -155,7 +151,7 @@ static void scale2x3(void* void_dst, unsigned dst_slice, const void* void_src, u
 		--count;
 	}
 
-	stage_scale2x3(SCDST(0), SCDST(1), SCDST(2), SCSRC(0), SCSRC(1), SCSRC(1), pixel, width);
+	stage_scale2x3_impl(SCDST(0), SCDST(1), SCDST(2), SCSRC(0), SCSRC(1), SCSRC(1), width);
 }
 
 /**
@@ -181,13 +177,13 @@ static void scale2x4(void* void_dst, unsigned dst_slice, const void* void_src, u
 
 	count = height;
 
-	stage_scale2x4(SCDST(0), SCDST(1), SCDST(2), SCDST(3), SCSRC(0), SCSRC(0), SCSRC(1), pixel, width);
+	stage_scale2x4_impl(SCDST(0), SCDST(1), SCDST(2), SCDST(3), SCSRC(0), SCSRC(0), SCSRC(1), width);
 
 	dst = SCDST(4);
 
 	count -= 2;
 	while (count) {
-		stage_scale2x4(SCDST(0), SCDST(1), SCDST(2), SCDST(3), SCSRC(0), SCSRC(1), SCSRC(2), pixel, width);
+		stage_scale2x4_impl(SCDST(0), SCDST(1), SCDST(2), SCDST(3), SCSRC(0), SCSRC(1), SCSRC(2), width);
 
 		dst = SCDST(4);
 		src = SCSRC(1);
@@ -195,7 +191,7 @@ static void scale2x4(void* void_dst, unsigned dst_slice, const void* void_src, u
 		--count;
 	}
 
-	stage_scale2x4(SCDST(0), SCDST(1), SCDST(2), SCDST(3), SCSRC(0), SCSRC(1), SCSRC(1), pixel, width);
+	stage_scale2x4_impl(SCDST(0), SCDST(1), SCDST(2), SCDST(3), SCSRC(0), SCSRC(1), SCSRC(1), width);
 }
 
 /**
@@ -221,13 +217,13 @@ static void scale3x(void* void_dst, unsigned dst_slice, const void* void_src, un
 
 	count = height;
 
-	stage_scale3x(SCDST(0), SCDST(1), SCDST(2), SCSRC(0), SCSRC(0), SCSRC(1), pixel, width);
+	stage_scale3x_impl(SCDST(0), SCDST(1), SCDST(2), SCSRC(0), SCSRC(0), SCSRC(1), width);
 
 	dst = SCDST(3);
 
 	count -= 2;
 	while (count) {
-		stage_scale3x(SCDST(0), SCDST(1), SCDST(2), SCSRC(0), SCSRC(1), SCSRC(2), pixel, width);
+		stage_scale3x_impl(SCDST(0), SCDST(1), SCDST(2), SCSRC(0), SCSRC(1), SCSRC(2), width);
 
 		dst = SCDST(3);
 		src = SCSRC(1);
@@ -235,7 +231,7 @@ static void scale3x(void* void_dst, unsigned dst_slice, const void* void_src, un
 		--count;
 	}
 
-	stage_scale3x(SCDST(0), SCDST(1), SCDST(2), SCSRC(0), SCSRC(1), SCSRC(1), pixel, width);
+	stage_scale3x_impl(SCDST(0), SCDST(1), SCDST(2), SCSRC(0), SCSRC(1), SCSRC(1), width);
 }
 
 /**
@@ -277,9 +273,9 @@ static void scale4x_buf(void* void_dst, unsigned dst_slice, void* void_mid, unsi
 	mid[4] = mid[3] + mid_slice;
 	mid[5] = mid[4] + mid_slice;
 
-	stage_scale2x(SCMID(-2 + 6), SCMID(-1 + 6), SCSRC(0), SCSRC(0), SCSRC(1), pixel, width);
-	stage_scale2x(SCMID(0), SCMID(1), SCSRC(0), SCSRC(1), SCSRC(2), pixel, width);
-	stage_scale2x(SCMID(2), SCMID(3), SCSRC(1), SCSRC(2), SCSRC(3), pixel, width);
+	stage_scale2x_impl(SCMID(-2 + 6), SCMID(-1 + 6), SCSRC(0), SCSRC(0), SCSRC(1), width);
+	stage_scale2x_impl(SCMID(0), SCMID(1), SCSRC(0), SCSRC(1), SCSRC(2), width);
+	stage_scale2x_impl(SCMID(2), SCMID(3), SCSRC(1), SCSRC(2), SCSRC(3), width);
 	stage_scale4x(SCDST(0), SCDST(1), SCDST(2), SCDST(3), SCMID(-2 + 6), SCMID(-2 + 6), SCMID(-1 + 6), SCMID(0), width);
 
 	dst = SCDST(4);
@@ -292,7 +288,7 @@ static void scale4x_buf(void* void_dst, unsigned dst_slice, void* void_mid, unsi
 	while (count) {
 		unsigned char* tmp;
 
-		stage_scale2x(SCMID(4), SCMID(5), SCSRC(2), SCSRC(3), SCSRC(4), pixel, width);
+		stage_scale2x_impl(SCMID(4), SCMID(5), SCSRC(2), SCSRC(3), SCSRC(4), width);
 		stage_scale4x(SCDST(0), SCDST(1), SCDST(2), SCDST(3), SCMID(1), SCMID(2), SCMID(3), SCMID(4), width);
 
 		dst = SCDST(4);
@@ -310,7 +306,7 @@ static void scale4x_buf(void* void_dst, unsigned dst_slice, void* void_mid, unsi
 		--count;
 	}
 
-	stage_scale2x(SCMID(4), SCMID(5), SCSRC(2), SCSRC(3), SCSRC(3), pixel, width);
+	stage_scale2x_impl(SCMID(4), SCMID(5), SCSRC(2), SCSRC(3), SCSRC(3), width);
 	stage_scale4x(SCDST(0), SCDST(1), SCDST(2), SCDST(3), SCMID(1), SCMID(2), SCMID(3), SCMID(4), width);
 
 	dst = SCDST(4);
