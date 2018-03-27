@@ -1143,3 +1143,116 @@ void scale2x4_32_sse2(scale2x_uint32* dst0, scale2x_uint32* dst1, scale2x_uint32
 
 #endif
 
+/* ARM NEON implementation */
+#ifdef USE_SCALE2X_NEON
+#include <arm_neon.h>
+
+static inline void scale2x_8_neon_border(uint8x16x2_t* dst, const uint8x16_t* src0, const uint8x16_t* src1, const uint8x16_t* src2, unsigned count)
+{
+	uint8x16_t B, D, E, F, H;
+	uint8x16_t nextE;
+	uint8x16_t BDeq, BFeq, BHeq, DFeq;
+
+	/* count must be aligned */
+	assert(count >= 32);
+	assert(count % 16 == 0);
+
+	/* all memory must be aligned */
+	assert(scale2x_align_ptr(dst) == dst);
+	assert(scale2x_align_ptr(src0) == src0);
+	assert(scale2x_align_ptr(src1) == src1);
+	assert(scale2x_align_ptr(src2) == src2);
+
+	/* first run */
+	B = *src0++;
+	E = *src1++;
+	nextE = *src1++;
+	D = vextq_u8(vextq_u8(E, E, 1), E, 15);
+	F = vextq_u8(E, nextE, 1);
+	H = *src2++;
+
+	BDeq = vceqq_u8(B, D);
+	BFeq = vceqq_u8(B, F);
+	BHeq = vceqq_u8(B, H);
+	DFeq = vceqq_u8(D, F);
+
+	*dst++ = vzipq_u8(vbslq_u8(vbicq_u8(vbicq_u8(BDeq, BHeq), DFeq), B, E),
+	                  vbslq_u8(vbicq_u8(vbicq_u8(BFeq, BHeq), DFeq), B, E));
+
+	/* central run */
+	for (count -= 32; count > 0; count -= 16) {
+		D = vextq_u8(E, nextE, 15);
+		B = *src0++;
+		E = nextE;
+		nextE = *src1++;
+		H = *src2++;
+		F = vextq_u8(E, nextE, 1);
+
+		BDeq = vceqq_u8(B, D);
+		BFeq = vceqq_u8(B, F);
+		BHeq = vceqq_u8(B, H);
+		DFeq = vceqq_u8(D, F);
+
+		*dst++ = vzipq_u8(vbslq_u8(vbicq_u8(vbicq_u8(BDeq, BHeq), DFeq), B, E),
+		                  vbslq_u8(vbicq_u8(vbicq_u8(BFeq, BHeq), DFeq), B, E));
+	}
+
+	/* last run */
+	D = vextq_u8(E, nextE, 15);
+	B = *src0;
+	E = nextE;
+	H = *src2;
+	F = vextq_u8(E, vextq_u8(E, E, 15), 1);
+
+	BDeq = vceqq_u8(B, D);
+	BFeq = vceqq_u8(B, F);
+	BHeq = vceqq_u8(B, H);
+	DFeq = vceqq_u8(D, F);
+
+	*dst = vzipq_u8(vbslq_u8(vbicq_u8(vbicq_u8(BDeq, BHeq), DFeq), B, E),
+	                vbslq_u8(vbicq_u8(vbicq_u8(BFeq, BHeq), DFeq), B, E));
+}
+
+void scale2x_8_neon(scale2x_uint8* dst0, scale2x_uint8* dst1, const scale2x_uint8* src0, const scale2x_uint8* src1, const scale2x_uint8* src2, unsigned count)
+{
+	if (count % 16 != 0 || count < 32) {
+		scale2x_8_def(dst0, dst1, src0, src1, src2, count);
+	} else {
+		scale2x_8_neon_border((uint8x16x2_t *)dst0, (const uint8x16_t*)src0, (const uint8x16_t *)src1, (const uint8x16_t *)src2, count);
+		scale2x_8_neon_border((uint8x16x2_t *)dst1, (const uint8x16_t*)src2, (const uint8x16_t *)src1, (const uint8x16_t *)src0, count);
+	}
+}
+
+/**
+ * Scale by a factor of 2x3 a row of pixels of 8 bits.
+ * This function operates like scale2x_8_neon() but with an expansion
+ * factor of 2x3 instead of 2x2.
+ */
+void scale2x3_8_neon(scale2x_uint8* dst0, scale2x_uint8* dst1, scale2x_uint8* dst2, const scale2x_uint8* src0, const scale2x_uint8* src1, const scale2x_uint8* src2, unsigned count)
+{
+	if (count % 16 != 0 || count < 32) {
+		scale2x3_8_def(dst0, dst1, dst2, src0, src1, src2, count);
+	} else {
+		scale2x_8_neon_border((uint8x16x2_t *)dst0, (const uint8x16_t*)src0, (const uint8x16_t*)src1, (const uint8x16_t*)src2, count);
+		scale2x_8_def_center(dst1, src0, src1, src2, count);
+		scale2x_8_neon_border((uint8x16x2_t *)dst2, (const uint8x16_t*)src2, (const uint8x16_t*)src1, (const uint8x16_t*)src0, count);
+	}
+}
+
+/**
+ * Scale by a factor of 2x4 a row of pixels of 8 bits.
+ * This function operates like scale2x_8_neon() but with an expansion
+ * factor of 2x4 instead of 2x2.
+ */
+void scale2x4_8_neon(scale2x_uint8* dst0, scale2x_uint8* dst1, scale2x_uint8* dst2, scale2x_uint8* dst3, const scale2x_uint8* src0, const scale2x_uint8* src1, const scale2x_uint8* src2, unsigned count)
+{
+	if (count % 16 != 0 || count < 32) {
+		scale2x4_8_def(dst0, dst1, dst2, dst3, src0, src1, src2, count);
+	} else {
+		scale2x_8_neon_border((uint8x16x2_t *)dst0, (const uint8x16_t*)src0, (const uint8x16_t*)src1, (const uint8x16_t*)src2, count);
+		scale2x_8_def_center(dst1, src0, src1, src2, count);
+		scale2x_8_def_center(dst2, src0, src1, src2, count);
+		scale2x_8_neon_border((uint8x16x2_t *)dst3, (const uint8x16_t*)src2, (const uint8x16_t*)src1, (const uint8x16_t*)src0, count);
+	}
+}
+#endif
