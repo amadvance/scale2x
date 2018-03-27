@@ -1213,6 +1213,75 @@ static inline void scale2x_8_neon_border(uint8x16x2_t* dst, const uint8x16_t* sr
 	                vbslq_u8(vbicq_u8(vbicq_u8(BFeq, BHeq), DFeq), B, E));
 }
 
+static inline void scale2x_16_neon_border(uint16x8x2_t* dst, const uint16x8_t* src0, const uint16x8_t* src1, const uint16x8_t* src2, unsigned count)
+{
+	uint16x8_t B, D, E, F, H;
+	uint16x8_t nextE;
+	uint16x8_t BDeq, BFeq, BHeq, DFeq;
+
+	/* count must be aligned */
+	assert(count >= 16);
+	assert(count % 8 == 0);
+
+	/* all memory must be aligned */
+	assert(scale2x_align_ptr(dst) == dst);
+	assert(scale2x_align_ptr(src0) == src0);
+	assert(scale2x_align_ptr(src1) == src1);
+	assert(scale2x_align_ptr(src2) == src2);
+
+	/* first run */
+	B = *src0++;
+	E = *src1++;
+	nextE = *src1++;
+	D = vextq_u16(vextq_u16(E, E, 1), E, 7);
+	F = vextq_u16(E, nextE, 1);
+	H = *src2++;
+
+	BDeq = vceqq_u16(B, D);
+	BFeq = vceqq_u16(B, F);
+	BHeq = vceqq_u16(B, H);
+	DFeq = vceqq_u16(D, F);
+
+	*dst++ = vzipq_u16(vbslq_u16(vbicq_u16(vbicq_u16(BDeq, BHeq), DFeq), B, E),
+	                   vbslq_u16(vbicq_u16(vbicq_u16(BFeq, BHeq), DFeq), B, E));
+
+	/* central run */
+	for (count -= 16; count > 0; count -= 8) {
+		D = vextq_u16(E, nextE, 7);
+		B = *src0++;
+		E = nextE;
+		nextE = *src1++;
+		H = *src2++;
+		F = vextq_u16(E, nextE, 1);
+
+		BDeq = vceqq_u16(B, D);
+		BFeq = vceqq_u16(B, F);
+		BHeq = vceqq_u16(B, H);
+		DFeq = vceqq_u16(D, F);
+
+		*dst++ = vzipq_u16(vbslq_u16(vbicq_u16(vbicq_u16(BDeq, BHeq), DFeq), B, E),
+		                   vbslq_u16(vbicq_u16(vbicq_u16(BFeq, BHeq), DFeq), B, E));
+	}
+
+	/* last run */
+	D = vextq_u16(E, nextE, 7);
+	B = *src0;
+	E = nextE;
+	H = *src2;
+	F = vextq_u16(E, vextq_u16(E, E, 7), 1);
+
+	BDeq = vceqq_u16(B, D);
+	BFeq = vceqq_u16(B, F);
+	BHeq = vceqq_u16(B, H);
+	DFeq = vceqq_u16(D, F);
+
+	*dst = vzipq_u16(vbslq_u16(vbicq_u16(vbicq_u16(BDeq, BHeq), DFeq), B, E),
+	                 vbslq_u16(vbicq_u16(vbicq_u16(BFeq, BHeq), DFeq), B, E));
+}
+
+/**
+ * Fast implementation of Scale2x using ARM NEON
+ */
 void scale2x_8_neon(scale2x_uint8* dst0, scale2x_uint8* dst1, const scale2x_uint8* src0, const scale2x_uint8* src1, const scale2x_uint8* src2, unsigned count)
 {
 	if (count % 16 != 0 || count < 32) {
@@ -1220,6 +1289,16 @@ void scale2x_8_neon(scale2x_uint8* dst0, scale2x_uint8* dst1, const scale2x_uint
 	} else {
 		scale2x_8_neon_border((uint8x16x2_t *)dst0, (const uint8x16_t*)src0, (const uint8x16_t *)src1, (const uint8x16_t *)src2, count);
 		scale2x_8_neon_border((uint8x16x2_t *)dst1, (const uint8x16_t*)src2, (const uint8x16_t *)src1, (const uint8x16_t *)src0, count);
+	}
+}
+
+void scale2x_16_neon(scale2x_uint16* dst0, scale2x_uint16* dst1, const scale2x_uint16* src0, const scale2x_uint16* src1, const scale2x_uint16* src2, unsigned count)
+{
+	if (count % 8 != 0 || count < 16) {
+		scale2x_16_def(dst0, dst1, src0, src1, src2, count);
+	} else {
+		scale2x_16_neon_border((uint16x8x2_t *)dst0, (const uint16x8_t *)src0, (const uint16x8_t *)src1, (const uint16x8_t *)src2, count);
+		scale2x_16_neon_border((uint16x8x2_t *)dst1, (const uint16x8_t *)src2, (const uint16x8_t *)src1, (const uint16x8_t *)src0, count);
 	}
 }
 
@@ -1239,6 +1318,17 @@ void scale2x3_8_neon(scale2x_uint8* dst0, scale2x_uint8* dst1, scale2x_uint8* ds
 	}
 }
 
+void scale2x3_16_neon(scale2x_uint16* dst0, scale2x_uint16* dst1, scale2x_uint16* dst2, const scale2x_uint16* src0, const scale2x_uint16* src1, const scale2x_uint16* src2, unsigned count)
+{
+	if (count % 8 != 0 || count < 16) {
+		scale2x3_16_def(dst0, dst1, dst2, src0, src1, src2, count);
+	} else {
+		scale2x_16_neon_border((uint16x8x2_t *)dst0, (const uint16x8_t *)src0, (const uint16x8_t *)src1, (const uint16x8_t *)src2, count);
+		scale2x_16_def_center(dst1, src0, src1, src2, count);
+		scale2x_16_neon_border((uint16x8x2_t *)dst2, (const uint16x8_t *)src2, (const uint16x8_t *)src1, (const uint16x8_t *)src0, count);
+	}
+}
+
 /**
  * Scale by a factor of 2x4 a row of pixels of 8 bits.
  * This function operates like scale2x_8_neon() but with an expansion
@@ -1255,4 +1345,17 @@ void scale2x4_8_neon(scale2x_uint8* dst0, scale2x_uint8* dst1, scale2x_uint8* ds
 		scale2x_8_neon_border((uint8x16x2_t *)dst3, (const uint8x16_t*)src2, (const uint8x16_t*)src1, (const uint8x16_t*)src0, count);
 	}
 }
+
+void scale2x4_16_neon(scale2x_uint16* dst0, scale2x_uint16* dst1, scale2x_uint16* dst2, scale2x_uint16* dst3, const scale2x_uint16* src0, const scale2x_uint16* src1, const scale2x_uint16* src2, unsigned count)
+{
+	if (count % 8 != 0 || count < 16) {
+		scale2x4_16_def(dst0, dst1, dst2, dst3, src0, src1, src2, count);
+	} else {
+		scale2x_16_neon_border((uint16x8x2_t *)dst0, (const uint16x8_t *)src0, (const uint16x8_t *)src1, (const uint16x8_t *)src2, count);
+		scale2x_16_def_center(dst1, src0, src1, src2, count);
+		scale2x_16_def_center(dst2, src0, src1, src2, count);
+		scale2x_16_neon_border((uint16x8x2_t *)dst3, (const uint16x8_t *)src2, (const uint16x8_t *)src1, (const uint16x8_t *)src0, count);
+	}
+}
+
 #endif
