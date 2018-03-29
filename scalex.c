@@ -205,6 +205,9 @@ void usage(void)
 #ifdef USE_SCALE2X_SSE2
 	printf("(using SSE2 optimization)\n");
 #endif
+#ifdef USE_SCALE2X_NEON
+	printf("(using ARM NEON optimization)\n");
+#endif
 	printf("\nSyntax: scalex [-k N] FROM.png TO.png\n");
 	printf("\nOptions:\n");
 	printf("\t-k N\tSelect the scale factor. 2, 2x3, 2x4, 3 or 4. (default 2).\n");
