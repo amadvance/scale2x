@@ -205,9 +205,10 @@ void usage(void)
 #ifdef USE_SCALE2X_SSE2
 	printf("(using SSE2 optimization)\n");
 #endif
-	printf("\nSyntax: scalex [-k N] FROM.png TO.png\n");
+	printf("\nSyntax: scalex [-o options] [-k N] FROM.png TO.png\n");
 	printf("\nOptions:\n");
 	printf("\t-k N\tSelect the scale factor. 2, 2x3, 2x4, 3 or 4. (default 2).\n");
+	printf("\t-o\tnosse2 : disable SSE2\n");
 	printf("\nMore info at " PACKAGE_URL "\n");
 	exit(EXIT_FAILURE);
 }
@@ -215,6 +216,7 @@ void usage(void)
 #ifdef HAVE_GETOPT_LONG
 struct option long_options[] = {
 	{ "scale", 1, 0, 'k' },
+	{ "options", 1, 0, 'o' },
 	{ "speed", 0, 0, 'T' },
 	{ "crc", 0, 0, 'c' },
 	{ "help", 0, 0, 'h' },
@@ -223,7 +225,7 @@ struct option long_options[] = {
 };
 #endif
 
-#define OPTIONS "k:Tchv"
+#define OPTIONS "k:o:Tchv"
 
 int main(int argc, char* argv[])
 {
@@ -267,6 +269,14 @@ int main(int argc, char* argv[])
 					printf("Invalid -k option. Valid values are 2, 2x3, 2x4, 3 and 4.\n");
 					exit(EXIT_FAILURE);
 				}
+			}
+			break;
+		case 'o' :
+			if (strcmp(optarg, "nosse2") == 0) {
+				scale_set_options(SCALE2X_OPTION_NO_SSE2);
+			} else {
+				printf("Invalid -o option. Valid values are : nosse2.\n");
+				exit(EXIT_FAILURE);
 			}
 			break;
 		case 'c' :

@@ -27,6 +27,7 @@
 #include <config.h>
 #endif
 
+#include "scalebit.h"
 #include "scale2x.h"
 #include "scale3x.h"
 
@@ -399,6 +400,20 @@ int scale_precondition(unsigned scale, unsigned pixel, unsigned width, unsigned 
 	return 0;
 }
 
+static unsigned int scale_options = SCALE2X_OPTION_DEFAULT;
+
+/**
+ * Set options for the Scale effect
+ * \param options options for the Scale effect
+ * \return previously set options for the Scale effect
+ */
+unsigned int scale_set_options(unsigned int options)
+{
+	unsigned int old_options = scale_options;
+	scale_options = options;
+	return old_options;
+}
+
 /**
  * Apply the Scale effect on a bitmap.
  * This function is simply a common interface for ::scale2x(), ::scale3x() and ::scale4x().
@@ -414,45 +429,53 @@ int scale_precondition(unsigned scale, unsigned pixel, unsigned width, unsigned 
 void scale(unsigned scale, void* void_dst, unsigned dst_slice, const void* void_src, unsigned src_slice, unsigned pixel, unsigned width, unsigned height)
 {
 	switch (pixel) {
+	case 1 :
 #ifdef USE_SCALE2X_SSE2
-	case 1 :
-		stage_scale2x_impl = (stage_scale2x_t)scale2x_8_sse2;
-		stage_scale2x3_impl = (stage_scale3x_t)scale2x3_8_sse2;
-		stage_scale2x4_impl = (stage_scale2x4_t)scale2x4_8_sse2;
-		stage_scale3x_impl = (stage_scale3x_t)scale3x_8_def;
-		break;
-	case 2 :
-		stage_scale2x_impl = (stage_scale2x_t)scale2x_16_sse2;
-		stage_scale2x3_impl = (stage_scale3x_t)scale2x3_16_sse2;
-		stage_scale2x4_impl = (stage_scale2x4_t)scale2x4_16_sse2;
-		stage_scale3x_impl = (stage_scale3x_t)scale3x_16_def;
-		break;
-	case 4 :
-		stage_scale2x_impl = (stage_scale2x_t)scale2x_32_sse2;
-		stage_scale2x3_impl = (stage_scale3x_t)scale2x3_32_sse2;
-		stage_scale2x4_impl = (stage_scale2x4_t)scale2x4_32_sse2;
-		stage_scale3x_impl = (stage_scale3x_t)scale3x_32_def;
-		break;
-#else
-	case 1 :
-		stage_scale2x_impl = (stage_scale2x_t)scale2x_8_def;
-		stage_scale2x3_impl = (stage_scale3x_t)scale2x3_8_def;
-		stage_scale2x4_impl = (stage_scale2x4_t)scale2x4_8_def;
-		stage_scale3x_impl = (stage_scale3x_t)scale3x_8_def;
-		break;
-	case 2 :
-		stage_scale2x_impl = (stage_scale2x_t)scale2x_16_def;
-		stage_scale2x3_impl = (stage_scale3x_t)scale2x3_16_def;
-		stage_scale2x4_impl = (stage_scale2x4_t)scale2x4_16_def;
-		stage_scale3x_impl = (stage_scale3x_t)scale3x_16_def;
-		break;
-	case 4 :
-		stage_scale2x_impl = (stage_scale2x_t)scale2x_32_def;
-		stage_scale2x3_impl = (stage_scale3x_t)scale2x3_32_def;
-		stage_scale2x4_impl = (stage_scale2x4_t)scale2x4_32_def;
-		stage_scale3x_impl = (stage_scale3x_t)scale3x_32_def;
-		break;
+		if (!(scale_options & SCALE2X_OPTION_NO_SSE2)) {
+			stage_scale2x_impl = (stage_scale2x_t)scale2x_8_sse2;
+			stage_scale2x3_impl = (stage_scale3x_t)scale2x3_8_sse2;
+			stage_scale2x4_impl = (stage_scale2x4_t)scale2x4_8_sse2;
+		} else
 #endif
+		{
+			stage_scale2x_impl = (stage_scale2x_t)scale2x_8_def;
+			stage_scale2x3_impl = (stage_scale3x_t)scale2x3_8_def;
+			stage_scale2x4_impl = (stage_scale2x4_t)scale2x4_8_def;
+		}
+		stage_scale3x_impl = (stage_scale3x_t)scale3x_8_def;
+		break;
+	case 2 :
+#ifdef USE_SCALE2X_SSE2
+		if (!(scale_options & SCALE2X_OPTION_NO_SSE2)) {
+			stage_scale2x_impl = (stage_scale2x_t)scale2x_16_sse2;
+			stage_scale2x3_impl = (stage_scale3x_t)scale2x3_16_sse2;
+			stage_scale2x4_impl = (stage_scale2x4_t)scale2x4_16_sse2;
+		} else
+#endif
+		{
+			stage_scale2x_impl = (stage_scale2x_t)scale2x_16_def;
+			stage_scale2x3_impl = (stage_scale3x_t)scale2x3_16_def;
+			stage_scale2x4_impl = (stage_scale2x4_t)scale2x4_16_def;
+		}
+		stage_scale3x_impl = (stage_scale3x_t)scale3x_16_def;
+		break;
+	case 4 :
+#ifdef USE_SCALE2X_SSE2
+		if (!(scale_options & SCALE2X_OPTION_NO_SSE2)) {
+			stage_scale2x_impl = (stage_scale2x_t)scale2x_32_sse2;
+			stage_scale2x3_impl = (stage_scale3x_t)scale2x3_32_sse2;
+			stage_scale2x4_impl = (stage_scale2x4_t)scale2x4_32_sse2;
+		} else
+#endif
+		{
+			stage_scale2x_impl = (stage_scale2x_t)scale2x_32_def;
+			stage_scale2x3_impl = (stage_scale3x_t)scale2x3_32_def;
+			stage_scale2x4_impl = (stage_scale2x4_t)scale2x4_32_def;
+		}
+		stage_scale3x_impl = (stage_scale3x_t)scale3x_32_def;
+		break;
+	default :
+		return;
 	}
 	switch (scale) {
 	case 202 :
