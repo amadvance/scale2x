@@ -447,9 +447,9 @@ void scale(unsigned scale, void* void_dst, unsigned dst_slice, const void* void_
 		stage_scale3x_impl = (stage_scale3x_t)scale3x_16_def;
 		break;
 	case 4 :
-		stage_scale2x_impl = (stage_scale2x_t)scale2x_32_def;
-		stage_scale2x3_impl = (stage_scale3x_t)scale2x3_32_def;
-		stage_scale2x4_impl = (stage_scale2x4_t)scale2x4_32_def;
+		stage_scale2x_impl = (stage_scale2x_t)scale2x_32_neon;
+		stage_scale2x3_impl = (stage_scale3x_t)scale2x3_32_neon;
+		stage_scale2x4_impl = (stage_scale2x4_t)scale2x4_32_neon;
 		stage_scale3x_impl = (stage_scale3x_t)scale3x_32_def;
 		break;
 #else
