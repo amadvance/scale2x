@@ -178,7 +178,7 @@ int file_speed(const char* file0, int opt_scale_x, int opt_scale_y, int opt_imp)
 			break;
 	}
 
-	printf("\nInput data processed at %g MB/s\n", amount / (double)elapsed);
+	printf("\nInput data processed at %g MB/s (%u bits per pixel)\n", amount / (double)elapsed, pixel * 8);
 
 	free(dst_alloc);
 	free(src_alloc);
