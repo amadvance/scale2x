@@ -31,6 +31,13 @@ Options
 		Select the scale factor. Available values are 2, 2x3,
 		2x4, 3, and 4.
 
+	-o novect
+		Disable the vectorized implementation using SSE2 and NEON
+		instructions.
+
+	-o nomem
+		Disable the random memory access implementation.
+
 Copyright
 	This file is Copyright (C) 2003, 2004 Andrea Mazzoleni
 

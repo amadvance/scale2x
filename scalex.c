@@ -34,7 +34,7 @@
 #include <stdio.h>
 #include <string.h>
 
-int file_process(const char* file0, const char* file1, int opt_scale_x, int opt_scale_y, int opt_crc)
+int file_process(const char* file0, const char* file1, int opt_scale_x, int opt_scale_y, int opt_crc, int opt_imp)
 {
 	unsigned pixel;
 	unsigned width;
@@ -69,7 +69,7 @@ int file_process(const char* file0, const char* file1, int opt_scale_x, int opt_
 	}
 	dst_ptr = scale2x_align_ptr(dst_alloc);
 
-	scale(opt_scale_x * 100 + opt_scale_y, dst_ptr, dst_slice, src_ptr, src_slice, pixel, width, height);
+	scale(opt_scale_x * 100 + opt_scale_y, dst_ptr, dst_slice, src_ptr, src_slice, pixel, width, height, opt_imp);
 
 	if (file_write(file1, dst_ptr, dst_slice, pixel, width * opt_scale_x, height * opt_scale_y, type, channel, palette, palette_size) != 0) {
 		goto bail;
@@ -111,7 +111,7 @@ static long long diffgettimeofday(struct timeval *start, struct timeval *stop)
 	return d;
 }
 
-int file_speed(const char* file0, int opt_scale_x, int opt_scale_y)
+int file_speed(const char* file0, int opt_scale_x, int opt_scale_y, int opt_imp)
 {
 	unsigned pixel;
 	unsigned width;
@@ -160,7 +160,7 @@ int file_speed(const char* file0, int opt_scale_x, int opt_scale_y)
 		unsigned i;
 
 		for (i = 0; i < 1000; ++i)
-			scale(opt_scale_x * 100 + opt_scale_y, dst_ptr, dst_slice, src_ptr, src_slice, pixel, width, height);
+			scale(opt_scale_x * 100 + opt_scale_y, dst_ptr, dst_slice, src_ptr, src_slice, pixel, width, height, opt_imp);
 
 		amount += i * width * height * pixel;
 
@@ -203,14 +203,18 @@ void usage(void)
 	version();
 	printf("Fast implementation of the Scale2/3/4x effects\n");
 #ifdef USE_SCALE2X_SSE2
-	printf("(using SSE2 optimization)\n");
+	printf("(using SSE2 vector implementation)\n");
 #endif
 #ifdef USE_SCALE2X_NEON
-	printf("(using ARM NEON optimization)\n");
+	printf("(using NEON vector implementation)\n");
 #endif
 	printf("\nSyntax: scalex [-k N] FROM.png TO.png\n");
 	printf("\nOptions:\n");
 	printf("\t-k N\tSelect the scale factor. 2, 2x3, 2x4, 3 or 4. (default 2).\n");
+#if defined(USE_SCALE2X_SSE2) || defined(USE_SCALE2X_NEON)
+	printf("\t-o novect\tDisable vector implementation.\n");
+#endif
+	printf("\t-o nomem\tDisable random memory access implementation.\n");
 	printf("\nMore info at " PACKAGE_URL "\n");
 	exit(EXIT_FAILURE);
 }
@@ -218,6 +222,7 @@ void usage(void)
 #ifdef HAVE_GETOPT_LONG
 struct option long_options[] = {
 	{ "scale", 1, 0, 'k' },
+	{ "opt", 1, 0, 'o' },
 	{ "speed", 0, 0, 'T' },
 	{ "crc", 0, 0, 'c' },
 	{ "help", 0, 0, 'h' },
@@ -226,7 +231,7 @@ struct option long_options[] = {
 };
 #endif
 
-#define OPTIONS "k:Tchv"
+#define OPTIONS "k:o:Tchv"
 
 int main(int argc, char* argv[])
 {
@@ -234,6 +239,7 @@ int main(int argc, char* argv[])
 	int opt_scale_y = 2;
 	int opt_crc = 0;
 	int opt_speed = 0;
+	int opt_imp = 0;
 	int c;
 
 	opterr = 0;
@@ -272,6 +278,16 @@ int main(int argc, char* argv[])
 				}
 			}
 			break;
+		case 'o' :
+			if (strcmp(optarg, "novect") == 0) {
+				opt_imp |= SCALE2X_OPT_NOVECT;
+			} else if (strcmp(optarg, "nomem") == 0) {
+				opt_imp |= SCALE2X_OPT_NOMEM;
+			} else {
+				printf("Invalid -o option. Valid values are novect, nomem.\n");
+				exit(EXIT_FAILURE);
+			}
+			break;
 		case 'c' :
 			opt_crc = 1;
 			break;
@@ -290,7 +306,7 @@ int main(int argc, char* argv[])
 			exit(EXIT_FAILURE);
 		}
 
-		if (file_speed(argv[optind], opt_scale_x, opt_scale_y) != 0) {
+		if (file_speed(argv[optind], opt_scale_x, opt_scale_y, opt_imp) != 0) {
 			exit(EXIT_FAILURE);
 		}
 	} else {
@@ -299,7 +315,7 @@ int main(int argc, char* argv[])
 			exit(EXIT_FAILURE);
 		}
 
-		if (file_process(argv[optind], argv[optind + 1], opt_scale_x, opt_scale_y, opt_crc) != 0) {
+		if (file_process(argv[optind], argv[optind + 1], opt_scale_x, opt_scale_y, opt_crc, opt_imp) != 0) {
 			exit(EXIT_FAILURE);
 		}
 	}
