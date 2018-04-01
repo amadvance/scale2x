@@ -38,6 +38,7 @@ AC_C_BIGENDIAN
 
 dnl Checks for compiler
 AC_CHECK_CC_OPT([-msse2], CFLAGS="$CFLAGS -msse2", [])
+AC_CHECK_CC_OPT([-mfpu=neon], CFLAGS="$CFLAGS -mfpu=neon", [])
 AC_CHECK_CC_OPT([-Wall], CFLAGS="$CFLAGS -Wall", [])
 AC_CHECK_CC_OPT([-Wextra], CFLAGS="$CFLAGS -Wextra", [])
 

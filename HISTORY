@@ -4,6 +4,7 @@ Scale2x HISTORY
 4.1 2018/04
 ===========
  * Added a new ARM NEON implementation [Thomas Bernard].
+   To enable it, you must build with the -mfpu=neon option.
  * Support implementation selection at runtime with the new -o cmdline
    option, and the "opt" function argument.
 
