@@ -17,9 +17,11 @@
 #ifndef __SCALE2X_H
 #define __SCALE2X_H
 
-typedef unsigned char scale2x_uint8;
-typedef unsigned short scale2x_uint16;
-typedef unsigned scale2x_uint32;
+#include <stdint.h>
+
+typedef uint8_t scale2x_uint8;
+typedef uint16_t scale2x_uint16;
+typedef uint32_t scale2x_uint32;
 
 /**
  * Enable the SSE2 implementation.
@@ -31,7 +33,7 @@ typedef unsigned scale2x_uint32;
 /**
  * Enable the ARM NEON implementation.
  */
-#if defined(__ARM_NEON)
+#if defined(__GNUC__) && defined(__ARM_NEON)
 #define USE_SCALE2X_NEON 1
 #endif
 
@@ -50,20 +52,18 @@ typedef unsigned scale2x_uint32;
 #define SCALE2X_ALIGN_ALLOC (SCALE2X_ALIGN_SIZE - 1)
 
 /**
- * Align a pointer to bytes.
+ * Align a pointer.
  */
 static inline void* scale2x_align_ptr(const void* ptr)
 {
-#ifdef USE_SCALE2X_SSE2
-	__asm__(
-		"add $15, %0\n"
-		"and $-16, %0\n"
-		: "+r" (ptr)
-		:
-		: "cc"
-	);
-#endif
+#if SCALE2X_ALIGN_SIZE != 1
+	intptr_t iptr = (intptr_t)ptr;
+	iptr += SCALE2X_ALIGN_SIZE - 1;
+	iptr &= -(intptr_t)SCALE2X_ALIGN_SIZE;
+	return (void *)iptr;
+#else
 	return (void*)ptr;
+#endif
 }
 
 /**
@@ -71,16 +71,13 @@ static inline void* scale2x_align_ptr(const void* ptr)
  */
 static inline unsigned scale2x_align_size(unsigned size)
 {
-#ifdef USE_SCALE2X_SSE2
-	__asm__(
-		"add $15, %0\n"
-		"and $-16, %0\n"
-		: "+r" (size)
-		:
-		: "cc"
-	);
-#endif
+#if SCALE2X_ALIGN_SIZE != 1
+	size += SCALE2X_ALIGN_SIZE - 1;
+	size &= -(int)SCALE2X_ALIGN_SIZE;
 	return size;
+#else
+	return size;
+#endif
 }
 
 void scale2x_8_def(scale2x_uint8* dst0, scale2x_uint8* dst1, const scale2x_uint8* src0, const scale2x_uint8* src1, const scale2x_uint8* src2, unsigned count);
