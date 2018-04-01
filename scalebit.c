@@ -50,6 +50,10 @@ static inline void stage_scale2x(void* dst0, void* dst1, const void* src0, const
 	case 1 : scale2x_8_sse2(SSDST(8, 0), SSDST(8, 1), SSSRC(8, 0), SSSRC(8, 1), SSSRC(8, 2), pixel_per_row); break;
 	case 2 : scale2x_16_sse2(SSDST(16, 0), SSDST(16, 1), SSSRC(16, 0), SSSRC(16, 1), SSSRC(16, 2), pixel_per_row); break;
 	case 4 : scale2x_32_sse2(SSDST(32, 0), SSDST(32, 1), SSSRC(32, 0), SSSRC(32, 1), SSSRC(32, 2), pixel_per_row); break;
+#elif defined(USE_SCALE2X_NEON)
+	case 1 : scale2x_8_neon(SSDST(8, 0), SSDST(8, 1), SSSRC(8, 0), SSSRC(8, 1), SSSRC(8, 2), pixel_per_row); break;
+	case 2 : scale2x_16_neon(SSDST(16, 0), SSDST(16, 1), SSSRC(16, 0), SSSRC(16, 1), SSSRC(16, 2), pixel_per_row); break;
+	case 4 : scale2x_32_neon(SSDST(32, 0), SSDST(32, 1), SSSRC(32, 0), SSSRC(32, 1), SSSRC(32, 2), pixel_per_row); break;
 #else
 	case 1 : scale2x_8_def(SSDST(8, 0), SSDST(8, 1), SSSRC(8, 0), SSSRC(8, 1), SSSRC(8, 2), pixel_per_row); break;
 	case 2 : scale2x_16_def(SSDST(16, 0), SSDST(16, 1), SSSRC(16, 0), SSSRC(16, 1), SSSRC(16, 2), pixel_per_row); break;
@@ -68,6 +72,10 @@ static inline void stage_scale2x3(void* dst0, void* dst1, void* dst2, const void
 	case 1 : scale2x3_8_sse2(SSDST(8, 0), SSDST(8, 1), SSDST(8, 2), SSSRC(8, 0), SSSRC(8, 1), SSSRC(8, 2), pixel_per_row); break;
 	case 2 : scale2x3_16_sse2(SSDST(16, 0), SSDST(16, 1), SSDST(16, 2), SSSRC(16, 0), SSSRC(16, 1), SSSRC(16, 2), pixel_per_row); break;
 	case 4 : scale2x3_32_sse2(SSDST(32, 0), SSDST(32, 1), SSDST(32, 2), SSSRC(32, 0), SSSRC(32, 1), SSSRC(32, 2), pixel_per_row); break;
+#elif defined(USE_SCALE2X_NEON)
+	case 1 : scale2x3_8_neon(SSDST(8, 0), SSDST(8, 1), SSDST(8, 2), SSSRC(8, 0), SSSRC(8, 1), SSSRC(8, 2), pixel_per_row); break;
+	case 2 : scale2x3_16_neon(SSDST(16, 0), SSDST(16, 1), SSDST(16, 2), SSSRC(16, 0), SSSRC(16, 1), SSSRC(16, 2), pixel_per_row); break;
+	case 4 : scale2x3_32_neon(SSDST(32, 0), SSDST(32, 1), SSDST(32, 2), SSSRC(32, 0), SSSRC(32, 1), SSSRC(32, 2), pixel_per_row); break;
 #else
 	case 1 : scale2x3_8_def(SSDST(8, 0), SSDST(8, 1), SSDST(8, 2), SSSRC(8, 0), SSSRC(8, 1), SSSRC(8, 2), pixel_per_row); break;
 	case 2 : scale2x3_16_def(SSDST(16, 0), SSDST(16, 1), SSDST(16, 2), SSSRC(16, 0), SSSRC(16, 1), SSSRC(16, 2), pixel_per_row); break;
@@ -86,6 +94,10 @@ static inline void stage_scale2x4(void* dst0, void* dst1, void* dst2, void* dst3
 	case 1 : scale2x4_8_sse2(SSDST(8, 0), SSDST(8, 1), SSDST(8, 2), SSDST(8, 3), SSSRC(8, 0), SSSRC(8, 1), SSSRC(8, 2), pixel_per_row); break;
 	case 2 : scale2x4_16_sse2(SSDST(16, 0), SSDST(16, 1), SSDST(16, 2), SSDST(16, 3), SSSRC(16, 0), SSSRC(16, 1), SSSRC(16, 2), pixel_per_row); break;
 	case 4 : scale2x4_32_sse2(SSDST(32, 0), SSDST(32, 1), SSDST(32, 2), SSDST(32, 3), SSSRC(32, 0), SSSRC(32, 1), SSSRC(32, 2), pixel_per_row); break;
+#elif defined(USE_SCALE2X_NEON)
+	case 1 : scale2x4_8_neon(SSDST(8, 0), SSDST(8, 1), SSDST(8, 2), SSDST(8, 3), SSSRC(8, 0), SSSRC(8, 1), SSSRC(8, 2), pixel_per_row); break;
+	case 2 : scale2x4_16_neon(SSDST(16, 0), SSDST(16, 1), SSDST(16, 2), SSDST(16, 3), SSSRC(16, 0), SSSRC(16, 1), SSSRC(16, 2), pixel_per_row); break;
+	case 4 : scale2x4_32_neon(SSDST(32, 0), SSDST(32, 1), SSDST(32, 2), SSDST(32, 3), SSSRC(32, 0), SSSRC(32, 1), SSSRC(32, 2), pixel_per_row); break;
 #else
 	case 1 : scale2x4_8_def(SSDST(8, 0), SSDST(8, 1), SSDST(8, 2), SSDST(8, 3), SSSRC(8, 0), SSSRC(8, 1), SSSRC(8, 2), pixel_per_row); break;
 	case 2 : scale2x4_16_def(SSDST(16, 0), SSDST(16, 1), SSDST(16, 2), SSDST(16, 3), SSSRC(16, 0), SSSRC(16, 1), SSSRC(16, 2), pixel_per_row); break;
