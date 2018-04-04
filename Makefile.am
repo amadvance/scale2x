@@ -61,7 +61,7 @@ EXTRA_DIST = \
 man_MANS = doc/scalex.1 doc/scalerx.1
 
 scalex_SOURCES = \
-	scalex.c scalebit.c scalebit.h getopt.c portable.h file.c file.h scale2x.c scale3x.c
+	scalex.c scalebit.c scalebit.h getopt.c portable.h file.c file.h scale2x.c scale3x.c pixel.c pixel.h
 
 scalerx_SOURCES = \
 	scalerx.c getopt.c portable.h file.c file.h pixel.c pixel.h

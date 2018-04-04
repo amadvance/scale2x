@@ -25,6 +25,7 @@
 
 #include "scalebit.h"
 #include "file.h"
+#include "pixel.h"
 #include "scale2x.h"
 #include "portable.h"
 
@@ -111,36 +112,15 @@ static long long diffgettimeofday(struct timeval *start, struct timeval *stop)
 	return d;
 }
 
-int file_speed(const char* file0, int opt_scale_x, int opt_scale_y, int opt_imp)
+int image_speed(const unsigned char* src_ptr, unsigned src_slice, unsigned pixel, unsigned width, unsigned height, int opt_scale_x, int opt_scale_y, int opt_imp)
 {
-	unsigned pixel;
-	unsigned width;
-	unsigned height;
-	void* src_alloc = 0;
-	unsigned char* src_ptr = 0;
-	unsigned src_slice;
 	void* dst_alloc = 0;
 	unsigned char* dst_ptr = 0;
 	unsigned dst_slice;
-	int type;
-	int channel;
-	png_color* palette = 0;
-	unsigned palette_size;
 	struct timeval start;
 	struct timeval stop;
 	long long amount;
 	long long elapsed;
-
-	if (file_read(file0, &src_alloc, &src_ptr, &src_slice, &pixel, &width, &height, &type, &channel, &palette, &palette_size, 1) != 0) {
-		goto bail;
-	}
-
-	if (scale_precondition(opt_scale_x * 100 + opt_scale_y, pixel, width, height) != 0) {
-		fprintf(stderr, "Error in the size of the source bitmap. Generally this happen\n");
-		fprintf(stderr, "when the bitmap is too small or when the width is not an exact\n");
-		fprintf(stderr, "multiplier of 8 bytes.\n");
-		goto bail;
-	}
 
 	dst_slice = scale2x_align_size(width * pixel * opt_scale_x);
 	dst_alloc = malloc(dst_slice * height * opt_scale_y + SCALE2X_ALIGN_ALLOC);
@@ -154,6 +134,8 @@ int file_speed(const char* file0, int opt_scale_x, int opt_scale_y, int opt_imp)
 		fprintf(stderr, "Time error.\n");
 		goto bail;
 	}
+
+	printf("Speed test with %d bits per pixel\n", pixel * 8);
 
 	amount = 0;
 	while (1) {
@@ -181,13 +163,96 @@ int file_speed(const char* file0, int opt_scale_x, int opt_scale_y, int opt_imp)
 	printf("\nInput data processed at %g MB/s\n", amount / (double)elapsed);
 
 	free(dst_alloc);
+
+	return 0;
+
+bail:
+	free(dst_alloc);
+	return -1;
+}
+
+/**
+ * Integer reversible hash function for 32 bits.
+ * Implementation of the Robert Jenkins "4-byte Integer Hashing",
+ * from http://burtleburtle.net/bob/hash/integer.html
+ */
+unsigned inthash(unsigned key)
+{
+	key -= key << 6;
+	key ^= key >> 17;
+	key -= key << 9;
+	key ^= key << 4;
+	key -= key << 3;
+	key ^= key << 10;
+	key ^= key >> 15;
+
+	return key;
+}
+
+int file_speed(const char* file0, int opt_scale_x, int opt_scale_y, int opt_imp)
+{
+	unsigned pixel;
+	unsigned width;
+	unsigned height;
+	void* src_alloc = 0;
+	unsigned char* src_ptr = 0;
+	unsigned src_slice;
+	int type;
+	int channel;
+	png_color* palette = 0;
+	unsigned palette_size;
+	unsigned pack;
+
+	if (file_read(file0, &src_alloc, &src_ptr, &src_slice, &pixel, &width, &height, &type, &channel, &palette, &palette_size, 1) != 0) {
+		goto bail;
+	}
+
+	if (scale_precondition(opt_scale_x * 100 + opt_scale_y, pixel, width, height) != 0) {
+		fprintf(stderr, "Error in the size of the source bitmap. Generally this happen\n");
+		fprintf(stderr, "when the bitmap is too small or when the width is not an exact\n");
+		fprintf(stderr, "multiplier of 8 bytes.\n");
+		goto bail;
+	}
+
+	/* repeat the test reducing the bit depth */
+	for (pack = 1; pixel / pack != 0; pack *= 2) {
+		void* tmp_alloc;
+		unsigned char* tmp_ptr;
+		unsigned tmp_slice;
+		unsigned tmp_pixel = pixel / pack;
+		unsigned x, y;
+
+		tmp_slice = scale2x_align_size(width * tmp_pixel);
+		tmp_alloc = malloc(tmp_slice * height + SCALE2X_ALIGN_ALLOC);
+		if (!tmp_alloc) {
+			fprintf(stderr, "Low memory.\n");
+			goto bail;
+		}
+		tmp_ptr = scale2x_align_ptr(tmp_alloc);
+
+		/* dummy packing of the image to reduce bit depth */
+		for (y = 0; y < height; ++y) {
+			for (x = 0; x < width; ++x) {
+				unsigned v = pixel_get(x, y, src_ptr, src_slice, pixel, width, height, 0);
+
+				/* dummy transformation to diffuse the pixel value */
+				v = inthash(v);
+
+				pixel_put(x, y, tmp_ptr, tmp_slice, tmp_pixel, width, height, v);
+			}
+		}
+
+		image_speed(tmp_ptr, tmp_slice, tmp_pixel, width, height, opt_scale_x, opt_scale_y, opt_imp);
+
+		free(tmp_alloc);
+	}
+
 	free(src_alloc);
 	free(palette);
 
 	return 0;
 
 bail:
-	free(dst_alloc);
 	free(src_alloc);
 	free(palette);
 	return -1;
