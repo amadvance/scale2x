@@ -194,5 +194,6 @@ check-local:
 	$(AM_V_at)cmp bench/checkx.lst bench/checkrx.lst
 	@echo -- Speed test
 	$(AM_V_at)$(TESTENV) ./scalex$(EXEEXT) -k 2 -T template.png
+	$(AM_V_at)$(TESTENV) ./scalex$(EXEEXT) -k 2 -T example/pengo-1.png
 	@echo Success!
 

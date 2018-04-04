@@ -160,7 +160,7 @@ int image_speed(const unsigned char* src_ptr, unsigned src_slice, unsigned pixel
 			break;
 	}
 
-	printf("\nInput data processed at %g MB/s\n", amount / (double)elapsed);
+	printf("\nInput data processed at %g MB/s (%u bits per pixel)\n", amount / (double)elapsed, pixel * 8);
 
 	free(dst_alloc);
 
