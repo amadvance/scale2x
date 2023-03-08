@@ -9,6 +9,8 @@ AC_CANONICAL_HOST
 # Checks for programs.
 AC_PROG_CC
 AC_CHECK_PROG([WINE],[wine],[wine],[])
+AC_CHECK_PROG([ADVD2],[advd2],[advd2],[])
+AM_CONDITIONAL(HAVE_ADVD2, [test x"$ADVD2" != x])
 
 # Checks for libraries.
 AC_CHECK_LIB([m], [log], [], [AC_MSG_ERROR([the libm library is missing])])

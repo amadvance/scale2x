@@ -71,12 +71,13 @@ clean-local:
 	$(AM_V_at)$(RM) template.png
 
 # Docs
-
+if HAVE_ADVD2
 %.1 : %.d
 	advd2 man < $(srcdir)/$< > $@
 
 %.txt : %.d
 	advd2 txt < $(srcdir)/$< | todos > $@
+endif
 
 # Archives
 
