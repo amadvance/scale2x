@@ -52,7 +52,7 @@ void scalex(unsigned char* dst_ptr, unsigned dst_slice, const unsigned char* src
 	}
 }
 
-#define SCALE2X_REVISION_MAX 5
+#define SCALE2X_REVISION_MAX 4
 
 pixel_t lerp(pixel_t v0, pixel_t v1, double f)
 {
@@ -282,7 +282,7 @@ void scale2x(unsigned char* dst_ptr, unsigned dst_slice, const unsigned char* sr
 	}
 }
 
-#define SCALE3X_REVISION_MAX 7
+#define SCALE3X_REVISION_MAX 8
 
 void scale3x(unsigned char* dst_ptr, unsigned dst_slice, const unsigned char* src_ptr, unsigned src_slice, unsigned pixel, int width, int height, int opt_tes, int opt_ver)
 {
@@ -601,7 +601,7 @@ void scale3x(unsigned char* dst_ptr, unsigned dst_slice, const unsigned char* sr
 	}
 }
 
-#define SCALE4X_REVISION_MAX SCALE2X_REVISION_MAX
+#define SCALE4X_REVISION_MAX 3
 
 int scale4x(unsigned char* dst_ptr, unsigned dst_slice, const unsigned char* src_ptr, unsigned src_slice, unsigned pixel, int width, int height, int opt_tes, int opt_ver)
 {
@@ -1375,6 +1375,21 @@ int main(int argc, char* argv[])
 		if (optind + 2 != argc) {
 			usage();
 			exit(EXIT_FAILURE);
+		}
+
+		if (opt_crc) {
+			const char* base = strrchr(argv[optind], '/');
+			if (!base)
+				base = argv[optind];
+			else
+				++base;
+			printf("%s %dx%d", base, opt_scale_x, opt_scale_y);
+			switch (opt_ver) {
+			case 0 : printf(" 0\n"); break;
+			case 1 : printf(" x\n"); break;
+			case 2 : printf(" k\n"); break;
+			default : printf(" %d\n", opt_ver); break;
+			}
 		}
 
 		if (file_process(argv[optind], argv[optind + 1], opt_scale_x, opt_scale_y, opt_tes, opt_ver, opt_crc, opt_only124) != 0) {

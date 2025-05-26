@@ -380,6 +380,15 @@ int main(int argc, char* argv[])
 			exit(EXIT_FAILURE);
 		}
 
+		if (opt_crc) {
+			const char* base = strrchr(argv[optind], '/');
+			if (!base)
+				base = argv[optind];
+			else
+				++base;
+			printf("%s %dx%d x\n", base, opt_scale_x, opt_scale_y);
+		}
+
 		if (file_process(argv[optind], argv[optind + 1], opt_scale_x, opt_scale_y, opt_crc, opt_imp) != 0) {
 			exit(EXIT_FAILURE);
 		}
