@@ -52,7 +52,7 @@ void scalex(unsigned char* dst_ptr, unsigned dst_slice, const unsigned char* src
 	}
 }
 
-#define SCALE2X_REVISION_MAX 4
+#define SCALE2X_REVISION_MAX 7
 
 pixel_t lerp(pixel_t v0, pixel_t v1, double f)
 {
@@ -111,8 +111,18 @@ void scale2x(unsigned char* dst_ptr, unsigned dst_slice, const unsigned char* sr
 
 	for (y = 0; y < height; ++y) {
 		for (x = 0; x < width; ++x) {
-			pixel_t E0, E1, E2, E3;
+			pixel_t O[4];
 			pixel_t A, B, C, D, E, F, G, H, I;
+			pixel_t A1, B1, C1, G5, H5, I5, A0, D0, G0, C4, F4, I4;
+
+/*
+        ABC
+        DEF
+        GHI
+
+        O0O1
+        O2O3
+ */
 
 			A = pixel_get(x - 1, y - 1, src_ptr, src_slice, pixel, width, height, opt_tes);
 			B = pixel_get(x, y - 1, src_ptr, src_slice, pixel, width, height, opt_tes);
@@ -124,35 +134,48 @@ void scale2x(unsigned char* dst_ptr, unsigned dst_slice, const unsigned char* sr
 			H = pixel_get(x, y + 1, src_ptr, src_slice, pixel, width, height, opt_tes);
 			I = pixel_get(x + 1, y + 1, src_ptr, src_slice, pixel, width, height, opt_tes);
 
-			/*
-			        ABC
-			        DEF
-			        GHI
 
-			        E0E1
-			        E2E3
-			 */
+/*
+     0  1  2  3  4
+
+   0       A1 B1 C1
+   1    A0 PA PB PC C4
+   2    D0 PD PE PF F4
+   3    G0 PG PH PI I4
+   4       G5 H5 I5
+ */
+
+			A1 = pixel_get(x - 1, y - 2, src_ptr, src_slice, pixel, width, height, opt_tes);
+			B1 = pixel_get(x, y - 2, src_ptr, src_slice, pixel, width, height, opt_tes);
+			C1 = pixel_get(x + 1, y - 2, src_ptr, src_slice, pixel, width, height, opt_tes);
+			G5 = pixel_get(x - 1, y + 2, src_ptr, src_slice, pixel, width, height, opt_tes);
+			H5 = pixel_get(x, y + 2, src_ptr, src_slice, pixel, width, height, opt_tes);
+			I5 = pixel_get(x + 1, y + 2, src_ptr, src_slice, pixel, width, height, opt_tes);
+			A0 = pixel_get(x - 2, y - 1, src_ptr, src_slice, pixel, width, height, opt_tes);
+			D0 = pixel_get(x - 2, y, src_ptr, src_slice, pixel, width, height, opt_tes);
+			G0 = pixel_get(x - 2, y + 1, src_ptr, src_slice, pixel, width, height, opt_tes);
+			C4 = pixel_get(x + 2, y - 1, src_ptr, src_slice, pixel, width, height, opt_tes);
+			F4 = pixel_get(x + 2, y, src_ptr, src_slice, pixel, width, height, opt_tes);
+			I4 = pixel_get(x + 2, y + 1, src_ptr, src_slice, pixel, width, height, opt_tes);
+
 			switch (opt_ver) {
 			default :
 			case 0 :
 				/* version 0, normal scaling */
-				E0 = E;
-				E1 = E;
-				E2 = E;
-				E3 = E;
+				O[0] = E;
+				O[1] = E;
+				O[2] = E;
+				O[3] = E;
 				break;
 			case 1 :
 				/* default */
-				E0 = D == B && B != F && D != H ? D : E;
-				E1 = B == F && B != D && F != H ? F : E;
-				E2 = D == H && D != B && H != F ? D : E;
-				E3 = H == F && D != H && B != F ? F : E;
+				O[0] = D == B && B != F && D != H ? D : E;
+				O[1] = B == F && B != D && F != H ? F : E;
+				O[2] = D == H && D != B && H != F ? D : E;
+				O[3] = H == F && D != H && B != F ? F : E;
 				break;
 
-			case 2 :
-				/* scalek */
-
-#define SCALE2K_BASE(A, B, C, D, E, F, G, H, I, E0, E1, E2, E3) \
+#define SCALE2K_BASE(A, B, C, D, E, F, G, H, I, N0, N1, N2, N3) \
 	if (D == B && B != E && D != E) { \
 		/* diagonal */ \
 		if (B == C && D == G) { \
@@ -160,45 +183,45 @@ void scale2x(unsigned char* dst_ptr, unsigned dst_slice, const unsigned char* sr
 		} \
 		else if (B == C) { \
 			/* horizontal slope */ \
-			E0 = lerp(D, E0, 0.75); \
-			E1 = lerp(D, E1, 0.25); \
+			O[N0] = lerp(D, O[N0], 0.75); \
+			O[N1] = lerp(D, O[N1], 0.25); \
 		} else if (D == G) { \
 			/* vertical slope */ \
-			E0 = lerp(D, E0, 0.75); \
-			E2 = lerp(D, E2, 0.25); \
+			O[N0] = lerp(D, O[N0], 0.75); \
+			O[N2] = lerp(D, O[N2], 0.25); \
 		} else { \
 			/* pure diagonal */ \
-			E0 = lerp(E0, D, 0.5); \
+			O[N0] = lerp(O[N0], D, 0.5); \
 		} \
 	}
 
 /* Used by AdvanceMAME */
-#define SCALE2K(A, B, C, D, E, F, G, H, I, E0, E1, E2, E3) \
+#define SCALE2K(A, B, C, D, E, F, G, H, I, N0, N1, N2, N3) \
 	if (D == B && B != E && D != E) { \
 		/* diagonal */ \
 		if (B == C && D == G) { \
 			/* square block */ \
 			if (A != E) { \
 				/* no star */ \
-				E0 = lerp(D, E0, 0.75); \
-				E1 = lerp(D, E1, 0.25); \
-				E2 = lerp(D, E2, 0.25); \
+				O[N0] = lerp(D, O[N0], 0.75); \
+				O[N1] = lerp(D, O[N1], 0.25); \
+				O[N2] = lerp(D, O[N2], 0.25); \
 			} \
 		} else if (B == C && C != F) { \
 			/* horizontal slope */ \
-			E0 = lerp(D, E0, 0.75); \
-			E1 = lerp(D, E1, 0.25); \
+			O[N0] = lerp(D, O[N0], 0.75); \
+			O[N1] = lerp(D, O[N1], 0.25); \
 		} else if (D == G && G != H) { \
 			/* vertical slope */ \
-			E0 = lerp(D, E0, 0.75); \
-			E2 = lerp(D, E2, 0.25); \
+			O[N0] = lerp(D, O[N0], 0.75); \
+			O[N2] = lerp(D, O[N2], 0.25); \
 		} else { \
 			/* pure diagonal */ \
-			E0 = lerp(E0, D, 0.5); \
+			O[N0] = lerp(O[N0], D, 0.5); \
 		} \
 	}
 
-#define SCALE2K_SPIKE(A, B, C, D, E, F, G, H, I, E0, E1, E2, E3) \
+#define SCALE2K_SPIKE(A, B, C, D, E, F, G, H, I, N0, N1, N2, N3) \
 	if (B != E && D != E) { \
 		if (D == B) { \
 			/* diagonal */ \
@@ -206,83 +229,278 @@ void scale2x(unsigned char* dst_ptr, unsigned dst_slice, const unsigned char* sr
 				/* square block */ \
 			} else if (B == C) { \
 				/* horizontal slope */ \
-				E0 = lerp(D, E0, 0.75); \
-				E1 = lerp(D, E1, 0.25); \
+				O[N0] = lerp(D, O[N0], 0.75); \
+				O[N1] = lerp(D, O[N1], 0.25); \
 			} else if (D == G) { \
 				/* vertical slope */ \
-				E0 = lerp(D, E0, 0.75); \
-				E2 = lerp(D, E2, 0.25); \
+				O[N0] = lerp(D, O[N0], 0.75); \
+				O[N2] = lerp(D, O[N2], 0.25); \
 			} else { \
 				/* pure diagonal */ \
-				E0 = lerp(E0, D, 0.5); \
+				O[N0] = lerp(O[N0], D, 0.5); \
 			} \
 		} else if (A == B && G == E) { \
 			/* horizontal spike */ \
-			E0 = lerp(D, E0, 0.5); \
+			O[N0] = lerp(D, O[N0], 0.5); \
 		} else if (A == D && C == E) { \
 			/* vertical spike */ \
-			E0 = lerp(B, E0, 0.5); \
+			O[N0] = lerp(B, O[N0], 0.5); \
 		} \
 	}
 
-#define SCALE2K_ALTERNATE(A, B, C, D, E, F, G, H, I, E0, E1, E2, E3) \
+#define SCALE2K_ALTERNATE(A, B, C, D, E, F, G, H, I, N0, N1, N2, N3) \
 	if (D == B && B != F && D != H) { \
 		/* diagonal */ \
 		if (B == C && D == G) { \
 			/* square block */ \
 			if (A != E) { \
-				E0 = lerp(D, E0, 0.75); \
-				E1 = lerp(D, E1, 0.25); \
-				E2 = lerp(D, E2, 0.25); \
+				O[N0] = lerp(D, O[N0], 0.75); \
+				O[N1] = lerp(D, O[N1], 0.25); \
+				O[N2] = lerp(D, O[N2], 0.25); \
 			} \
 		} else if (B == C && C != F) { \
 			/* horizontal slope */ \
-			E0 = lerp(D, E0, 0.75); \
-			E1 = lerp(D, E1, 0.25); \
+			O[N0] = lerp(D, O[N0], 0.75); \
+			O[N1] = lerp(D, O[N1], 0.25); \
 		} else if (D == G && G != H) { \
 			/* vertical slope */ \
-			E0 = lerp(D, E0, 0.75); \
-			E2 = lerp(D, E2, 0.25); \
+			O[N0] = lerp(D, O[N0], 0.75); \
+			O[N2] = lerp(D, O[N2], 0.25); \
 		} else { \
 			/* pure diagonal */ \
-			E0 = lerp(E0, D, 0.5); \
+			O[N0] = lerp(O[N0], D, 0.5); \
 		} \
 	}
 
-				E0 = E1 = E2 = E3 = E;
+			case 2 :
+				/* scalek */
+				O[0] = O[1] = O[2] = O[3] = E;
 
-				SCALE2K(A, B, C, D, E, F, G, H, I, E0, E1, E2, E3);
-				SCALE2K(G, D, A, H, E, B, I, F, C, E2, E0, E3, E1);
-				SCALE2K(I, H, G, F, E, D, C, B, A, E3, E2, E1, E0);
-				SCALE2K(C, F, I, B, E, H, A, D, G, E1, E3, E0, E2);
+				SCALE2K(A, B, C, D, E, F, G, H, I, 0, 1, 2, 3);
+				SCALE2K(G, D, A, H, E, B, I, F, C, 2, 0, 3, 1);
+				SCALE2K(I, H, G, F, E, D, C, B, A, 3, 2, 1, 0);
+				SCALE2K(C, F, I, B, E, H, A, D, G, 1, 3, 0, 2);
 
 				break;
+
+
+#define XBR_LV2_2X(PE, PI, PH, PF, PG, PC, PD, PB, PA, G5, C4, G0, D0, C1, B1, F4, I4, H5, I5, A0, A1, N0, N1, N2, N3) \
+	if (PE != PH && PE != PF) { \
+		unsigned e = dist(PC, PE) + dist(PE, PG) + dist(H5, PI) + dist (PI, F4) + 4 * dist(PH, PF); \
+		unsigned i = dist(PD, PH) + dist(PH, I5) + dist(I4, PF) + dist(PF, PB) + 4 * dist(PE, PI); \
+		if (e < i) { \
+			int ex2 = PE != PC && PB != PC; \
+			int ex3 = PE != PG && PD != PG; \
+			unsigned ke = dist(PF, PG); \
+			unsigned ki = dist(PH, PC); \
+			pixel_t px = dist(PE, PF) <= dist(PE, PH) ? PF : PH; \
+			if (ke == 0 && ki == 0 && ex3 && ex2) { \
+				LEFT_UP_2_2X(N3, N2, N1, px); \
+			} else if (2 * ke <= ki && ex3) { \
+				LEFT_2_2X(N3, N2, px); \
+			} else if (ke >= 2 * ki && ex2) { \
+				UP_2_2X(N3, N1, px); \
+			} else { \
+				DIA_2X(N3, px); \
+			} \
+		} \
+	}
+
+// XBR Level 3 - Enhanced edge detection with better diagonal handling
+#define XBR_LV3_2X(PE, PI, PH, PF, PG, PC, PD, PB, PA, G5, C4, G0, D0, C1, B1, F4, I4, H5, I5, A0, A1, N0, N1, N2, N3) \
+	if (PE != PH && PE != PF) { \
+		unsigned e = dist(PC, PE) + dist(PE, PG) + dist(H5, PI) + dist (PI, F4) + 4 * dist(PH, PF); \
+		unsigned i = dist(PD, PH) + dist(PH, I5) + dist(I4, PF) + dist(PF, PB) + 4 * dist(PE, PI); \
+		if (e < i) { \
+			int ex2 = PE != PC && PB != PC; \
+			int ex3 = PE != PG && PD != PG; \
+			unsigned ke = dist(PF, PG); \
+			unsigned ki = dist(PH, PC); \
+			int left_up = ex3 && ex2; \
+			int left_only = ex3 && !ex2; \
+			int up_only = !ex3 && ex2; \
+			pixel_t px = dist(PE, PF) <= dist(PE, PH) ? PF : PH; \
+			\
+			/* Enhanced blending conditions for Level 3 */ \
+			if (left_up && (ke * 2 <= ki) && (ki * 2 <= ke)) { \
+				LEFT_UP_2_2X_LV3(N3, N2, N1, px, PE); \
+			} else if (left_only && (ke * 2 <= ki)) { \
+				LEFT_2_2X_LV3(N3, N2, px, PE); \
+			} else if (up_only && (ki * 2 <= ke)) { \
+				UP_2_2X_LV3(N3, N1, px, PE); \
+			} else if (left_up) { \
+				LEFT_UP_2_2X(N3, N2, N1, px); \
+			} else if (left_only) { \
+				LEFT_2_2X(N3, N2, px); \
+			} else if (up_only) { \
+				UP_2_2X(N3, N1, px); \
+			} else { \
+				DIA_2X(N3, px); \
+			} \
+		} \
+	}
+
+/* XBR Level 4 - Most advanced with gradient-aware interpolation */
+#define XBR_LV4_2X(PE, PI, PH, PF, PG, PC, PD, PB, PA, G5, C4, G0, D0, C1, B1, F4, I4, H5, I5, A0, A1, N0, N1, N2, N3) \
+	if (PE != PH && PE != PF) { \
+		unsigned e = dist(PC, PE) + dist(PE, PG) + dist(H5, PI) + dist (PI, F4) + 4 * dist(PH, PF); \
+		unsigned i = dist(PD, PH) + dist(PH, I5) + dist(I4, PF) + dist(PF, PB) + 4 * dist(PE, PI); \
+		if (e < i) { \
+			int ex2 = PE != PC && PB != PC; \
+			int ex3 = PE != PG && PD != PG; \
+			unsigned ke = dist(PF, PG); \
+			unsigned ki = dist(PH, PC); \
+			\
+			/* Enhanced gradient detection for Level 4 */ \
+			unsigned grad_h = dist(PA, PB) + dist(PB, PC) + dist(PD, PE) + dist(PE, PF) + dist(PG, PH) + dist(PH, PI); \
+			unsigned grad_v = dist(A1, PA) + dist(PA, PD) + dist(B1, PB) + dist(PB, PE) + dist(C1, PC) + dist(PC, PF); \
+			unsigned grad_ratio = (grad_h > grad_v) ? (grad_h * 8) / (grad_v + 1) : (grad_v * 8) / (grad_h + 1); \
+			\
+			int left_up = ex3 && ex2; \
+			int left_only = ex3 && !ex2; \
+			int up_only = !ex3 && ex2; \
+			pixel_t px = dist(PE, PF) <= dist(PE, PH) ? PF : PH; \
+			\
+			/* Gradient-aware blending for Level 4 */ \
+			if (left_up && grad_ratio > 4) { \
+				LEFT_UP_2_2X_LV4(N3, N2, N1, px, PE, grad_ratio); \
+			} else if (left_only && (ke * 3 <= ki * 2) && grad_ratio > 2) { \
+				LEFT_2_2X_LV4(N3, N2, px, PE, grad_ratio); \
+			} else if (up_only && (ki * 3 <= ke * 2) && grad_ratio > 2) { \
+				UP_2_2X_LV4(N3, N1, px, PE, grad_ratio); \
+			} else if (left_up) { \
+				LEFT_UP_2_2X_LV3(N3, N2, N1, px, PE); \
+			} else if (left_only) { \
+				LEFT_2_2X_LV3(N3, N2, px, PE); \
+			} else if (up_only) { \
+				UP_2_2X_LV3(N3, N1, px, PE); \
+			} else { \
+				DIA_2X_LV4(N3, px, PE); \
+			} \
+		} \
+	}
+
+/* Level 2 interpolation macros */
+#define LEFT_UP_2_2X(N3, N2, N1, PIXEL) \
+	O[N3] = lerp(PIXEL, O[N3], 7.0 / 8); \
+	O[N1] = O[N2] = lerp(O[N2], PIXEL, 3.0 / 4);
+
+#define LEFT_2_2X(N3, N2, PIXEL) \
+	O[N3] = lerp(PIXEL, O[N3], 3.0 / 4); \
+	O[N2] = lerp(O[N2], PIXEL, 3.0 / 4);
+
+#define UP_2_2X(N3, N1, PIXEL) \
+	O[N3] = lerp(PIXEL, O[N3], 3.0 / 4); \
+	O[N1] = lerp(O[N1], PIXEL, 3.0 / 4);
+
+#define DIA_2X(N3, PIXEL) \
+	O[N3] = lerp(O[N3], PIXEL, 1.0 / 2);
+
+/* Level 3 enhanced interpolation macros */
+#define LEFT_UP_2_2X_LV3(N3, N2, N1, PIXEL, PE) \
+	O[N3] = lerp(PIXEL, O[N3], 5.0 / 8); \
+	O[N1] = lerp(O[N1], PIXEL, 5.0 / 8); \
+	O[N2] = lerp(O[N2], PIXEL, 5.0 / 8);
+
+#define LEFT_2_2X_LV3(N3, N2, PIXEL, PE) \
+	O[N3] = lerp(PIXEL, O[N3], 5.0 / 8); \
+	O[N2] = lerp(O[N2], PIXEL, 5.0 / 8);
+
+#define UP_2_2X_LV3(N3, N1, PIXEL, PE) \
+	O[N3] = lerp(PIXEL, O[N3], 5.0 / 8); \
+	O[N1] = lerp(O[N1], PIXEL, 5.0 / 8);
+
+/* Level 4 gradient-aware interpolation macros */
+#define LEFT_UP_2_2X_LV4(N3, N2, N1, PIXEL, PE, GRAD) \
+	{ \
+		if (GRAD > 8) { \
+			O[N3] = lerp(PIXEL, O[N3], 7.0 / 8); \
+			O[N1] = lerp(O[N1], PIXEL, 7.0 / 8); \
+			O[N2] = lerp(O[N2], PIXEL, 7.0 / 8); \
+		} else { \
+			O[N3] = lerp(PIXEL, O[N3], 5.0 / 8); \
+			O[N1] = lerp(O[N1], PIXEL, 5.0 / 8); \
+			O[N2] = lerp(O[N2], PIXEL, 5.0 / 8); \
+		} \
+	}
+
+#define LEFT_2_2X_LV4(N3, N2, PIXEL, PE, GRAD) \
+	{ \
+		if (GRAD > 8) { \
+			O[N3] = lerp(PIXEL, O[N3], 7.0 / 8); \
+			O[N2] = lerp(O[N2], PIXEL, 7.0 / 8); \
+		} else { \
+			O[N3] = lerp(PIXEL, O[N3], 5.0 / 8); \
+			O[N2] = lerp(O[N2], PIXEL, 5.0 / 8); \
+		} \
+	}
+
+#define UP_2_2X_LV4(N3, N1, PIXEL, PE, GRAD) \
+	{ \
+		if (GRAD > 8) { \
+			O[N3] = lerp(PIXEL, O[N3], 7.0 / 8); \
+			O[N1] = lerp(O[N1], PIXEL, 7.0 / 8); \
+		} else { \
+			O[N3] = lerp(PIXEL, O[N3], 5.0 / 8); \
+			O[N1] = lerp(O[N1], PIXEL, 5.0 / 8); \
+		} \
+	}
+
+#define DIA_2X_LV4(N3, PIXEL, PE) \
+	O[N3] = lerp(O[N3], PIXEL, 3.0 / 8);
 
 			case 3 :
-				/* rejected */
-				E0 = D == B && ((B != F && D != H) || D == A) ? D : E;
-				E1 = B == F && ((B != D && F != H) || B == C) ? F : E;
-				E2 = D == H && ((D != B && H != F) || D == G) ? D : E;
-				E3 = H == F && ((D != H && B != F) || H == I) ? F : E;
+				/* xbr level 2 */
+				O[0] = O[1] = O[2] = O[3] = E;
+
+				XBR_LV2_2X(E, I, H, F, G, C, D, B, A, G5, C4, G0, D0, C1, B1, F4, I4, H5, I5, A0, A1, 0, 1, 2, 3);
+				XBR_LV2_2X(E, C, F, B, I, A, H, D, G, I4, A1, I5, H5, A0, D0, B1, C1, F4, C4, G5, G0, 2, 0, 3, 1);
+				XBR_LV2_2X(E, A, B, D, C, G, F, H, I, C1, G0, C4, F4, G5, H5, D0, A0, B1, A1, I4, I5, 3, 2, 1, 0);
+				XBR_LV2_2X(E, G, D, H, A, I, B, F, C, A0, I5, A1, B1, I4, F4, H5, G5, D0, G0, C1, C4, 1, 3, 0, 2);
 				break;
 			case 4 :
+				/* xbr level 3 */
+				O[0] = O[1] = O[2] = O[3] = E;
+
+				XBR_LV3_2X(E, I, H, F, G, C, D, B, A, G5, C4, G0, D0, C1, B1, F4, I4, H5, I5, A0, A1, 0, 1, 2, 3);
+				XBR_LV3_2X(E, C, F, B, I, A, H, D, G, I4, A1, I5, H5, A0, D0, B1, C1, F4, C4, G5, G0, 2, 0, 3, 1);
+				XBR_LV3_2X(E, A, B, D, C, G, F, H, I, C1, G0, C4, F4, G5, H5, D0, A0, B1, A1, I4, I5, 3, 2, 1, 0);
+				XBR_LV3_2X(E, G, D, H, A, I, B, F, C, A0, I5, A1, B1, I4, F4, H5, G5, D0, G0, C1, C4, 1, 3, 0, 2);
+				break;
+			case 5 :
+				/* xbr level 4 */
+				O[0] = O[1] = O[2] = O[3] = E;
+
+				XBR_LV4_2X(E, I, H, F, G, C, D, B, A, G5, C4, G0, D0, C1, B1, F4, I4, H5, I5, A0, A1, 0, 1, 2, 3);
+				XBR_LV4_2X(E, C, F, B, I, A, H, D, G, I4, A1, I5, H5, A0, D0, B1, C1, F4, C4, G5, G0, 2, 0, 3, 1);
+				XBR_LV4_2X(E, A, B, D, C, G, F, H, I, C1, G0, C4, F4, G5, H5, D0, A0, B1, A1, I4, I5, 3, 2, 1, 0);
+				XBR_LV4_2X(E, G, D, H, A, I, B, F, C, A0, I5, A1, B1, I4, F4, H5, G5, D0, G0, C1, C4, 1, 3, 0, 2);
+				break;
+			case 6 :
+				/* rejected */
+				O[0] = D == B && ((B != F && D != H) || D == A) ? D : E;
+				O[1] = B == F && ((B != D && F != H) || B == C) ? F : E;
+				O[2] = D == H && ((D != B && H != F) || D == G) ? D : E;
+				O[3] = H == F && ((D != H && B != F) || H == I) ? F : E;
+				break;
+			case 7 :
 				/* rejected, loses isolated pixels */
-				E0 = D == B && A != E ? D : E;
-				E1 = B == F && C != E ? F : E;
-				E2 = D == H && G != E ? D : E;
-				E3 = H == F && I != E ? F : E;
+				O[0] = D == B && A != E ? D : E;
+				O[1] = B == F && C != E ? F : E;
+				O[2] = D == H && G != E ? D : E;
+				O[3] = H == F && I != E ? F : E;
 				break;
 			}
 
-			pixel_put(x * 2, y * 2, dst_ptr, dst_slice, pixel, width * 2, height * 2, E0);
-			pixel_put(x * 2 + 1, y * 2, dst_ptr, dst_slice, pixel, width * 2, height * 2, E1);
-			pixel_put(x * 2, y * 2 + 1, dst_ptr, dst_slice, pixel, width * 2, height * 2, E2);
-			pixel_put(x * 2 + 1, y * 2 + 1, dst_ptr, dst_slice, pixel, width * 2, height * 2, E3);
+			pixel_put(x * 2, y * 2, dst_ptr, dst_slice, pixel, width * 2, height * 2, O[0]);
+			pixel_put(x * 2 + 1, y * 2, dst_ptr, dst_slice, pixel, width * 2, height * 2, O[1]);
+			pixel_put(x * 2, y * 2 + 1, dst_ptr, dst_slice, pixel, width * 2, height * 2, O[2]);
+			pixel_put(x * 2 + 1, y * 2 + 1, dst_ptr, dst_slice, pixel, width * 2, height * 2, O[3]);
 		}
 	}
 }
 
-#define SCALE3X_REVISION_MAX 8
+#define SCALE3X_REVISION_MAX 11
 
 void scale3x(unsigned char* dst_ptr, unsigned dst_slice, const unsigned char* src_ptr, unsigned src_slice, unsigned pixel, int width, int height, int opt_tes, int opt_ver)
 {
@@ -291,10 +509,24 @@ void scale3x(unsigned char* dst_ptr, unsigned dst_slice, const unsigned char* sr
 
 	for (y = 0; y < height; ++y) {
 		for (x = 0; x < width; ++x) {
-			pixel_t E0, E1, E2, E3, E4, E5, E6, E7, E8;
+			pixel_t O[9];
 			pixel_t A, B, C, D, E, F, G, H, I;
+			pixel_t A1, B1, C1, G5, H5, I5, A0, D0, G0, C4, F4, I4;
 			int k0, k1, k2, k3;
 			int c0, c1, c2, c3;
+
+/*
+        ABC
+        DEF
+        GHI
+
+        k0k1
+        k2k3
+
+        O0O1O2
+        O3O4O5
+        O6O7O8
+ */
 
 			A = pixel_get(x - 1, y - 1, src_ptr, src_slice, pixel, width, height, opt_tes);
 			B = pixel_get(x, y - 1, src_ptr, src_slice, pixel, width, height, opt_tes);
@@ -306,31 +538,42 @@ void scale3x(unsigned char* dst_ptr, unsigned dst_slice, const unsigned char* sr
 			H = pixel_get(x, y + 1, src_ptr, src_slice, pixel, width, height, opt_tes);
 			I = pixel_get(x + 1, y + 1, src_ptr, src_slice, pixel, width, height, opt_tes);
 
-			/*
-			        ABC
-			        DEF
-			        GHI
+/*
+     0  1  2  3  4
 
-			        k0k1
-			        k2k3
+   0       A1 B1 C1
+   1    A0 PA PB PC C4
+   2    D0 PD PE PF F4
+   3    G0 PG PH PI I4
+   4       G5 H5 I5
+ */
 
-			        E0E1E2
-			        E3E4E5
-			        E6E7E8
-			 */
+			A1 = pixel_get(x - 1, y - 2, src_ptr, src_slice, pixel, width, height, opt_tes);
+			B1 = pixel_get(x, y - 2, src_ptr, src_slice, pixel, width, height, opt_tes);
+			C1 = pixel_get(x + 1, y - 2, src_ptr, src_slice, pixel, width, height, opt_tes);
+			G5 = pixel_get(x - 1, y + 2, src_ptr, src_slice, pixel, width, height, opt_tes);
+			H5 = pixel_get(x, y + 2, src_ptr, src_slice, pixel, width, height, opt_tes);
+			I5 = pixel_get(x + 1, y + 2, src_ptr, src_slice, pixel, width, height, opt_tes);
+			A0 = pixel_get(x - 2, y - 1, src_ptr, src_slice, pixel, width, height, opt_tes);
+			D0 = pixel_get(x - 2, y, src_ptr, src_slice, pixel, width, height, opt_tes);
+			G0 = pixel_get(x - 2, y + 1, src_ptr, src_slice, pixel, width, height, opt_tes);
+			C4 = pixel_get(x + 2, y - 1, src_ptr, src_slice, pixel, width, height, opt_tes);
+			F4 = pixel_get(x + 2, y, src_ptr, src_slice, pixel, width, height, opt_tes);
+			I4 = pixel_get(x + 2, y + 1, src_ptr, src_slice, pixel, width, height, opt_tes);
+
 			switch (opt_ver) {
 			default :
 			case 0 :
 				/* version 0, normal scaling */
-				E0 = E;
-				E1 = E;
-				E2 = E;
-				E3 = E;
-				E4 = E;
-				E5 = E;
-				E6 = E;
-				E7 = E;
-				E8 = E;
+				O[0] = E;
+				O[1] = E;
+				O[2] = E;
+				O[3] = E;
+				O[4] = E;
+				O[5] = E;
+				O[6] = E;
+				O[7] = E;
+				O[8] = E;
 				break;
 			case 1 :
 				/* default */
@@ -338,31 +581,18 @@ void scale3x(unsigned char* dst_ptr, unsigned dst_slice, const unsigned char* sr
 				k1 = B == F && B != D && F != H;
 				k2 = D == H && D != B && H != F;
 				k3 = H == F && D != H && B != F;
-				E0 = k0 ? D : E;
-				E1 = (k0 && E != C) || (k1 && E != A) ? B : E;
-				E2 = k1 ? F : E;
-				E3 = (k0 && E != G) || (k2 && E != A) ? D : E;
-				E4 = E;
-				E5 = (k1 && E != I) || (k3 && E != C) ? F : E;
-				E6 = k2 ? D : E;
-				E7 = (k2 && E != I) || (k3 && E != G) ? H : E;
-				E8 = k3 ? F : E;
+				O[0] = k0 ? D : E;
+				O[1] = (k0 && E != C) || (k1 && E != A) ? B : E;
+				O[2] = k1 ? F : E;
+				O[3] = (k0 && E != G) || (k2 && E != A) ? D : E;
+				O[4] = E;
+				O[5] = (k1 && E != I) || (k3 && E != C) ? F : E;
+				O[6] = k2 ? D : E;
+				O[7] = (k2 && E != I) || (k3 && E != G) ? H : E;
+				O[8] = k3 ? F : E;
 				break;
 
-			case 2 :
-				/* scalek */
-
-				/*
-				        ABC
-				        DEF
-				        GHI
-
-				        E0E1E2
-				        E3E4E5
-				        E6E7E8
-				 */
-
-#define SCALE3K_BASE(A, B, C, D, E, F, G, H, I, E0, E1, E2, E3, E4, E5, E6, E7, E8) \
+#define SCALE3K_BASE(A, B, C, D, E, F, G, H, I, N0, N1, N2, N3, N4, N5, N6, N7, N8) \
 	if (D == B && B != E && D != E) { \
 		/* diagonal */ \
 		if (B == C && D == G) { \
@@ -370,58 +600,58 @@ void scale3x(unsigned char* dst_ptr, unsigned dst_slice, const unsigned char* sr
 		} \
 		else if (B == C) { \
 			/* horizontal slope */ \
-			E0 = D; \
-			E1 = lerp(D, E1, 0.75); \
-			E2 = lerp(D, E2, 0.25); \
-			E3 = lerp(D, E3, 0.25); \
+			O[N0] = D; \
+			O[N1] = lerp(D, O[N1], 0.75); \
+			O[N2] = lerp(D, O[N2], 0.25); \
+			O[N3] = lerp(D, O[N3], 0.25); \
 		} else if (D == G) { \
 			/* vertical slope */ \
-			E0 = D; \
-			E3 = lerp(D, E3, 0.75); \
-			E6 = lerp(D, E6, 0.25); \
-			E1 = lerp(D, E1, 0.25); \
+			O[N0] = D; \
+			O[N3] = lerp(D, O[N3], 0.75); \
+			O[N6] = lerp(D, O[N6], 0.25); \
+			O[N1] = lerp(D, O[N1], 0.25); \
 		} else { \
 			/* pure diagonal */ \
-			E0 = lerp(D, E0, 0.875); \
-			E1 = lerp(D, E1, 0.125); \
-			E3 = lerp(D, E3, 0.125); \
+			O[N0] = lerp(D, O[N0], 0.875); \
+			O[N1] = lerp(D, O[N1], 0.125); \
+			O[N3] = lerp(D, O[N3], 0.125); \
 		} \
 	}
 
 /* Used by AdvanceMAME */
-#define SCALE3K(A, B, C, D, E, F, G, H, I, E0, E1, E2, E3, E4, E5, E6, E7, E8) \
+#define SCALE3K(A, B, C, D, E, F, G, H, I, N0, N1, N2, N3, N4, N5, N6, N7, N8) \
 	if (D == B && B != E && D != E) { \
 		/* diagonal */ \
 		if (B == C && D == G) { \
 			/* square block */ \
 			if (A != E) { \
-				E0 = D; \
-				E1 = lerp(D, E1, 0.75); \
-				E2 = lerp(D, E2, 0.25); \
-				E3 = lerp(D, E3, 0.75); \
-				E6 = lerp(D, E6, 0.25); \
+				O[N0] = D; \
+				O[N1] = lerp(D, O[N1], 0.75); \
+				O[N2] = lerp(D, O[N2], 0.25); \
+				O[N3] = lerp(D, O[N3], 0.75); \
+				O[N6] = lerp(D, O[N6], 0.25); \
 			} \
 		} else if (B == C && C != F) { \
 			/* horizontal slope */ \
-			E0 = D; \
-			E1 = lerp(D, E1, 0.75); \
-			E2 = lerp(D, E2, 0.25); \
-			E3 = lerp(D, E3, 0.25); \
+			O[N0] = D; \
+			O[N1] = lerp(D, O[N1], 0.75); \
+			O[N2] = lerp(D, O[N2], 0.25); \
+			O[N3] = lerp(D, O[N3], 0.25); \
 		} else if (D == G && G != H) { \
 			/* vertical slope */ \
-			E0 = D; \
-			E3 = lerp(D, E3, 0.75); \
-			E6 = lerp(D, E6, 0.25); \
-			E1 = lerp(D, E1, 0.25); \
+			O[N0] = D; \
+			O[N3] = lerp(D, O[N3], 0.75); \
+			O[N6] = lerp(D, O[N6], 0.25); \
+			O[N1] = lerp(D, O[N1], 0.25); \
 		} else { \
 			/* pure diagonal */ \
-			E0 = lerp(D, E0, 0.875); \
-			E1 = lerp(D, E1, 0.125); \
-			E3 = lerp(D, E3, 0.125); \
+			O[N0] = lerp(D, O[N0], 0.875); \
+			O[N1] = lerp(D, O[N1], 0.125); \
+			O[N3] = lerp(D, O[N3], 0.125); \
 		} \
 	}
 
-#define SCALE3K_SPIKE(A, B, C, D, E, F, G, H, I, E0, E1, E2, E3, E4, E5, E6, E7, E8) \
+#define SCALE3K_SPIKE(A, B, C, D, E, F, G, H, I, N0, N1, N2, N3, N4, N5, N6, N7, N8) \
 	if (B != E && D != E) { \
 		if (D == B) { \
 			/* diagonal */ \
@@ -429,112 +659,321 @@ void scale3x(unsigned char* dst_ptr, unsigned dst_slice, const unsigned char* sr
 				/* square block */ \
 			} else if (B == C) { \
 				/* horizontal slope */ \
-				E0 = D; \
-				E1 = lerp(D, E1, 0.75); \
-				E2 = lerp(D, E2, 0.25); \
-				E3 = lerp(D, E3, 0.25); \
+				O[N0] = D; \
+				O[N1] = lerp(D, O[N1], 0.75); \
+				O[N2] = lerp(D, O[N2], 0.25); \
+				O[N3] = lerp(D, O[N3], 0.25); \
 			} else if (D == G) { \
 				/* vertical slope */ \
-				E0 = D; \
-				E3 = lerp(D, E3, 0.75); \
-				E6 = lerp(D, E6, 0.25); \
-				E1 = lerp(D, E1, 0.25); \
+				O[N0] = D; \
+				O[N3] = lerp(D, O[N3], 0.75); \
+				O[N6] = lerp(D, O[N6], 0.25); \
+				O[N1] = lerp(D, O[N1], 0.25); \
 			} else { \
 				/* pure diagonal */ \
-				E0 = lerp(D, E0, 0.875); \
-				E1 = lerp(D, E1, 0.125); \
-				E3 = lerp(D, E3, 0.125); \
+				O[N0] = lerp(D, O[N0], 0.875); \
+				O[N1] = lerp(D, O[N1], 0.125); \
+				O[N3] = lerp(D, O[N3], 0.125); \
 			} \
 		} else if (A == B && G == E) { \
 			/* horizontal spike */ \
-			E0 = lerp(D, E0, 0.875); \
-			E1 = lerp(D, E1, 0.125); \
-			E3 = lerp(D, E3, 0.125); \
+			O[N0] = lerp(D, O[N0], 0.875); \
+			O[N1] = lerp(D, O[N1], 0.125); \
+			O[N3] = lerp(D, O[N3], 0.125); \
 		} else if (A == D && C == E) { \
 			/* vertical spike */ \
-			E0 = lerp(B, E0, 0.875); \
-			E1 = lerp(B, E1, 0.125); \
-			E3 = lerp(B, E3, 0.125); \
+			O[N0] = lerp(B, O[N0], 0.875); \
+			O[N1] = lerp(B, O[N1], 0.125); \
+			O[N3] = lerp(B, O[N3], 0.125); \
 		} \
 	}
 
-#define SCALE3K_ALTERNATE(A, B, C, D, E, F, G, H, I, E0, E1, E2, E3, E4, E5, E6, E7, E8) \
+#define SCALE3K_ALTERNATE(A, B, C, D, E, F, G, H, I, N0, N1, N2, N3, N4, N5, N6, N7, N8) \
 	if (D == B && B != F && D != H) { \
 		/* diagonal */ \
 		if (B == C && D == G) { \
 			/* square block */ \
 			if (A != E) { \
-				E0 = D; \
-				E1 = lerp(D, E1, 0.75); \
-				E2 = lerp(D, E2, 0.25); \
-				E3 = lerp(D, E3, 0.75); \
-				E6 = lerp(D, E6, 0.25); \
+				O[N0] = D; \
+				O[N1] = lerp(D, O[N1], 0.75); \
+				O[N2] = lerp(D, O[N2], 0.25); \
+				O[N3] = lerp(D, O[N3], 0.75); \
+				O[N6] = lerp(D, O[N6], 0.25); \
 			} \
 		} else if (B == C && C != F) { \
 			/* horizontal slope */ \
-			E0 = D; \
-			E1 = lerp(D, E1, 0.75); \
-			E2 = lerp(D, E2, 0.25); \
-			E3 = lerp(D, E3, 0.25); \
+			O[N0] = D; \
+			O[N1] = lerp(D, O[N1], 0.75); \
+			O[N2] = lerp(D, O[N2], 0.25); \
+			O[N3] = lerp(D, O[N3], 0.25); \
 		} else if (D == G && G != H) { \
 			/* vertical slope */ \
-			E0 = D; \
-			E3 = lerp(D, E3, 0.75); \
-			E6 = lerp(D, E6, 0.25); \
-			E1 = lerp(D, E1, 0.25); \
+			O[N0] = D; \
+			O[N3] = lerp(D, O[N3], 0.75); \
+			O[N6] = lerp(D, O[N6], 0.25); \
+			O[N1] = lerp(D, O[N1], 0.25); \
 		} else { \
 			/* pure diagonal */ \
-			E0 = lerp(D, E0, 0.875); \
-			E1 = lerp(D, E1, 0.125); \
-			E3 = lerp(D, E3, 0.125); \
+			O[N0] = lerp(D, O[N0], 0.875); \
+			O[N1] = lerp(D, O[N1], 0.125); \
+			O[N3] = lerp(D, O[N3], 0.125); \
 		} \
 	}
 
-				E0 = E1 = E2 = E3 = E4 = E5 = E6 = E7 = E8 = E;
+			case 2 :
+				/* scalek */
+				O[0] = O[1] = O[2] = O[3] = O[4] = O[5] = O[6] = O[7] = O[8] = E;
 
-				SCALE3K(A, B, C, D, E, F, G, H, I, E0, E1, E2, E3, E4, E5, E6, E7, E8);
-				SCALE3K(G, D, A, H, E, B, I, F, C, E6, E3, E0, E7, E4, E1, E8, E5, E2);
-				SCALE3K(I, H, G, F, E, D, C, B, A, E8, E7, E6, E5, E4, E3, E2, E1, E0);
-				SCALE3K(C, F, I, B, E, H, A, D, G, E2, E5, E8, E1, E4, E7, E0, E3, E6);
+				SCALE3K(A, B, C, D, E, F, G, H, I, 0, 1, 2, 3, 4, 5, 6, 7, 8);
+				SCALE3K(G, D, A, H, E, B, I, F, C, 6, 3, 0, 7, 4, 1, 8, 5, 2);
+				SCALE3K(I, H, G, F, E, D, C, B, A, 8, 7, 6, 5, 4, 3, 2, 1, 0);
+				SCALE3K(C, F, I, B, E, H, A, D, G, 2, 5, 8, 1, 4, 7, 0, 3, 6);
 				break;
 
-			case 3 :
-				/* rejected */
-				E0 = D == B && B != F && D != H ? D : E;
-				E1 = E;
-				E2 = B == F && B != D && F != H ? F : E;
-				E3 = E;
-				E4 = E;
-				E5 = E;
-				E6 = D == H && D != B && H != F ? D : E;
-				E7 = E;
-				E8 = H == F && D != H && B != F ? F : E;
+/* XBR Level 2 for 3x scaling */
+#define XBR_LV2_3X(PE, PI, PH, PF, PG, PC, PD, PB, PA, G5, C4, G0, D0, C1, B1, F4, I4, H5, I5, A0, A1, N0, N1, N2, N3, N4, N5, N6, N7, N8) \
+	if (PE != PH && PE != PF) { \
+		unsigned e = dist(PC, PE) + dist(PE, PG) + dist(H5, PI) + dist(PI, F4) + 4 * dist(PH, PF); \
+		unsigned i = dist(PD, PH) + dist(PH, I5) + dist(I4, PF) + dist(PF, PB) + 4 * dist(PE, PI); \
+		if (e < i) { \
+			int ex2 = PE != PC && PB != PC; \
+			int ex3 = PE != PG && PD != PG; \
+			unsigned ke = dist(PF, PG); \
+			unsigned ki = dist(PH, PC); \
+			pixel_t px = dist(PE, PF) <= dist(PE, PH) ? PF : PH; \
+			if (ke == 0 && ki == 0 && ex3 && ex2) { \
+				LEFT_UP_2_3X(N0, N1, N2, N3, N4, N5, N6, N7, N8, px); \
+			} else if (2 * ke <= ki && ex3) { \
+				LEFT_2_3X(N0, N1, N2, N3, N4, N5, N6, N7, N8, px); \
+			} else if (ke >= 2 * ki && ex2) { \
+				UP_2_3X(N0, N1, N2, N3, N4, N5, N6, N7, N8, px); \
+			} else { \
+				DIA_3X(N0, N1, N2, N3, N4, N5, N6, N7, N8, px); \
+			} \
+		} \
+	}
+
+/* XBR Level 3 for 3x scaling - Enhanced edge detection */
+#define XBR_LV3_3X(PE, PI, PH, PF, PG, PC, PD, PB, PA, G5, C4, G0, D0, C1, B1, F4, I4, H5, I5, A0, A1, N0, N1, N2, N3, N4, N5, N6, N7, N8) \
+	if (PE != PH && PE != PF) { \
+		unsigned e = dist(PC, PE) + dist(PE, PG) + dist(H5, PI) + dist(PI, F4) + 4 * dist(PH, PF); \
+		unsigned i = dist(PD, PH) + dist(PH, I5) + dist(I4, PF) + dist(PF, PB) + 4 * dist(PE, PI); \
+		if (e < i) { \
+			int ex2 = PE != PC && PB != PC; \
+			int ex3 = PE != PG && PD != PG; \
+			unsigned ke = dist(PF, PG); \
+			unsigned ki = dist(PH, PC); \
+			int left_up = ex3 && ex2; \
+			int left_only = ex3 && !ex2; \
+			int up_only = !ex3 && ex2; \
+			pixel_t px = dist(PE, PF) <= dist(PE, PH) ? PF : PH; \
+			\
+			/* Enhanced blending conditions for Level 3 */ \
+			if (left_up && (ke * 2 <= ki) && (ki * 2 <= ke)) { \
+				LEFT_UP_2_3X_LV3(N0, N1, N2, N3, N4, N5, N6, N7, N8, px, PE); \
+			} else if (left_only && (ke * 2 <= ki)) { \
+				LEFT_2_3X_LV3(N0, N1, N2, N3, N4, N5, N6, N7, N8, px, PE); \
+			} else if (up_only && (ki * 2 <= ke)) { \
+				UP_2_3X_LV3(N0, N1, N2, N3, N4, N5, N6, N7, N8, px, PE); \
+			} else if (left_up) { \
+				LEFT_UP_2_3X(N0, N1, N2, N3, N4, N5, N6, N7, N8, px); \
+			} else if (left_only) { \
+				LEFT_2_3X(N0, N1, N2, N3, N4, N5, N6, N7, N8, px); \
+			} else if (up_only) { \
+				UP_2_3X(N0, N1, N2, N3, N4, N5, N6, N7, N8, px); \
+			} else { \
+				DIA_3X(N0, N1, N2, N3, N4, N5, N6, N7, N8, px); \
+			} \
+		} \
+	}
+
+/* XBR Level 4 for 3x scaling - Most advanced with gradient-aware interpolation */
+#define XBR_LV4_3X(PE, PI, PH, PF, PG, PC, PD, PB, PA, G5, C4, G0, D0, C1, B1, F4, I4, H5, I5, A0, A1, N0, N1, N2, N3, N4, N5, N6, N7, N8) \
+	if (PE != PH && PE != PF) { \
+		unsigned e = dist(PC, PE) + dist(PE, PG) + dist(H5, PI) + dist(PI, F4) + 4 * dist(PH, PF); \
+		unsigned i = dist(PD, PH) + dist(PH, I5) + dist(I4, PF) + dist(PF, PB) + 4 * dist(PE, PI); \
+		if (e < i) { \
+			int ex2 = PE != PC && PB != PC; \
+			int ex3 = PE != PG && PD != PG; \
+			unsigned ke = dist(PF, PG); \
+			unsigned ki = dist(PH, PC); \
+			\
+			/* Enhanced gradient detection for Level 4 */ \
+			unsigned grad_h = dist(PA, PB) + dist(PB, PC) + dist(PD, PE) + dist(PE, PF) + dist(PG, PH) + dist(PH, PI); \
+			unsigned grad_v = dist(A1, PA) + dist(PA, PD) + dist(B1, PB) + dist(PB, PE) + dist(C1, PC) + dist(PC, PF); \
+			unsigned grad_ratio = (grad_h > grad_v) ? (grad_h * 8) / (grad_v + 1) : (grad_v * 8) / (grad_h + 1); \
+			\
+			int left_up = ex3 && ex2; \
+			int left_only = ex3 && !ex2; \
+			int up_only = !ex3 && ex2; \
+			pixel_t px = dist(PE, PF) <= dist(PE, PH) ? PF : PH; \
+			\
+			/* Gradient-aware blending for Level 4 */ \
+			if (left_up && grad_ratio > 4) { \
+				LEFT_UP_2_3X_LV4(N0, N1, N2, N3, N4, N5, N6, N7, N8, px, PE, grad_ratio); \
+			} else if (left_only && (ke * 3 <= ki * 2) && grad_ratio > 2) { \
+				LEFT_2_3X_LV4(N0, N1, N2, N3, N4, N5, N6, N7, N8, px, PE, grad_ratio); \
+			} else if (up_only && (ki * 3 <= ke * 2) && grad_ratio > 2) { \
+				UP_2_3X_LV4(N0, N1, N2, N3, N4, N5, N6, N7, N8, px, PE, grad_ratio); \
+			} else if (left_up) { \
+				LEFT_UP_2_3X_LV3(N0, N1, N2, N3, N4, N5, N6, N7, N8, px, PE); \
+			} else if (left_only) { \
+				LEFT_2_3X_LV3(N0, N1, N2, N3, N4, N5, N6, N7, N8, px, PE); \
+			} else if (up_only) { \
+				UP_2_3X_LV3(N0, N1, N2, N3, N4, N5, N6, N7, N8, px, PE); \
+			} else { \
+				DIA_3X_LV4(N0, N1, N2, N3, N4, N5, N6, N7, N8, px, PE); \
+			} \
+		} \
+	}
+
+/* Level 2 interpolation macros for 3x scaling */
+#define LEFT_UP_2_3X(N0, N1, N2, N3, N4, N5, N6, N7, N8, PIXEL) \
+	O[N0] = lerp(PIXEL, O[N0], 7.0 / 8); \
+	O[N1] = lerp(O[N1], PIXEL, 3.0 / 4); \
+	O[N3] = lerp(O[N3], PIXEL, 3.0 / 4); \
+	O[N4] = lerp(O[N4], PIXEL, 1.0 / 2);
+
+#define LEFT_2_3X(N0, N1, N2, N3, N4, N5, N6, N7, N8, PIXEL) \
+	O[N0] = lerp(PIXEL, O[N0], 3.0 / 4); \
+	O[N3] = lerp(O[N3], PIXEL, 3.0 / 4); \
+	O[N6] = lerp(O[N6], PIXEL, 3.0 / 4);
+
+#define UP_2_3X(N0, N1, N2, N3, N4, N5, N6, N7, N8, PIXEL) \
+	O[N0] = lerp(PIXEL, O[N0], 3.0 / 4); \
+	O[N1] = lerp(O[N1], PIXEL, 3.0 / 4); \
+	O[N2] = lerp(O[N2], PIXEL, 3.0 / 4);
+
+#define DIA_3X(N0, N1, N2, N3, N4, N5, N6, N7, N8, PIXEL) \
+	O[N0] = lerp(O[N0], PIXEL, 1.0 / 2);
+
+/* Level 3 enhanced interpolation macros for 3x scaling */
+#define LEFT_UP_2_3X_LV3(N0, N1, N2, N3, N4, N5, N6, N7, N8, PIXEL, PE) \
+	O[N0] = lerp(PIXEL, O[N0], 5.0 / 8); \
+	O[N1] = lerp(O[N1], PIXEL, 5.0 / 8); \
+	O[N3] = lerp(O[N3], PIXEL, 5.0 / 8); \
+	O[N4] = lerp(O[N4], PIXEL, 3.0 / 8);
+
+#define LEFT_2_3X_LV3(N0, N1, N2, N3, N4, N5, N6, N7, N8, PIXEL, PE) \
+	O[N0] = lerp(PIXEL, O[N0], 5.0 / 8); \
+	O[N3] = lerp(O[N3], PIXEL, 5.0 / 8); \
+	O[N6] = lerp(O[N6], PIXEL, 5.0 / 8);
+
+#define UP_2_3X_LV3(N0, N1, N2, N3, N4, N5, N6, N7, N8, PIXEL, PE) \
+	O[N0] = lerp(PIXEL, O[N0], 5.0 / 8); \
+	O[N1] = lerp(O[N1], PIXEL, 5.0 / 8); \
+	O[N2] = lerp(O[N2], PIXEL, 5.0 / 8);
+
+/* Level 4 gradient-aware interpolation macros for 3x scaling */
+#define LEFT_UP_2_3X_LV4(N0, N1, N2, N3, N4, N5, N6, N7, N8, PIXEL, PE, GRAD) \
+	{ \
+		if (GRAD > 8) { \
+			O[N0] = lerp(PIXEL, O[N0], 7.0 / 8); \
+			O[N1] = lerp(O[N1], PIXEL, 7.0 / 8); \
+			O[N3] = lerp(O[N3], PIXEL, 7.0 / 8); \
+			O[N4] = lerp(O[N4], PIXEL, 5.0 / 8); \
+		} else { \
+			O[N0] = lerp(PIXEL, O[N0], 5.0 / 8); \
+			O[N1] = lerp(O[N1], PIXEL, 5.0 / 8); \
+			O[N3] = lerp(O[N3], PIXEL, 5.0 / 8); \
+			O[N4] = lerp(O[N4], PIXEL, 3.0 / 8); \
+		} \
+	}
+
+#define LEFT_2_3X_LV4(N0, N1, N2, N3, N4, N5, N6, N7, N8, PIXEL, PE, GRAD) \
+	{ \
+		if (GRAD > 8) { \
+			O[N0] = lerp(PIXEL, O[N0], 7.0 / 8); \
+			O[N3] = lerp(O[N3], PIXEL, 7.0 / 8); \
+			O[N6] = lerp(O[N6], PIXEL, 7.0 / 8); \
+		} else { \
+			O[N0] = lerp(PIXEL, O[N0], 5.0 / 8); \
+			O[N3] = lerp(O[N3], PIXEL, 5.0 / 8); \
+			O[N6] = lerp(O[N6], PIXEL, 5.0 / 8); \
+		} \
+	}
+
+#define UP_2_3X_LV4(N0, N1, N2, N3, N4, N5, N6, N7, N8, PIXEL, PE, GRAD) \
+	{ \
+		if (GRAD > 8) { \
+			O[N0] = lerp(PIXEL, O[N0], 7.0 / 8); \
+			O[N1] = lerp(O[N1], PIXEL, 7.0 / 8); \
+			O[N2] = lerp(O[N2], PIXEL, 7.0 / 8); \
+		} else { \
+			O[N0] = lerp(PIXEL, O[N0], 5.0 / 8); \
+			O[N1] = lerp(O[N1], PIXEL, 5.0 / 8); \
+			O[N2] = lerp(O[N2], PIXEL, 5.0 / 8); \
+		} \
+	}
+
+#define DIA_3X_LV4(N0, N1, N2, N3, N4, N5, N6, N7, N8, PIXEL, PE) \
+	O[N0] = lerp(O[N0], PIXEL, 3.0 / 8);
+
+			case 3:
+				/* xbr level 2 */
+				O[0] = O[1] = O[2] = O[3] = O[4] = O[5] = O[6] = O[7] = O[8] = E;
+
+				/* Apply XBR algorithm for each quadrant of the 3x3 grid */
+				XBR_LV2_3X(E, I, H, F, G, C, D, B, A, G5, C4, G0, D0, C1, B1, F4, I4, H5, I5, A0, A1, 0, 1, 2, 3, 4, 5, 6, 7, 8);
+				XBR_LV2_3X(E, C, F, B, I, A, H, D, G, I4, A1, I5, H5, A0, D0, B1, C1, F4, C4, G5, G0, 2, 5, 8, 1, 4, 7, 0, 3, 6);
+				XBR_LV2_3X(E, A, B, D, C, G, F, H, I, C1, G0, C4, F4, G5, H5, D0, A0, B1, A1, I4, I5, 8, 7, 6, 5, 4, 3, 2, 1, 0);
+				XBR_LV2_3X(E, G, D, H, A, I, B, F, C, A0, I5, A1, B1, I4, F4, H5, G5, D0, G0, C1, C4, 6, 3, 0, 7, 4, 1, 8, 5, 2);
 				break;
-			case 4 :
-				/* rejected */
-				E0 = D == B && ((B != F && D != H) || D == A) ? D : E;
-				E1 = E;
-				E2 = B == F && ((B != D && F != H) || B == C) ? F : E;
-				E3 = E;
-				E4 = E;
-				E5 = E;
-				E6 = D == H && ((D != B && H != F) || D == G) ? D : E;
-				E7 = E;
-				E8 = H == F && ((D != H && B != F) || H == I) ? F : E;
+			case 4:
+				/* xbr level 3 */
+				O[0] = O[1] = O[2] = O[3] = O[4] = O[5] = O[6] = O[7] = O[8] = E;
+
+				XBR_LV3_3X(E, I, H, F, G, C, D, B, A, G5, C4, G0, D0, C1, B1, F4, I4, H5, I5, A0, A1, 0, 1, 2, 3, 4, 5, 6, 7, 8);
+				XBR_LV3_3X(E, C, F, B, I, A, H, D, G, I4, A1, I5, H5, A0, D0, B1, C1, F4, C4, G5, G0, 2, 5, 8, 1, 4, 7, 0, 3, 6);
+				XBR_LV3_3X(E, A, B, D, C, G, F, H, I, C1, G0, C4, F4, G5, H5, D0, A0, B1, A1, I4, I5, 8, 7, 6, 5, 4, 3, 2, 1, 0);
+				XBR_LV3_3X(E, G, D, H, A, I, B, F, C, A0, I5, A1, B1, I4, F4, H5, G5, D0, G0, C1, C4, 6, 3, 0, 7, 4, 1, 8, 5, 2);
 				break;
-			case 5 :
-				/* rejected */
-				E0 = D == B && A != E ? D : E;
-				E1 = E;
-				E2 = B == F && C != E ? F : E;
-				E3 = E;
-				E4 = E;
-				E5 = E;
-				E6 = D == H && G != E ? D : E;
-				E7 = E;
-				E8 = H == F && I != E ? F : E;
+			case 5:
+				/* xbr level 4 */
+				O[0] = O[1] = O[2] = O[3] = O[4] = O[5] = O[6] = O[7] = O[8] = E;
+
+				XBR_LV4_3X(E, I, H, F, G, C, D, B, A, G5, C4, G0, D0, C1, B1, F4, I4, H5, I5, A0, A1, 0, 1, 2, 3, 4, 5, 6, 7, 8);
+				XBR_LV4_3X(E, C, F, B, I, A, H, D, G, I4, A1, I5, H5, A0, D0, B1, C1, F4, C4, G5, G0, 2, 5, 8, 1, 4, 7, 0, 3, 6);
+				XBR_LV4_3X(E, A, B, D, C, G, F, H, I, C1, G0, C4, F4, G5, H5, D0, A0, B1, A1, I4, I5, 8, 7, 6, 5, 4, 3, 2, 1, 0);
+				XBR_LV4_3X(E, G, D, H, A, I, B, F, C, A0, I5, A1, B1, I4, F4, H5, G5, D0, G0, C1, C4, 6, 3, 0, 7, 4, 1, 8, 5, 2);
 				break;
 			case 6 :
+				/* rejected */
+				O[0] = D == B && B != F && D != H ? D : E;
+				O[1] = E;
+				O[2] = B == F && B != D && F != H ? F : E;
+				O[3] = E;
+				O[4] = E;
+				O[5] = E;
+				O[6] = D == H && D != B && H != F ? D : E;
+				O[7] = E;
+				O[8] = H == F && D != H && B != F ? F : E;
+				break;
+			case 7 :
+				/* rejected */
+				O[0] = D == B && ((B != F && D != H) || D == A) ? D : E;
+				O[1] = E;
+				O[2] = B == F && ((B != D && F != H) || B == C) ? F : E;
+				O[3] = E;
+				O[4] = E;
+				O[5] = E;
+				O[6] = D == H && ((D != B && H != F) || D == G) ? D : E;
+				O[7] = E;
+				O[8] = H == F && ((D != H && B != F) || H == I) ? F : E;
+				break;
+			case 8 :
+				/* rejected */
+				O[0] = D == B && A != E ? D : E;
+				O[1] = E;
+				O[2] = B == F && C != E ? F : E;
+				O[3] = E;
+				O[4] = E;
+				O[5] = E;
+				O[6] = D == H && G != E ? D : E;
+				O[7] = E;
+				O[8] = H == F && I != E ? F : E;
+				break;
+			case 9 :
 				/* rejected */
 				k0 = D == B && B != F && D != H;
 				k1 = B == F && B != D && F != H;
@@ -544,59 +983,59 @@ void scale3x(unsigned char* dst_ptr, unsigned dst_slice, const unsigned char* sr
 				c1 = k1 && E != B;
 				c2 = k2 && E != H;
 				c3 = k3 && E != H;
-				E0 = k0 ? D : E;
-				E1 = c0 || c1 ? B : E;
-				E2 = k1 ? F : E;
-				E3 = c0 || c2 ? D : E;
-				E4 = E;
-				E5 = c1 || c3 ? F : E;
-				E6 = k2 ? D : E;
-				E7 = c2 || c3 ? H : E;
-				E8 = k3 ? F : E;
+				O[0] = k0 ? D : E;
+				O[1] = c0 || c1 ? B : E;
+				O[2] = k1 ? F : E;
+				O[3] = c0 || c2 ? D : E;
+				O[4] = E;
+				O[5] = c1 || c3 ? F : E;
+				O[6] = k2 ? D : E;
+				O[7] = c2 || c3 ? H : E;
+				O[8] = k3 ? F : E;
 				break;
-			case 7 :
+			case 10 :
 				/* rejected */
 				k0 = D == B && B != F && D != H;
 				k1 = B == F && B != D && F != H;
 				k2 = D == H && D != B && H != F;
 				k3 = H == F && D != H && B != F;
-				E0 = k0 ? D : E;
-				E1 = k0 != k1 ? B : E;
-				E2 = k1 ? F : E;
-				E3 = k0 != k2 ? D : E;
-				E4 = E;
-				E5 = k1 != k3 ? F : E;
-				E6 = k2 ? D : E;
-				E7 = k2 != k3 ? H : E;
-				E8 = k3 ? F : E;
+				O[0] = k0 ? D : E;
+				O[1] = k0 != k1 ? B : E;
+				O[2] = k1 ? F : E;
+				O[3] = k0 != k2 ? D : E;
+				O[4] = E;
+				O[5] = k1 != k3 ? F : E;
+				O[6] = k2 ? D : E;
+				O[7] = k2 != k3 ? H : E;
+				O[8] = k3 ? F : E;
 				break;
-			case 8 :
+			case 11 :
 				/* rejected */
 				k0 = D == B && B != F && D != H;
 				k1 = B == F && B != D && F != H;
 				k2 = D == H && D != B && H != F;
 				k3 = H == F && D != H && B != F;
-				E0 = k0 ? D : E;
-				E1 = k0 || k1 ? B : E;
-				E2 = k1 ? F : E;
-				E3 = k0 || k2 ? D : E;
-				E4 = E;
-				E5 = k1 || k3 ? F : E;
-				E6 = k2 ? D : E;
-				E7 = k2 || k3 ? H : E;
-				E8 = k3 ? F : E;
+				O[0] = k0 ? D : E;
+				O[1] = k0 || k1 ? B : E;
+				O[2] = k1 ? F : E;
+				O[3] = k0 || k2 ? D : E;
+				O[4] = E;
+				O[5] = k1 || k3 ? F : E;
+				O[6] = k2 ? D : E;
+				O[7] = k2 || k3 ? H : E;
+				O[8] = k3 ? F : E;
 				break;
 			}
 
-			pixel_put(x * 3, y * 3, dst_ptr, dst_slice, pixel, width * 3, height * 3, E0);
-			pixel_put(x * 3 + 1, y * 3, dst_ptr, dst_slice, pixel, width * 3, height * 3, E1);
-			pixel_put(x * 3 + 2, y * 3, dst_ptr, dst_slice, pixel, width * 3, height * 3, E2);
-			pixel_put(x * 3, y * 3 + 1, dst_ptr, dst_slice, pixel, width * 3, height * 3, E3);
-			pixel_put(x * 3 + 1, y * 3 + 1, dst_ptr, dst_slice, pixel, width * 3, height * 3, E4);
-			pixel_put(x * 3 + 2, y * 3 + 1, dst_ptr, dst_slice, pixel, width * 3, height * 3, E5);
-			pixel_put(x * 3, y * 3 + 2, dst_ptr, dst_slice, pixel, width * 3, height * 3, E6);
-			pixel_put(x * 3 + 1, y * 3 + 2, dst_ptr, dst_slice, pixel, width * 3, height * 3, E7);
-			pixel_put(x * 3 + 2, y * 3 + 2, dst_ptr, dst_slice, pixel, width * 3, height * 3, E8);
+			pixel_put(x * 3, y * 3, dst_ptr, dst_slice, pixel, width * 3, height * 3, O[0]);
+			pixel_put(x * 3 + 1, y * 3, dst_ptr, dst_slice, pixel, width * 3, height * 3, O[1]);
+			pixel_put(x * 3 + 2, y * 3, dst_ptr, dst_slice, pixel, width * 3, height * 3, O[2]);
+			pixel_put(x * 3, y * 3 + 1, dst_ptr, dst_slice, pixel, width * 3, height * 3, O[3]);
+			pixel_put(x * 3 + 1, y * 3 + 1, dst_ptr, dst_slice, pixel, width * 3, height * 3, O[4]);
+			pixel_put(x * 3 + 2, y * 3 + 1, dst_ptr, dst_slice, pixel, width * 3, height * 3, O[5]);
+			pixel_put(x * 3, y * 3 + 2, dst_ptr, dst_slice, pixel, width * 3, height * 3, O[6]);
+			pixel_put(x * 3 + 1, y * 3 + 2, dst_ptr, dst_slice, pixel, width * 3, height * 3, O[7]);
+			pixel_put(x * 3 + 2, y * 3 + 2, dst_ptr, dst_slice, pixel, width * 3, height * 3, O[8]);
 		}
 	}
 }
@@ -629,12 +1068,21 @@ int scale4x(unsigned char* dst_ptr, unsigned dst_slice, const unsigned char* src
 
 	for (y = 0; y < height; ++y) {
 		for (x = 0; x < width; ++x) {
-			pixel_t E0, E1, E2, E3, E4, E5, E6, E7, E8, E9, EA, EB, EC, ED, EE, EF;
-			pixel_t EV[16];
+			pixel_t O[16];
 			pixel_t A, B, C, D, E, F, G, H, I;
 			pixel_t A1, B1, C1, G5, H5, I5, A0, D0, G0, C4, F4, I4;
 
-			/* scalex */
+/*
+        ABC
+        DEF
+        GHI
+
+        O0O1O2O3
+        O4O5O6O7
+        O8O9OAOB
+        OCODOOOF
+ */
+
 			A = pixel_get(x - 1, y - 1, src_ptr, src_slice, pixel, width, height, opt_tes);
 			B = pixel_get(x, y - 1, src_ptr, src_slice, pixel, width, height, opt_tes);
 			C = pixel_get(x + 1, y - 1, src_ptr, src_slice, pixel, width, height, opt_tes);
@@ -655,7 +1103,6 @@ int scale4x(unsigned char* dst_ptr, unsigned dst_slice, const unsigned char* src
    4       G5 H5 I5
  */
 
-			/* xbr */
 			A1 = pixel_get(x - 1, y - 2, src_ptr, src_slice, pixel, width, height, opt_tes);
 			B1 = pixel_get(x, y - 2, src_ptr, src_slice, pixel, width, height, opt_tes);
 			C1 = pixel_get(x + 1, y - 2, src_ptr, src_slice, pixel, width, height, opt_tes);
@@ -670,54 +1117,29 @@ int scale4x(unsigned char* dst_ptr, unsigned dst_slice, const unsigned char* src
 			I4 = pixel_get(x + 2, y + 1, src_ptr, src_slice, pixel, width, height, opt_tes);
 
 
-			/*
-			        ABC
-			        DEF
-			        GHI
-
-			        E0E1E2E3
-			        E4E5E6E7
-			        E8E9EAEB
-			        ECEDEEEF
-			 */
 			switch (opt_ver) {
 			default :
 			case 0 :
 				/* version 0, normal scaling */
-				E0 = E;
-				E1 = E;
-				E2 = E;
-				E3 = E;
-				E4 = E;
-				E5 = E;
-				E6 = E;
-				E7 = E;
-				E8 = E;
-				E9 = E;
-				EA = E;
-				EB = E;
-				EC = E;
-				ED = E;
-				EE = E;
-				EF = E;
+				O[0] = E;
+				O[1] = E;
+				O[2] = E;
+				O[3] = E;
+				O[4] = E;
+				O[5] = E;
+				O[6] = E;
+				O[7] = E;
+				O[8] = E;
+				O[9] = E;
+				O[10] = E;
+				O[11] = E;
+				O[12] = E;
+				O[13] = E;
+				O[14] = E;
+				O[15] = E;
 				break;
 
-			case 2 :
-				/* scalek */
-
-				/*
-				        ABC
-				        DEF
-				        GHI
-
-				        E0E1E2E3
-				        E4E5E6E7
-				        E8E9EAEB
-				        ECEDEEEF
-				 */
-
-
-#define SCALE4K_BASE(A, B, C, D, E, F, G, H, I, E0, E1, E2, E3, E4, E5, E6, E7, E8, E9, EA, EB, EC, ED, EE, EF) \
+#define SCALE4K_BASE(A, B, C, D, E, F, G, H, I, N0, N1, N2, N3, N4, N5, N6, N7, N8, N9, N10, N11, N12, N13, N14, N15) \
 	if (D == B && B != E && D != E) { \
 		/* diagonal */ \
 		if (B == C && D == G) { \
@@ -725,117 +1147,116 @@ int scale4x(unsigned char* dst_ptr, unsigned dst_slice, const unsigned char* src
 		} \
 		else if (B == C && C != F) { \
 			/* horizontal slope */ \
-			E0 = D; \
-			E1 = D; \
-			E2 = lerp(D, E2, 0.75); \
-			E3 = lerp(D, E3, 0.25); \
-			E4 = lerp(D, E4, 0.75); \
-			E5 = lerp(D, E5, 0.25); \
+			O[N0] = D; \
+			O[N1] = D; \
+			O[N2] = lerp(D, O[N2], 0.75); \
+			O[N3] = lerp(D, O[N3], 0.25); \
+			O[N4] = lerp(D, O[N4], 0.75); \
+			O[N5] = lerp(D, O[N5], 0.25); \
 		} else if (D == G && G != H) { \
 			/* vertical slope */ \
-			E0 = D; \
-			E4 = D; \
-			E8 = lerp(D, E8, 0.75); \
-			EC = lerp(D, EC, 0.25); \
-			E1 = lerp(D, E1, 0.75); \
-			E5 = lerp(D, E5, 0.25); \
+			O[N0] = D; \
+			O[N4] = D; \
+			O[N8] = lerp(D, O[N8], 0.75); \
+			O[N12] = lerp(D, O[N12], 0.25); \
+			O[N1] = lerp(D, O[N1], 0.75); \
+			O[N5] = lerp(D, O[N5], 0.25); \
 		} else { \
 			/* pure diagonal */ \
-			E0 = D; \
-			E1 = lerp(D, E1, 0.5); \
-			E4 = lerp(D, E4, 0.5); \
+			O[N0] = D; \
+			O[N1] = lerp(D, O[N1], 0.5); \
+			O[N4] = lerp(D, O[N4], 0.5); \
 		} \
 	}
 
 /* Used by AdvanceMAME */
-#define SCALE4K(A, B, C, D, E, F, G, H, I, E0, E1, E2, E3, E4, E5, E6, E7, E8, E9, EA, EB, EC, ED, EE, EF) \
+#define SCALE4K(A, B, C, D, E, F, G, H, I, N0, N1, N2, N3, N4, N5, N6, N7, N8, N9, N10, N11, N12, N13, N14, N15) \
 	if (D == B && B != E && D != E) { \
 		/* diagonal */ \
 		if (B == C && D == G) { \
 			if (A != E) { \
 				/* no star */ \
-				E0 = D; \
-				E1 = D; \
-				E2 = lerp(D, E2, 0.75); \
-				E3 = lerp(D, E3, 0.25); \
-				E4 = D; \
-				E8 = lerp(D, E8, 0.75); \
-				EC = lerp(D, EC, 0.25); \
-				E5 = lerp(D, E5, 0.50); \
+				O[N0] = D; \
+				O[N1] = D; \
+				O[N2] = lerp(D, O[N2], 0.75); \
+				O[N3] = lerp(D, O[N3], 0.25); \
+				O[N4] = D; \
+				O[N8] = lerp(D, O[N8], 0.75); \
+				O[N12] = lerp(D, O[N12], 0.25); \
+				O[N5] = lerp(D, O[N5], 0.50); \
 			} \
 		} else if (B == C && C != F) { \
 			/* horizontal slope */ \
-			E0 = D; \
-			E1 = D; \
-			E2 = lerp(D, E2, 0.75); \
-			E3 = lerp(D, E3, 0.25); \
-			E4 = lerp(D, E4, 0.75); \
-			E5 = lerp(D, E5, 0.25); \
+			O[N0] = D; \
+			O[N1] = D; \
+			O[N2] = lerp(D, O[N2], 0.75); \
+			O[N3] = lerp(D, O[N3], 0.25); \
+			O[N4] = lerp(D, O[N4], 0.75); \
+			O[N5] = lerp(D, O[N5], 0.25); \
 		} else if (D == G && G != H) { \
 			/* vertical slope */ \
-			E0 = D; \
-			E4 = D; \
-			E8 = lerp(D, E8, 0.75); \
-			EC = lerp(D, EC, 0.25); \
-			E1 = lerp(D, E1, 0.75); \
-			E5 = lerp(D, E5, 0.25); \
+			O[N0] = D; \
+			O[N4] = D; \
+			O[N8] = lerp(D, O[N8], 0.75); \
+			O[N12] = lerp(D, O[N12], 0.25); \
+			O[N1] = lerp(D, O[N1], 0.75); \
+			O[N5] = lerp(D, O[N5], 0.25); \
 		} else { \
 			/* pure diagonal */ \
-			E0 = D; \
-			E1 = lerp(D, E1, 0.5); \
-			E4 = lerp(D, E4, 0.5); \
+			O[N0] = D; \
+			O[N1] = lerp(D, O[N1], 0.5); \
+			O[N4] = lerp(D, O[N4], 0.5); \
 		} \
 	}
 
-#define SCALE4K_ALTERNATE(A, B, C, D, E, F, G, H, I, E0, E1, E2, E3, E4, E5, E6, E7, E8, E9, EA, EB, EC, ED, EE, EF) \
+#define SCALE4K_ALTERNATE(A, B, C, D, E, F, G, H, I, N0, N1, N2, N3, N4, N5, N6, N7, N8, N9, N10, N11, N12, N13, N14, N15) \
 	if (D == B && B != F && D != H) { \
 		/* diagonal */ \
 		if (B == C && D == G) { \
 			/* avoid starts */ \
 			if (A != E) { \
-				E0 = D; \
-				E1 = D; \
-				E2 = lerp(D, E2, 0.75); \
-				E3 = lerp(D, E3, 0.25); \
-				E4 = D; \
-				E8 = lerp(D, E8, 0.75); \
-				EC = lerp(D, EC, 0.25); \
-				E5 = lerp(D, E5, 0.50); \
+				O[N0] = D; \
+				O[N1] = D; \
+				O[N2] = lerp(D, O[N2], 0.75); \
+				O[N3] = lerp(D, O[N3], 0.25); \
+				O[N4] = D; \
+				O[N8] = lerp(D, O[N8], 0.75); \
+				O[N12] = lerp(D, O[N12], 0.25); \
+				O[N5] = lerp(D, O[N5], 0.50); \
 			} \
 		} else if (B == C && C != F) { \
 			/* horizontal slope */ \
-			E0 = D; \
-			E1 = D; \
-			E2 = lerp(D, E2, 0.75); \
-			E3 = lerp(D, E3, 0.25); \
-			E4 = lerp(D, E4, 0.75); \
-			E5 = lerp(D, E5, 0.25); \
+			O[N0] = D; \
+			O[N1] = D; \
+			O[N2] = lerp(D, O[N2], 0.75); \
+			O[N3] = lerp(D, O[N3], 0.25); \
+			O[N4] = lerp(D, O[N4], 0.75); \
+			O[N5] = lerp(D, O[N5], 0.25); \
 		} else if (D == G && G != H) { \
 			/* vertical slope */ \
-			E0 = D; \
-			E4 = D; \
-			E8 = lerp(D, E8, 0.75); \
-			EC = lerp(D, EC, 0.25); \
-			E1 = lerp(D, E1, 0.75); \
-			E5 = lerp(D, E5, 0.25); \
+			O[N0] = D; \
+			O[N4] = D; \
+			O[N8] = lerp(D, O[N8], 0.75); \
+			O[N12] = lerp(D, O[N12], 0.25); \
+			O[N1] = lerp(D, O[N1], 0.75); \
+			O[N5] = lerp(D, O[N5], 0.25); \
 		} else { \
 			/* pure diagonal */ \
-			E0 = D; \
-			E1 = lerp(D, E1, 0.5); \
-			E4 = lerp(D, E4, 0.5); \
+			O[N0] = D; \
+			O[N1] = lerp(D, O[N1], 0.5); \
+			O[N4] = lerp(D, O[N4], 0.5); \
 		} \
 	}
 
-				E0 = E1 = E2 = E3 = E4 = E5 = E6 = E7 = E8 = E9 = EA = EB = EC = ED = EE = EF = E;
+			case 2 :
+				/* scalek */
+				O[0] = O[1] = O[2] = O[3] = O[4] = O[5] = O[6] = O[7] = O[8] = O[9] = O[10] = O[11] = O[12] = O[13] = O[14] = O[15] = E;
 
-				SCALE4K(A, B, C, D, E, F, G, H, I, E0, E1, E2, E3, E4, E5, E6, E7, E8, E9, EA, EB, EC, ED, EE, EF);
-				SCALE4K(G, D, A, H, E, B, I, F, C, EC, E8, E4, E0, ED, E9, E5, E1, EE, EA, E6, E2, EF, EB, E7, E3);
-				SCALE4K(I, H, G, F, E, D, C, B, A, EF, EE, ED, EC, EB, EA, E9, E8, E7, E6, E5, E4, E3, E2, E1, E0);
-				SCALE4K(C, F, I, B, E, H, A, D, G, E3, E7, EB, EF, E2, E6, EA, EE, E1, E5, E9, ED, E0, E4, E8, EC);
+				SCALE4K(A, B, C, D, E, F, G, H, I, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15);
+				SCALE4K(G, D, A, H, E, B, I, F, C, 12, 8, 4, 0, 13, 9, 5, 1, 14, 10, 6, 2, 15, 11, 7, 3);
+				SCALE4K(I, H, G, F, E, D, C, B, A, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0);
+				SCALE4K(C, F, I, B, E, H, A, D, G, 3, 7, 11, 15, 2, 6, 10, 14, 1, 5, 9, 13, 0, 4, 8, 12);
 				break;
-
-			case 3 :
-				/* xbr */
 
 /*
      0  1  2  3  4
@@ -847,16 +1268,16 @@ int scale4x(unsigned char* dst_ptr, unsigned dst_slice, const unsigned char* src
    4       G5 H5 I5
  */
 
-#define XBR(PE, PI, PH, PF, PG, PC, PD, PB, PA, G5, C4, G0, D0, C1, B1, F4, I4, H5, I5, A0, A1, N0, N1, N2, N3, N4, N5, N6, N7, N8, N9, N10, N11, N12, N13, N14, N15) \
+#define XBR_LV2_4X(PE, PI, PH, PF, PG, PC, PD, PB, PA, G5, C4, G0, D0, C1, B1, F4, I4, H5, I5, A0, A1, N0, N1, N2, N3, N4, N5, N6, N7, N8, N9, N10, N11, N12, N13, N14, N15) \
 	if (PE != PH && PE != PF) { \
-		unsigned e = df(PE, PC) + df(PE, PG) + df(PI, H5) + df(PI, F4) + 4 * df(PH, PF); \
-		unsigned i = df(PH, PD) + df(PH, I5) + df(PF, I4) + df(PF, PB) + 4 * df(PE, PI); \
+		unsigned e = dist(PE, PC) + dist(PE, PG) + dist(PI, H5) + dist(PI, F4) + 4 * dist(PH, PF); \
+		unsigned i = dist(PH, PD) + dist(PH, I5) + dist(PF, I4) + dist(PF, PB) + 4 * dist(PE, PI); \
 		if (e < i) { \
 			int ex2 = PE != PC && PB != PC; \
 			int ex3 = PE != PG && PD != PG; \
-			unsigned ke = df(PF, PG); \
-			unsigned ki = df(PH, PC); \
-			pixel_t px = df(PE, PF) <= df(PE, PH) ? PF : PH; \
+			unsigned ke = dist(PF, PG); \
+			unsigned ki = dist(PH, PC); \
+			pixel_t px = dist(PE, PF) <= dist(PE, PH) ? PF : PH; \
 			if (ke == 0 && ki == 0 && ex3 && ex2) { \
 				LEFT_UP_2(N15, N14, N11, N13, N12, N10, N7, N3, px); \
 			} else if (2 * ke <= ki && ex3) { \
@@ -870,73 +1291,319 @@ int scale4x(unsigned char* dst_ptr, unsigned dst_slice, const unsigned char* src
 	}
 
 #define LEFT_UP_2(N15, N14, N11, N13, N12, N10, N7, N3, PIXEL) \
-	EV[N7] = EV[N13] = lerp(PIXEL, EV[N13], 0.75); \
-	EV[N3] = EV[N10] = EV[N12] = lerp(EV[N12], PIXEL, 0.75); \
-	EV[N11] = EV[N14] = EV[N15] = PIXEL;
+	O[N7] = O[N13] = lerp(PIXEL, O[N13], 0.75); \
+	O[N3] = O[N10] = O[N12] = lerp(O[N12], PIXEL, 0.75); \
+	O[N11] = O[N14] = O[N15] = PIXEL;
 
 #define LEFT_2(N15, N14, N11, N13, N12, N10, PIXEL) \
-	EV[N11] = lerp(PIXEL, EV[N11], 0.75); \
-	EV[N13] = lerp(PIXEL, EV[N13], 0.75); \
-	EV[N10] = lerp(EV[N10], PIXEL, 0.75); \
-	EV[N12] = lerp(EV[N12], PIXEL, 0.75); \
-	EV[N14] = EV[N15] = PIXEL;
+	O[N11] = lerp(PIXEL, O[N11], 0.75); \
+	O[N13] = lerp(PIXEL, O[N13], 0.75); \
+	O[N10] = lerp(O[N10], PIXEL, 0.75); \
+	O[N12] = lerp(O[N12], PIXEL, 0.75); \
+	O[N14] = O[N15] = PIXEL;
 
 #define UP_2(N15, N14, N11, N3, N7, N10, PIXEL) \
-	EV[N14] = lerp(PIXEL, EV[N14], 0.75); \
-	EV[N7] = lerp(PIXEL, EV[N7], 0.75); \
-	EV[N10] = lerp(EV[N10], PIXEL, 0.75); \
-	EV[N3] = lerp(EV[N3], PIXEL, 0.75); \
-	EV[N11] = EV[N15] = PIXEL;
+	O[N14] = lerp(PIXEL, O[N14], 0.75); \
+	O[N7] = lerp(PIXEL, O[N7], 0.75); \
+	O[N10] = lerp(O[N10], PIXEL, 0.75); \
+	O[N3] = lerp(O[N3], PIXEL, 0.75); \
+	O[N11] = O[N15] = PIXEL;
 
 #define DIA_2(N15, N14, N11, PIXEL) \
-	EV[N11] = lerp(EV[N11], PIXEL, 0.5); \
-	EV[N14] = lerp(EV[N14], PIXEL, 0.5); \
-	EV[N15] = PIXEL;
+	O[N11] = lerp(O[N11], PIXEL, 0.5); \
+	O[N14] = lerp(O[N14], PIXEL, 0.5); \
+	O[N15] = PIXEL;
 
-#define df(A, B) dist(A, B)
 
-				EV[0] = EV[1] = EV[2] = EV[3] = EV[4] = EV[5] = EV[6] = EV[7] = EV[8] = EV[9] = EV[10] = EV[11] = EV[12] = EV[13] = EV[14] = EV[15] = E;
+/* XBR Level 3 - 4x scale with enhanced edge detection */
+#define XBR_LV3_4X(PE, PI, PH, PF, PG, PC, PD, PB, PA, G5, C4, G0, D0, C1, B1, F4, I4, H5, I5, A0, A1, N0, N1, N2, N3, N4, N5, N6, N7, N8, N9, N10, N11, N12, N13, N14, N15) \
+	if (PE != PH && PE != PF) { \
+		unsigned e = dist(PC, PE) + dist(PE, PG) + dist(H5, PI) + dist(PI, F4) + 4 * dist(PH, PF); \
+		unsigned i = dist(PD, PH) + dist(PH, I5) + dist(I4, PF) + dist(PF, PB) + 4 * dist(PE, PI); \
+		if (e < i) { \
+			int ex2 = PE != PC && PB != PC; \
+			int ex3 = PE != PG && PD != PG; \
+			unsigned ke = dist(PF, PG); \
+			unsigned ki = dist(PH, PC); \
+			int left_up = ex3 && ex2; \
+			int left_only = ex3 && !ex2; \
+			int up_only = !ex3 && ex2; \
+			pixel_t px = dist(PE, PF) <= dist(PE, PH) ? PF : PH; \
+			\
+			/* Enhanced blending conditions for Level 3 4x */ \
+			if (left_up && (ke * 2 <= ki) && (ki * 2 <= ke)) { \
+				LEFT_UP_2_4X_LV3(N0, N1, N2, N3, N4, N5, N6, N7, N8, N9, N10, N11, N12, N13, N14, N15, px, PE); \
+			} else if (left_only && (ke * 2 <= ki)) { \
+				LEFT_2_4X_LV3(N0, N1, N2, N3, N4, N5, N6, N7, N8, N9, N10, N11, N12, N13, N14, N15, px, PE); \
+			} else if (up_only && (ki * 2 <= ke)) { \
+				UP_2_4X_LV3(N0, N1, N2, N3, N4, N5, N6, N7, N8, N9, N10, N11, N12, N13, N14, N15, px, PE); \
+			} else if (left_up) { \
+				LEFT_UP_2_4X(N0, N1, N2, N3, N4, N5, N6, N7, N8, N9, N10, N11, N12, N13, N14, N15, px); \
+			} else if (left_only) { \
+				LEFT_2_4X(N0, N1, N2, N3, N4, N5, N6, N7, N8, N9, N10, N11, N12, N13, N14, N15, px); \
+			} else if (up_only) { \
+				UP_2_4X(N0, N1, N2, N3, N4, N5, N6, N7, N8, N9, N10, N11, N12, N13, N14, N15, px); \
+			} else { \
+				DIA_4X(N0, N1, N2, N3, N4, N5, N6, N7, N8, N9, N10, N11, N12, N13, N14, N15, px); \
+			} \
+		} \
+	}
 
-				XBR(E, I, H, F, G, C, D, B, A, G5, C4, G0, D0, C1, B1, F4, I4, H5, I5, A0, A1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15);
-				XBR(E, C, F, B, I, A, H, D, G, I4, A1, I5, H5, A0, D0, B1, C1, F4, C4, G5, G0, 12, 8, 4, 0, 13, 9, 5, 1, 14, 10, 6, 2, 15, 11, 7, 3);
-				XBR(E, A, B, D, C, G, F, H, I, C1, G0, C4, F4, G5, H5, D0, A0, B1, A1, I4, I5, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0);
-				XBR(E, G, D, H, A, I, B, F, C, A0, I5, A1, B1, I4, F4, H5, G5, D0, G0, C1, C4, 3, 7, 11, 15, 2, 6, 10, 14, 1, 5, 9, 13, 0, 4, 8, 12);
+/* XBR Level 4 - 4x scale with gradient-aware interpolation */
+#define XBR_LV4_4X(PE, PI, PH, PF, PG, PC, PD, PB, PA, G5, C4, G0, D0, C1, B1, F4, I4, H5, I5, A0, A1, N0, N1, N2, N3, N4, N5, N6, N7, N8, N9, N10, N11, N12, N13, N14, N15) \
+	if (PE != PH && PE != PF) { \
+		unsigned e = dist(PC, PE) + dist(PE, PG) + dist(H5, PI) + dist(PI, F4) + 4 * dist(PH, PF); \
+		unsigned i = dist(PD, PH) + dist(PH, I5) + dist(I4, PF) + dist(PF, PB) + 4 * dist(PE, PI); \
+		if (e < i) { \
+			int ex2 = PE != PC && PB != PC; \
+			int ex3 = PE != PG && PD != PG; \
+			unsigned ke = dist(PF, PG); \
+			unsigned ki = dist(PH, PC); \
+			\
+			/* Enhanced gradient detection for Level 4 4x */ \
+			unsigned grad_h = dist(PA, PB) + dist(PB, PC) + dist(PD, PE) + dist(PE, PF) + dist(PG, PH) + dist(PH, PI); \
+			unsigned grad_v = dist(A1, PA) + dist(PA, PD) + dist(B1, PB) + dist(PB, PE) + dist(C1, PC) + dist(PC, PF); \
+			unsigned grad_ratio = (grad_h > grad_v) ? (grad_h * 8) / (grad_v + 1) : (grad_v * 8) / (grad_h + 1); \
+			\
+			int left_up = ex3 && ex2; \
+			int left_only = ex3 && !ex2; \
+			int up_only = !ex3 && ex2; \
+			pixel_t px = dist(PE, PF) <= dist(PE, PH) ? PF : PH; \
+			\
+			/* Gradient-aware blending for Level 4 4x */ \
+			if (left_up && grad_ratio > 6) { \
+				LEFT_UP_2_4X_LV4(N0, N1, N2, N3, N4, N5, N6, N7, N8, N9, N10, N11, N12, N13, N14, N15, px, PE, grad_ratio); \
+			} else if (left_only && (ke * 3 <= ki * 2) && grad_ratio > 4) { \
+				LEFT_2_4X_LV4(N0, N1, N2, N3, N4, N5, N6, N7, N8, N9, N10, N11, N12, N13, N14, N15, px, PE, grad_ratio); \
+			} else if (up_only && (ki * 3 <= ke * 2) && grad_ratio > 4) { \
+				UP_2_4X_LV4(N0, N1, N2, N3, N4, N5, N6, N7, N8, N9, N10, N11, N12, N13, N14, N15, px, PE, grad_ratio); \
+			} else if (left_up) { \
+				LEFT_UP_2_4X_LV3(N0, N1, N2, N3, N4, N5, N6, N7, N8, N9, N10, N11, N12, N13, N14, N15, px, PE); \
+			} else if (left_only) { \
+				LEFT_2_4X_LV3(N0, N1, N2, N3, N4, N5, N6, N7, N8, N9, N10, N11, N12, N13, N14, N15, px, PE); \
+			} else if (up_only) { \
+				UP_2_4X_LV3(N0, N1, N2, N3, N4, N5, N6, N7, N8, N9, N10, N11, N12, N13, N14, N15, px, PE); \
+			} else { \
+				DIA_4X_LV4(N0, N1, N2, N3, N4, N5, N6, N7, N8, N9, N10, N11, N12, N13, N14, N15, px, PE); \
+			} \
+		} \
+	}
 
-				E0 = EV[0];
-				E1 = EV[1];
-				E2 = EV[2];
-				E3 = EV[3];
-				E4 = EV[4];
-				E5 = EV[5];
-				E6 = EV[6];
-				E7 = EV[7];
-				E8 = EV[8];
-				E9 = EV[9];
-				EA = EV[10];
-				EB = EV[11];
-				EC = EV[12];
-				ED = EV[13];
-				EE = EV[14];
-				EF = EV[15];
+#define LEFT_UP_2_4X(N0, N1, N2, N3, N4, N5, N6, N7, N8, N9, N10, N11, N12, N13, N14, N15, PIXEL) \
+	O[N0] = lerp(PIXEL, O[N0], 7.0 / 8); \
+	O[N1] = lerp(PIXEL, O[N1], 3.0 / 4); \
+	O[N4] = lerp(PIXEL, O[N4], 3.0 / 4); \
+	O[N5] = lerp(O[N5], PIXEL, 1.0 / 2); \
+	O[N2] = lerp(O[N2], PIXEL, 1.0 / 4); \
+	O[N3] = lerp(O[N3], PIXEL, 1.0 / 8); \
+	O[N8] = lerp(O[N8], PIXEL, 1.0 / 4); \
+	O[N12] = lerp(O[N12], PIXEL, 1.0 / 8);
+
+#define LEFT_2_4X(N0, N1, N2, N3, N4, N5, N6, N7, N8, N9, N10, N11, N12, N13, N14, N15, PIXEL) \
+	O[N0] = lerp(PIXEL, O[N0], 3.0 / 4); \
+	O[N1] = lerp(O[N1], PIXEL, 1.0 / 2); \
+	O[N4] = lerp(PIXEL, O[N4], 3.0 / 4); \
+	O[N5] = lerp(O[N5], PIXEL, 1.0 / 2); \
+	O[N8] = lerp(O[N8], PIXEL, 1.0 / 4); \
+	O[N9] = lerp(O[N9], PIXEL, 1.0 / 8); \
+	O[N12] = lerp(O[N12], PIXEL, 1.0 / 4); \
+	O[N13] = lerp(O[N13], PIXEL, 1.0 / 8);
+
+#define UP_2_4X(N0, N1, N2, N3, N4, N5, N6, N7, N8, N9, N10, N11, N12, N13, N14, N15, PIXEL) \
+	O[N0] = lerp(PIXEL, O[N0], 3.0 / 4); \
+	O[N1] = lerp(PIXEL, O[N1], 3.0 / 4); \
+	O[N4] = lerp(O[N4], PIXEL, 1.0 / 2); \
+	O[N5] = lerp(O[N5], PIXEL, 1.0 / 2); \
+	O[N2] = lerp(O[N2], PIXEL, 1.0 / 4); \
+	O[N6] = lerp(O[N6], PIXEL, 1.0 / 8); \
+	O[N3] = lerp(O[N3], PIXEL, 1.0 / 4); \
+	O[N7] = lerp(O[N7], PIXEL, 1.0 / 8);
+
+#define DIA_4X(N0, N1, N2, N3, N4, N5, N6, N7, N8, N9, N10, N11, N12, N13, N14, N15, PIXEL) \
+	O[N0] = lerp(O[N0], PIXEL, 1.0 / 2); \
+	O[N1] = lerp(O[N1], PIXEL, 3.0 / 8); \
+	O[N4] = lerp(O[N4], PIXEL, 3.0 / 8); \
+	O[N5] = lerp(O[N5], PIXEL, 1.0 / 4);
+
+/* Level 3 enhanced 4x interpolation macros */
+#define LEFT_UP_2_4X_LV3(N0, N1, N2, N3, N4, N5, N6, N7, N8, N9, N10, N11, N12, N13, N14, N15, PIXEL, PE) \
+	O[N0] = lerp(PIXEL, O[N0], 6.0 / 8); \
+	O[N1] = lerp(PIXEL, O[N1], 5.0 / 8); \
+	O[N4] = lerp(PIXEL, O[N4], 5.0 / 8); \
+	O[N5] = lerp(O[N5], PIXEL, 3.0 / 8); \
+	O[N2] = lerp(O[N2], PIXEL, 2.0 / 8); \
+	O[N3] = lerp(O[N3], PIXEL, 1.0 / 8); \
+	O[N8] = lerp(O[N8], PIXEL, 2.0 / 8); \
+	O[N9] = lerp(O[N9], PIXEL, 1.0 / 8); \
+	O[N6] = lerp(O[N6], PIXEL, 1.0 / 8); \
+	O[N10] = lerp(O[N10], PIXEL, 1.0 / 16); \
+	O[N12] = lerp(O[N12], PIXEL, 1.0 / 8); \
+	O[N13] = lerp(O[N13], PIXEL, 1.0 / 16);
+
+#define LEFT_2_4X_LV3(N0, N1, N2, N3, N4, N5, N6, N7, N8, N9, N10, N11, N12, N13, N14, N15, PIXEL, PE) \
+	O[N0] = lerp(PIXEL, O[N0], 5.0 / 8); \
+	O[N1] = lerp(O[N1], PIXEL, 3.0 / 8); \
+	O[N4] = lerp(PIXEL, O[N4], 5.0 / 8); \
+	O[N5] = lerp(O[N5], PIXEL, 3.0 / 8); \
+	O[N8] = lerp(O[N8], PIXEL, 2.0 / 8); \
+	O[N9] = lerp(O[N9], PIXEL, 1.0 / 8); \
+	O[N12] = lerp(O[N12], PIXEL, 2.0 / 8); \
+	O[N13] = lerp(O[N13], PIXEL, 1.0 / 8); \
+	O[N2] = lerp(O[N2], PIXEL, 1.0 / 8); \
+	O[N6] = lerp(O[N6], PIXEL, 1.0 / 16); \
+	O[N10] = lerp(O[N10], PIXEL, 1.0 / 16); \
+	O[N14] = lerp(O[N14], PIXEL, 1.0 / 32);
+
+#define UP_2_4X_LV3(N0, N1, N2, N3, N4, N5, N6, N7, N8, N9, N10, N11, N12, N13, N14, N15, PIXEL, PE) \
+	O[N0] = lerp(PIXEL, O[N0], 5.0 / 8); \
+	O[N1] = lerp(PIXEL, O[N1], 5.0 / 8); \
+	O[N4] = lerp(O[N4], PIXEL, 3.0 / 8); \
+	O[N5] = lerp(O[N5], PIXEL, 3.0 / 8); \
+	O[N2] = lerp(O[N2], PIXEL, 2.0 / 8); \
+	O[N6] = lerp(O[N6], PIXEL, 1.0 / 8); \
+	O[N3] = lerp(O[N3], PIXEL, 2.0 / 8); \
+	O[N7] = lerp(O[N7], PIXEL, 1.0 / 8); \
+	O[N8] = lerp(O[N8], PIXEL, 1.0 / 8); \
+	O[N9] = lerp(O[N9], PIXEL, 1.0 / 16); \
+	O[N10] = lerp(O[N10], PIXEL, 1.0 / 16); \
+	O[N11] = lerp(O[N11], PIXEL, 1.0 / 32);
+
+/* Level 4 gradient-aware 4x interpolation macros */
+#define LEFT_UP_2_4X_LV4(N0, N1, N2, N3, N4, N5, N6, N7, N8, N9, N10, N11, N12, N13, N14, N15, PIXEL, PE, GRAD) \
+	{ \
+		if (GRAD > 12) { \
+			O[N0] = lerp(PIXEL, O[N0], 7.0 / 8); \
+			O[N1] = lerp(PIXEL, O[N1], 6.0 / 8); \
+			O[N4] = lerp(PIXEL, O[N4], 6.0 / 8); \
+			O[N5] = lerp(O[N5], PIXEL, 2.0 / 8); \
+			O[N2] = lerp(O[N2], PIXEL, 3.0 / 8); \
+			O[N3] = lerp(O[N3], PIXEL, 2.0 / 8); \
+			O[N8] = lerp(O[N8], PIXEL, 3.0 / 8); \
+			O[N9] = lerp(O[N9], PIXEL, 2.0 / 8); \
+			O[N6] = lerp(O[N6], PIXEL, 2.0 / 8); \
+			O[N10] = lerp(O[N10], PIXEL, 1.0 / 8); \
+			O[N12] = lerp(O[N12], PIXEL, 2.0 / 8); \
+			O[N13] = lerp(O[N13], PIXEL, 1.0 / 8); \
+		} else if (GRAD > 8) { \
+			O[N0] = lerp(PIXEL, O[N0], 6.0 / 8); \
+			O[N1] = lerp(PIXEL, O[N1], 5.0 / 8); \
+			O[N4] = lerp(PIXEL, O[N4], 5.0 / 8); \
+			O[N5] = lerp(O[N5], PIXEL, 3.0 / 8); \
+			O[N2] = lerp(O[N2], PIXEL, 2.0 / 8); \
+			O[N3] = lerp(O[N3], PIXEL, 1.0 / 8); \
+			O[N8] = lerp(O[N8], PIXEL, 2.0 / 8); \
+			O[N9] = lerp(O[N9], PIXEL, 1.0 / 8); \
+			O[N6] = lerp(O[N6], PIXEL, 1.0 / 8); \
+			O[N10] = lerp(O[N10], PIXEL, 1.0 / 16); \
+			O[N12] = lerp(O[N12], PIXEL, 1.0 / 8); \
+			O[N13] = lerp(O[N13], PIXEL, 1.0 / 16); \
+		} else { \
+			LEFT_UP_2_4X_LV3(N0, N1, N2, N3, N4, N5, N6, N7, N8, N9, N10, N11, N12, N13, N14, N15, PIXEL, PE); \
+		} \
+	}
+
+#define LEFT_2_4X_LV4(N0, N1, N2, N3, N4, N5, N6, N7, N8, N9, N10, N11, N12, N13, N14, N15, PIXEL, PE, GRAD) \
+	{ \
+		if (GRAD > 12) { \
+			O[N0] = lerp(PIXEL, O[N0], 6.0 / 8); \
+			O[N1] = lerp(O[N1], PIXEL, 2.0 / 8); \
+			O[N4] = lerp(PIXEL, O[N4], 6.0 / 8); \
+			O[N5] = lerp(O[N5], PIXEL, 2.0 / 8); \
+			O[N8] = lerp(O[N8], PIXEL, 3.0 / 8); \
+			O[N9] = lerp(O[N9], PIXEL, 2.0 / 8); \
+			O[N12] = lerp(O[N12], PIXEL, 3.0 / 8); \
+			O[N13] = lerp(O[N13], PIXEL, 2.0 / 8); \
+		} else if (GRAD > 8) { \
+			O[N0] = lerp(PIXEL, O[N0], 5.0 / 8); \
+			O[N1] = lerp(O[N1], PIXEL, 3.0 / 8); \
+			O[N4] = lerp(PIXEL, O[N4], 5.0 / 8); \
+			O[N5] = lerp(O[N5], PIXEL, 3.0 / 8); \
+			O[N8] = lerp(O[N8], PIXEL, 2.0 / 8); \
+			O[N9] = lerp(O[N9], PIXEL, 1.0 / 8); \
+			O[N12] = lerp(O[N12], PIXEL, 2.0 / 8); \
+			O[N13] = lerp(O[N13], PIXEL, 1.0 / 8); \
+		} else { \
+			LEFT_2_4X_LV3(N0, N1, N2, N3, N4, N5, N6, N7, N8, N9, N10, N11, N12, N13, N14, N15, PIXEL, PE); \
+		} \
+	}
+
+#define UP_2_4X_LV4(N0, N1, N2, N3, N4, N5, N6, N7, N8, N9, N10, N11, N12, N13, N14, N15, PIXEL, PE, GRAD) \
+	{ \
+		if (GRAD > 12) { \
+			O[N0] = lerp(PIXEL, O[N0], 6.0 / 8); \
+			O[N1] = lerp(PIXEL, O[N1], 6.0 / 8); \
+			O[N4] = lerp(O[N4], PIXEL, 2.0 / 8); \
+			O[N5] = lerp(O[N5], PIXEL, 2.0 / 8); \
+			O[N2] = lerp(O[N2], PIXEL, 3.0 / 8); \
+			O[N6] = lerp(O[N6], PIXEL, 2.0 / 8); \
+			O[N3] = lerp(O[N3], PIXEL, 3.0 / 8); \
+			O[N7] = lerp(O[N7], PIXEL, 2.0 / 8); \
+		} else if (GRAD > 8) { \
+			O[N0] = lerp(PIXEL, O[N0], 5.0 / 8); \
+			O[N1] = lerp(PIXEL, O[N1], 5.0 / 8); \
+			O[N4] = lerp(O[N4], PIXEL, 3.0 / 8); \
+			O[N5] = lerp(O[N5], PIXEL, 3.0 / 8); \
+			O[N2] = lerp(O[N2], PIXEL, 2.0 / 8); \
+			O[N6] = lerp(O[N6], PIXEL, 1.0 / 8); \
+			O[N3] = lerp(O[N3], PIXEL, 2.0 / 8); \
+			O[N7] = lerp(O[N7], PIXEL, 1.0 / 8); \
+		} else { \
+			UP_2_4X_LV3(N0, N1, N2, N3, N4, N5, N6, N7, N8, N9, N10, N11, N12, N13, N14, N15, PIXEL, PE); \
+		} \
+	}
+
+#define DIA_4X_LV4(N0, N1, N2, N3, N4, N5, N6, N7, N8, N9, N10, N11, N12, N13, N14, N15, PIXEL, PE) \
+	O[N0] = lerp(O[N0], PIXEL, 3.0 / 8); \
+	O[N1] = lerp(O[N1], PIXEL, 2.0 / 8); \
+	O[N4] = lerp(O[N4], PIXEL, 2.0 / 8); \
+	O[N5] = lerp(O[N5], PIXEL, 1.0 / 8);
+
+			case 3 :
+				/* xbr level 2 */
+				O[0] = O[1] = O[2] = O[3] = O[4] = O[5] = O[6] = O[7] = O[8] = O[9] = O[10] = O[11] = O[12] = O[13] = O[14] = O[15] = E;
+
+				XBR_LV2_4X(E, I, H, F, G, C, D, B, A, G5, C4, G0, D0, C1, B1, F4, I4, H5, I5, A0, A1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15);
+				XBR_LV2_4X(E, C, F, B, I, A, H, D, G, I4, A1, I5, H5, A0, D0, B1, C1, F4, C4, G5, G0, 12, 8, 4, 0, 13, 9, 5, 1, 14, 10, 6, 2, 15, 11, 7, 3);
+				XBR_LV2_4X(E, A, B, D, C, G, F, H, I, C1, G0, C4, F4, G5, H5, D0, A0, B1, A1, I4, I5, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0);
+				XBR_LV2_4X(E, G, D, H, A, I, B, F, C, A0, I5, A1, B1, I4, F4, H5, G5, D0, G0, C1, C4, 3, 7, 11, 15, 2, 6, 10, 14, 1, 5, 9, 13, 0, 4, 8, 12);
+
 				break;
+			case 4 :
+				/* xbr level 3 */
+				O[0] = O[1] = O[2] = O[3] = O[4] = O[5] = O[6] = O[7] = O[8] = O[9] = O[10] = O[11] = O[12] = O[13] = O[14] = O[15] = E;
+
+				XBR_LV3_4X(E, I, H, F, G, C, D, B, A, G5, C4, G0, D0, C1, B1, F4, I4, H5, I5, A0, A1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15);
+				XBR_LV3_4X(E, C, F, B, I, A, H, D, G, I4, A1, I5, H5, A0, D0, B1, C1, F4, C4, G5, G0, 12, 8, 4, 0, 13, 9, 5, 1, 14, 10, 6, 2, 15, 11, 7, 3);
+				XBR_LV3_4X(E, A, B, D, C, G, F, H, I, C1, G0, C4, F4, G5, H5, D0, A0, B1, A1, I4, I5, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0);
+				XBR_LV3_4X(E, G, D, H, A, I, B, F, C, A0, I5, A1, B1, I4, F4, H5, G5, D0, G0, C1, C4, 3, 7, 11, 15, 2, 6, 10, 14, 1, 5, 9, 13, 0, 4, 8, 12);
+				break;
+			case 5 :
+				/* xbr level 4 */
+				O[0] = O[1] = O[2] = O[3] = O[4] = O[5] = O[6] = O[7] = O[8] = O[9] = O[10] = O[11] = O[12] = O[13] = O[14] = O[15] = E;
+
+				XBR_LV4_4X(E, I, H, F, G, C, D, B, A, G5, C4, G0, D0, C1, B1, F4, I4, H5, I5, A0, A1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15);
+				XBR_LV4_4X(E, C, F, B, I, A, H, D, G, I4, A1, I5, H5, A0, D0, B1, C1, F4, C4, G5, G0, 12, 8, 4, 0, 13, 9, 5, 1, 14, 10, 6, 2, 15, 11, 7, 3);
+				XBR_LV4_4X(E, A, B, D, C, G, F, H, I, C1, G0, C4, F4, G5, H5, D0, A0, B1, A1, I4, I5, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0);
+				XBR_LV4_4X(E, G, D, H, A, I, B, F, C, A0, I5, A1, B1, I4, F4, H5, G5, D0, G0, C1, C4, 3, 7, 11, 15, 2, 6, 10, 14, 1, 5, 9, 13, 0, 4, 8, 12);
+				break;						
 			}
 
-			pixel_put(x * 4, y * 4, dst_ptr, dst_slice, pixel, width * 4, height * 4, E0);
-			pixel_put(x * 4 + 1, y * 4, dst_ptr, dst_slice, pixel, width * 4, height * 4, E1);
-			pixel_put(x * 4 + 2, y * 4, dst_ptr, dst_slice, pixel, width * 4, height * 4, E2);
-			pixel_put(x * 4 + 3, y * 4, dst_ptr, dst_slice, pixel, width * 4, height * 4, E3);
-			pixel_put(x * 4, y * 4 + 1, dst_ptr, dst_slice, pixel, width * 4, height * 4, E4);
-			pixel_put(x * 4 + 1, y * 4 + 1, dst_ptr, dst_slice, pixel, width * 4, height * 4, E5);
-			pixel_put(x * 4 + 2, y * 4 + 1, dst_ptr, dst_slice, pixel, width * 4, height * 4, E6);
-			pixel_put(x * 4 + 3, y * 4 + 1, dst_ptr, dst_slice, pixel, width * 4, height * 4, E7);
-			pixel_put(x * 4, y * 4 + 2, dst_ptr, dst_slice, pixel, width * 4, height * 4, E8);
-			pixel_put(x * 4 + 1, y * 4 + 2, dst_ptr, dst_slice, pixel, width * 4, height * 4, E9);
-			pixel_put(x * 4 + 2, y * 4 + 2, dst_ptr, dst_slice, pixel, width * 4, height * 4, EA);
-			pixel_put(x * 4 + 3, y * 4 + 2, dst_ptr, dst_slice, pixel, width * 4, height * 4, EB);
-			pixel_put(x * 4, y * 4 + 3, dst_ptr, dst_slice, pixel, width * 4, height * 4, EC);
-			pixel_put(x * 4 + 1, y * 4 + 3, dst_ptr, dst_slice, pixel, width * 4, height * 4, ED);
-			pixel_put(x * 4 + 2, y * 4 + 3, dst_ptr, dst_slice, pixel, width * 4, height * 4, EE);
-			pixel_put(x * 4 + 3, y * 4 + 3, dst_ptr, dst_slice, pixel, width * 4, height * 4, EF);
+			pixel_put(x * 4, y * 4, dst_ptr, dst_slice, pixel, width * 4, height * 4, O[0]);
+			pixel_put(x * 4 + 1, y * 4, dst_ptr, dst_slice, pixel, width * 4, height * 4, O[1]);
+			pixel_put(x * 4 + 2, y * 4, dst_ptr, dst_slice, pixel, width * 4, height * 4, O[2]);
+			pixel_put(x * 4 + 3, y * 4, dst_ptr, dst_slice, pixel, width * 4, height * 4, O[3]);
+			pixel_put(x * 4, y * 4 + 1, dst_ptr, dst_slice, pixel, width * 4, height * 4, O[4]);
+			pixel_put(x * 4 + 1, y * 4 + 1, dst_ptr, dst_slice, pixel, width * 4, height * 4, O[5]);
+			pixel_put(x * 4 + 2, y * 4 + 1, dst_ptr, dst_slice, pixel, width * 4, height * 4, O[6]);
+			pixel_put(x * 4 + 3, y * 4 + 1, dst_ptr, dst_slice, pixel, width * 4, height * 4, O[7]);
+			pixel_put(x * 4, y * 4 + 2, dst_ptr, dst_slice, pixel, width * 4, height * 4, O[8]);
+			pixel_put(x * 4 + 1, y * 4 + 2, dst_ptr, dst_slice, pixel, width * 4, height * 4, O[9]);
+			pixel_put(x * 4 + 2, y * 4 + 2, dst_ptr, dst_slice, pixel, width * 4, height * 4, O[10]);
+			pixel_put(x * 4 + 3, y * 4 + 2, dst_ptr, dst_slice, pixel, width * 4, height * 4, O[11]);
+			pixel_put(x * 4, y * 4 + 3, dst_ptr, dst_slice, pixel, width * 4, height * 4, O[12]);
+			pixel_put(x * 4 + 1, y * 4 + 3, dst_ptr, dst_slice, pixel, width * 4, height * 4, O[13]);
+			pixel_put(x * 4 + 2, y * 4 + 3, dst_ptr, dst_slice, pixel, width * 4, height * 4, O[14]);
+			pixel_put(x * 4 + 3, y * 4 + 3, dst_ptr, dst_slice, pixel, width * 4, height * 4, O[15]);
 		}
 	}
 
@@ -952,9 +1619,19 @@ void scale2x3(unsigned char* dst_ptr, unsigned dst_slice, const unsigned char* s
 
 	for (y = 0; y < height; ++y) {
 		for (x = 0; x < width; ++x) {
-			pixel_t E0, E1, E2, E3, E4, E5;
+			pixel_t O[6];
 			pixel_t A, B, C, D, E, F, G, H, I;
 			int k0, k1, k2, k3;
+
+/*
+        ABC
+        DEF
+        GHI
+
+        O0O1
+        O2O3
+        O4O5
+ */
 
 			A = pixel_get(x - 1, y - 1, src_ptr, src_slice, pixel, width, height, opt_tes);
 			B = pixel_get(x, y - 1, src_ptr, src_slice, pixel, width, height, opt_tes);
@@ -966,25 +1643,16 @@ void scale2x3(unsigned char* dst_ptr, unsigned dst_slice, const unsigned char* s
 			H = pixel_get(x, y + 1, src_ptr, src_slice, pixel, width, height, opt_tes);
 			I = pixel_get(x + 1, y + 1, src_ptr, src_slice, pixel, width, height, opt_tes);
 
-			/*
-			        ABC
-			        DEF
-			        GHI
-
-			        E0E1
-			        E2E3
-			        E4E5
-			 */
 			switch (opt_ver) {
 			default :
 			case 0 :
 				/* version 0, normal scaling */
-				E0 = E;
-				E1 = E;
-				E2 = E;
-				E3 = E;
-				E4 = E;
-				E5 = E;
+				O[0] = E;
+				O[1] = E;
+				O[2] = E;
+				O[3] = E;
+				O[4] = E;
+				O[5] = E;
 				break;
 			case 1 :
 				/* default */
@@ -992,21 +1660,21 @@ void scale2x3(unsigned char* dst_ptr, unsigned dst_slice, const unsigned char* s
 				k1 = B == F && B != D && F != H;
 				k2 = D == H && D != B && H != F;
 				k3 = H == F && D != H && B != F;
-				E0 = k0 ? D : E;
-				E1 = k1 ? F : E;
-				E2 = (k0 && E != G) || (k2 && E != A) ? D : E;
-				E3 = (k1 && E != I) || (k3 && E != C) ? F : E;
-				E4 = k2 ? D : E;
-				E5 = k3 ? F : E;
+				O[0] = k0 ? D : E;
+				O[1] = k1 ? F : E;
+				O[2] = (k0 && E != G) || (k2 && E != A) ? D : E;
+				O[3] = (k1 && E != I) || (k3 && E != C) ? F : E;
+				O[4] = k2 ? D : E;
+				O[5] = k3 ? F : E;
 				break;
 			}
 
-			pixel_put(x * 2, y * 3, dst_ptr, dst_slice, pixel, width * 2, height * 3, E0);
-			pixel_put(x * 2 + 1, y * 3, dst_ptr, dst_slice, pixel, width * 2, height * 3, E1);
-			pixel_put(x * 2, y * 3 + 1, dst_ptr, dst_slice, pixel, width * 2, height * 3, E2);
-			pixel_put(x * 2 + 1, y * 3 + 1, dst_ptr, dst_slice, pixel, width * 2, height * 3, E3);
-			pixel_put(x * 2, y * 3 + 2, dst_ptr, dst_slice, pixel, width * 2, height * 3, E4);
-			pixel_put(x * 2 + 1, y * 3 + 2, dst_ptr, dst_slice, pixel, width * 2, height * 3, E5);
+			pixel_put(x * 2, y * 3, dst_ptr, dst_slice, pixel, width * 2, height * 3, O[0]);
+			pixel_put(x * 2 + 1, y * 3, dst_ptr, dst_slice, pixel, width * 2, height * 3, O[1]);
+			pixel_put(x * 2, y * 3 + 1, dst_ptr, dst_slice, pixel, width * 2, height * 3, O[2]);
+			pixel_put(x * 2 + 1, y * 3 + 1, dst_ptr, dst_slice, pixel, width * 2, height * 3, O[3]);
+			pixel_put(x * 2, y * 3 + 2, dst_ptr, dst_slice, pixel, width * 2, height * 3, O[4]);
+			pixel_put(x * 2 + 1, y * 3 + 2, dst_ptr, dst_slice, pixel, width * 2, height * 3, O[5]);
 		}
 	}
 }
@@ -1020,9 +1688,20 @@ void scale2x4(unsigned char* dst_ptr, unsigned dst_slice, const unsigned char* s
 
 	for (y = 0; y < height; ++y) {
 		for (x = 0; x < width; ++x) {
-			pixel_t E0, E1, E2, E3, E4, E5, E6, E7;
+			pixel_t O[8];
 			pixel_t A, B, C, D, E, F, G, H, I;
 			int k0, k1, k2, k3;
+
+/*
+        ABC
+        DEF
+        GHI
+
+        O0O1
+        O2O3
+        O4O5
+        O6O7
+*/
 
 			A = pixel_get(x - 1, y - 1, src_ptr, src_slice, pixel, width, height, opt_tes);
 			B = pixel_get(x, y - 1, src_ptr, src_slice, pixel, width, height, opt_tes);
@@ -1034,28 +1713,18 @@ void scale2x4(unsigned char* dst_ptr, unsigned dst_slice, const unsigned char* s
 			H = pixel_get(x, y + 1, src_ptr, src_slice, pixel, width, height, opt_tes);
 			I = pixel_get(x + 1, y + 1, src_ptr, src_slice, pixel, width, height, opt_tes);
 
-			/*
-			        ABC
-			        DEF
-			        GHI
-
-			        E0E1
-			        E2E3
-			        E4E5
-			        E6E7
-			 */
 			switch (opt_ver) {
 			default :
 			case 0 :
 				/* version 0, normal scaling */
-				E0 = E;
-				E1 = E;
-				E2 = E;
-				E3 = E;
-				E4 = E;
-				E5 = E;
-				E6 = E;
-				E7 = E;
+				O[0] = E;
+				O[1] = E;
+				O[2] = E;
+				O[3] = E;
+				O[4] = E;
+				O[5] = E;
+				O[6] = E;
+				O[7] = E;
 				break;
 			case 1 :
 				/* default */
@@ -1063,14 +1732,14 @@ void scale2x4(unsigned char* dst_ptr, unsigned dst_slice, const unsigned char* s
 				k1 = B == F && B != D && F != H;
 				k2 = D == H && D != B && H != F;
 				k3 = H == F && D != H && B != F;
-				E0 = k0 ? D : E;
-				E1 = k1 ? F : E;
-				E2 = (k0 && E != G) || (k2 && E != A) ? D : E;
-				E3 = (k1 && E != I) || (k3 && E != C) ? F : E;
-				E4 = (k0 && E != G) || (k2 && E != A) ? D : E;
-				E5 = (k1 && E != I) || (k3 && E != C) ? F : E;
-				E6 = k2 ? D : E;
-				E7 = k3 ? F : E;
+				O[0] = k0 ? D : E;
+				O[1] = k1 ? F : E;
+				O[2] = (k0 && E != G) || (k2 && E != A) ? D : E;
+				O[3] = (k1 && E != I) || (k3 && E != C) ? F : E;
+				O[4] = (k0 && E != G) || (k2 && E != A) ? D : E;
+				O[5] = (k1 && E != I) || (k3 && E != C) ? F : E;
+				O[6] = k2 ? D : E;
+				O[7] = k3 ? F : E;
 				break;
 			case 2 :
 				/* Hans de Goede variation, rejected */
@@ -1078,25 +1747,25 @@ void scale2x4(unsigned char* dst_ptr, unsigned dst_slice, const unsigned char* s
 				k1 = B == F && B != D && F != H;
 				k2 = D == H && D != B && H != F;
 				k3 = H == F && D != H && B != F;
-				E0 = k0 ? D : E;
-				E1 = k1 ? F : E;
-				E2 = k0 ? D : E;
-				E3 = k1 ? F : E;
-				E4 = k2 ? D : E;
-				E5 = k3 ? F : E;
-				E6 = k2 ? D : E;
-				E7 = k3 ? F : E;
+				O[0] = k0 ? D : E;
+				O[1] = k1 ? F : E;
+				O[2] = k0 ? D : E;
+				O[3] = k1 ? F : E;
+				O[4] = k2 ? D : E;
+				O[5] = k3 ? F : E;
+				O[6] = k2 ? D : E;
+				O[7] = k3 ? F : E;
 				break;
 			}
 
-			pixel_put(x * 2, y * 4, dst_ptr, dst_slice, pixel, width * 2, height * 4, E0);
-			pixel_put(x * 2 + 1, y * 4, dst_ptr, dst_slice, pixel, width * 2, height * 4, E1);
-			pixel_put(x * 2, y * 4 + 1, dst_ptr, dst_slice, pixel, width * 2, height * 4, E2);
-			pixel_put(x * 2 + 1, y * 4 + 1, dst_ptr, dst_slice, pixel, width * 2, height * 4, E3);
-			pixel_put(x * 2, y * 4 + 2, dst_ptr, dst_slice, pixel, width * 2, height * 4, E4);
-			pixel_put(x * 2 + 1, y * 4 + 2, dst_ptr, dst_slice, pixel, width * 2, height * 4, E5);
-			pixel_put(x * 2, y * 4 + 3, dst_ptr, dst_slice, pixel, width * 2, height * 4, E6);
-			pixel_put(x * 2 + 1, y * 4 + 3, dst_ptr, dst_slice, pixel, width * 2, height * 4, E7);
+			pixel_put(x * 2, y * 4, dst_ptr, dst_slice, pixel, width * 2, height * 4, O[0]);
+			pixel_put(x * 2 + 1, y * 4, dst_ptr, dst_slice, pixel, width * 2, height * 4, O[1]);
+			pixel_put(x * 2, y * 4 + 1, dst_ptr, dst_slice, pixel, width * 2, height * 4, O[2]);
+			pixel_put(x * 2 + 1, y * 4 + 1, dst_ptr, dst_slice, pixel, width * 2, height * 4, O[3]);
+			pixel_put(x * 2, y * 4 + 2, dst_ptr, dst_slice, pixel, width * 2, height * 4, O[4]);
+			pixel_put(x * 2 + 1, y * 4 + 2, dst_ptr, dst_slice, pixel, width * 2, height * 4, O[5]);
+			pixel_put(x * 2, y * 4 + 3, dst_ptr, dst_slice, pixel, width * 2, height * 4, O[6]);
+			pixel_put(x * 2 + 1, y * 4 + 3, dst_ptr, dst_slice, pixel, width * 2, height * 4, O[7]);
 		}
 	}
 }
@@ -1338,8 +2007,20 @@ int main(int argc, char* argv[])
 				opt_ver = 1;
 			else if (strcmp(optarg, "k") == 0)
 				opt_ver = 2;
-			else
-				opt_ver = atoi(optarg);
+			else if (strcmp(optarg, "xbr") == 0 || strcmp(optarg, "xbr_l2") == 0)
+				opt_ver = 3;
+			else if (strcmp(optarg, "xbr_l3") == 0)
+				opt_ver = 4;
+			else if (strcmp(optarg, "xbr_l4") == 0)
+				opt_ver = 5;
+			else {
+				char *e;
+				opt_ver = strtol(optarg, &e, 10);
+				if (*e != 0) {
+					printf("Invalid -r option. Valid values are x, k, xbr, xbr_l3, xbr_l4.\n");
+					exit(EXIT_FAILURE);
+				}
+			}
 			break;
 		case 'g' :
 			opt_gen = 1;
