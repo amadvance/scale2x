@@ -1,0 +1,28 @@
+// Scale2x (rev3) GLSL shader - ported by Pete Bernert modified by ShadX comment by Pete Bernert (from original scale2x GLSLang)
+//
+//
+// Scale2x Homepage: http://scale2x.sourceforge.net/
+//
+// Scale2X is using the GPL, so feel free to use this shader in your work, but
+// publish the source as well, for other interested coders to see and/or modify.
+//
+
+uniform vec4 OGL2Param;
+uniform vec4 OGL2Size;
+uniform sampler2D OGL2Texture;
+
+void main()
+{
+
+vec4 col = texture2DProj(OGL2Texture, gl_TexCoord[0]);
+vec4 tl = texture2DProj(OGL2Texture, gl_TexCoord[1]);//top-left
+vec4 tr = texture2DProj(OGL2Texture, gl_TexCoord[2]); //top-right
+vec4 bl = texture2DProj(OGL2Texture, gl_TexCoord[3]);//bottom-left
+vec4 br = texture2DProj(OGL2Texture, gl_TexCoord[4]);//bottom-right
+
+if (tl == br && tr != bl) col = tl;
+if (tr == bl && tl != br) col = tr;
+
+gl_FragColor = col;
+
+}

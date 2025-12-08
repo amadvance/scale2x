@@ -1,0 +1,27 @@
+Pete's OpenGL2 GLslang shader effect: "Scale2x"
+==============================================
+
+Description:
+------------
+A shader for improving the display, especially for "clean" 2D games. It's a port of the original Scale2x algorithm from by Andrea Mazzoleni. Check out the Scale2x site (http://scale2x.sourceforge.net/) for more details.
+
+Installation:
+-------------
+Copy the "gpuPeteOGL2.slv" and "gpuPeteOGL2.slf" files into a emu sub-directory called "shaders". Configure the plugin's "Shader effects" option to "5 - GLSlang files", and set the "Shader effect level" to "4 - Maximum".
+
+Important: to get a real Scale2x effect, your configured window/fullscreen size has to be at least twice as the internal psx display resolution. 
+
+The correct formula to set your window/fullscreen size is: 
+ 
+ "psx game resolution" * "plugin internal resolution mode + 1" * 2
+
+So, for a psx game which is using 320x240, and the "1 - high" mode, you would need
+320x240 * (1 + 1) * 2 = 640x480 * 2 = 1280x960 
+
+Or, simply put: if you use "0 - low" as X/Y internal resolution, you should use a minimum 640x480 window/fullscreen size with most games. If you are using "1 - high", most games will need at least a 1280x960 window/fullscreen size. Note: smaller sizes will also work, but the Scale2x algorithm will fail on some screen pixels.
+
+Also note that the plugin's "screen filtering" option should be turned off.
+
+License:
+--------
+The Scale2x algorithm is using the GPL. Further details can be found on the Scale2x site (URL see above).

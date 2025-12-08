@@ -23,7 +23,6 @@ AC_CHECK_LIB([png], [png_get_IHDR],
 )
 
 # Checks for header files.
-AC_HEADER_STDC
 AC_CHECK_HEADERS([unistd.h getopt.h sys/time.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
