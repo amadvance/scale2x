@@ -129,13 +129,24 @@ check-local:
 	$(AM_V_at)mkdir bench
 	@echo -- Generate the template.png
 	$(AM_V_at)$(TESTENV) ./scalerx$(EXEEXT) -g
+	$(AM_V_at)$(TESTENV) ./scalerx$(EXEEXT) -k 3 -r 0 template.png bench/template_original.png
 	@echo -- Test the template
 	$(AM_V_at)$(TESTENV) ./scalerx$(EXEEXT) -k 2 -c template.png bench/ttx22.png | $(DTOU) >> bench/check.lst
 	$(AM_V_at)$(TESTENV) ./scalerx$(EXEEXT) -k 3 -c template.png bench/ttx33.png | $(DTOU) >> bench/check.lst
 	$(AM_V_at)$(TESTENV) ./scalerx$(EXEEXT) -k 4 -c template.png bench/ttx44.png | $(DTOU) >> bench/check.lst
+	$(AM_V_at)$(TESTENV) ./scalerx$(EXEEXT) -k 4 -r 0 bench/template_original.png bench/template_original.png
+	$(AM_V_at)$(TESTENV) ./scalerx$(EXEEXT) -k 3 -r 0 bench/ttx22.png bench/template_scale2x.png
+	$(AM_V_at)$(TESTENV) ./scalerx$(EXEEXT) -k 2 -r 0 bench/template_scale2x.png bench/template_scale2x.png
+	$(AM_V_at)$(TESTENV) ./scalerx$(EXEEXT) -k 4 -r 0 bench/ttx33.png bench/template_scale3x.png
+	$(AM_V_at)$(TESTENV) ./scalerx$(EXEEXT) -k 3 -r 0 bench/ttx44.png bench/template_scale4x.png
 	$(AM_V_at)$(TESTENV) ./scalerx$(EXEEXT) -k 2 -r k -c template.png bench/ttk22.png | $(DTOU) >> bench/check.lst
 	$(AM_V_at)$(TESTENV) ./scalerx$(EXEEXT) -k 3 -r k -c template.png bench/ttk33.png | $(DTOU) >> bench/check.lst
 	$(AM_V_at)$(TESTENV) ./scalerx$(EXEEXT) -k 4 -r k -c template.png bench/ttk44.png | $(DTOU) >> bench/check.lst
+	$(AM_V_at)$(TESTENV) ./scalerx$(EXEEXT) -k 4 -r 0 bench/template_original.png bench/template_original.png
+	$(AM_V_at)$(TESTENV) ./scalerx$(EXEEXT) -k 3 -r 0 bench/ttk22.png bench/template_scale2k.png
+	$(AM_V_at)$(TESTENV) ./scalerx$(EXEEXT) -k 2 -r 0 bench/template_scale2k.png bench/template_scale2k.png
+	$(AM_V_at)$(TESTENV) ./scalerx$(EXEEXT) -k 4 -r 0 bench/ttk33.png bench/template_scale3k.png
+	$(AM_V_at)$(TESTENV) ./scalerx$(EXEEXT) -k 3 -r 0 bench/ttk44.png bench/template_scale4k.png	
 	@echo -- Test the basn files
 	$(AM_V_at)for i in $(TEST); do \
 		$(TESTENV) ./scalerx$(EXEEXT) -k 2 -c $(srcdir)/test/basn$$i.png bench/tr22$$i.png | $(DTOU) >> bench/check.lst ; \
