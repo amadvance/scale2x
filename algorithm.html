@@ -53,14 +53,14 @@
 
 <h2>Scale2x Algorithm</h2>
 <p>
-The effect works repeating a computation pattern for every pixel of the original
+The effect works by repeating a computation pattern for every pixel of the original
 image.
 The pattern starts from a square of 9 pixels and expands the central pixel
-computing 4 new pixels.
+by computing 4 new pixels.
 </p>
 
 <p>
-Starting from this pattern :
+Starting from this pattern:
 </p>
 
 <center><table class="algo">
@@ -70,7 +70,7 @@ Starting from this pattern :
 </table></center>
 
 <p>
-The central pixel <em>E</em> is expanded in 4 new pixels:
+The central pixel <em>E</em> is expanded into 4 new pixels:
 </p>
 
 <center><table class="algo">
@@ -79,7 +79,7 @@ The central pixel <em>E</em> is expanded in 4 new pixels:
 </table></center>
 
 <p>
-with these rules (in C language) :
+with these rules (in C language):
 </p>
 
 <pre>
@@ -90,7 +90,7 @@ E3 = H == F && D != H && B != F ? F : E;
 </pre>
 
 <p>
-which can be rewritten as :
+which can be rewritten as:
 </p>
 
 <pre>
@@ -119,13 +119,13 @@ if (B != H && D != F) {
 </pre>
 
 <p>
-The image border is computed reusing the value of the nearest pixel on the
+The image border is computed by reusing the value of the nearest pixel on the
 border when the value of a pixel over the border is required.
 </p>
 
 <h2>Scale3x Algorithm</h2>
 <p>
-Starting from this pattern :
+Starting from this pattern:
 </p>
 
 <center><table class="algo">
@@ -135,7 +135,7 @@ Starting from this pattern :
 </table></center>
 
 <p>
-The central pixel <em>E</em> is expanded in 9 new pixels:
+The central pixel <em>E</em> is expanded into 9 new pixels:
 </p>
 
 <center><table class="algo">
@@ -145,7 +145,7 @@ The central pixel <em>E</em> is expanded in 9 new pixels:
 </table></center>
 
 <p>
-with these rules (in C language) :
+with these rules (in C language):
 </p>
 
 <pre>
@@ -226,6 +226,5 @@ The following are some examples that show the application of the effects.
 </div>
 </body>
 </html>
-
 
 
