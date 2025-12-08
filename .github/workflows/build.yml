@@ -11,6 +11,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+      - run: sudo apt-get update && sudo apt-get install -y libpng-dev
       - run: autoreconf -i
       - run: ./configure
-      - run: make all check
+      - run: make all
+      - run: make distcheck
