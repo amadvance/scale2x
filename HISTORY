@@ -4,25 +4,26 @@ Scale2x HISTORY
 4.1 2025/11
 ===========
  * Added a new ARM NEON implementation [Thomas Bernard].
-   To enable it, you must build with the -mfpu=neon option.
- * Support implementation selection at runtime with the new -o cmdline
+ * To enable it, it had to be built with the -mfpu=neon option.
+ * Supported implementation selection at runtime with the new -o cmdline
    option, and the "opt" function argument.
 
 4.0 2016/11
 ===========
- * Added a new SSE2 implementation using intrinsics that replaces the old
+ * Added a new SSE2 implementation using intrinsics that replaced the old
    MMX one [Thomas Bernard].
-   To enable it, you must build with the -msse2 option.
+ * To enable it, it had to be built with the -msse2 option.
  * Made source ANSI C compliant [Thomas Bernard].
- * Windows binaries built with gcc 4.9.3 using the MXE cross compiler at
+ * Windows binaries were built with gcc 4.9.3 using the MXE cross compiler at
    commit 62bcdbee56e87c81f1faa105b8777a5879d4e2e with targets
    i686-w64-mingw32 and x86_64-w64-mingw32.
 
 3.2 2015/08
 ===========
- * Revised the license. Now it's only GPLv2+.
- * Windows binary built with gcc 4.8.1 using the MXE cross compiler 2.23,
-   with targets i686-w64-mingw32. Before the target was i686-pc-mingw32.
+ * Revised the license. It was now only GPLv2+.
+ * Windows binary was built with gcc 4.8.1 using the MXE cross compiler 2.23,
+   with target i686-w64-mingw32.
+ * Before, the target was i686-pc-mingw32.
 
 3.1 2014/03
 ===========
@@ -30,53 +31,50 @@ Scale2x HISTORY
 
 3.0 2013/05
 ===========
- * Now in git repository.
- * Preliminary scale2k support in the 'scalerx' tool. Just select the algo
-   revision 'k'. It's the new effect used by AdvanceMAME.
- * Removed libpng.dll and zlib.dll files. They are not needed anymore.
+ * Was now in git repository.
+ * Preliminary scale2k support was added in the 'scalerx' tool.
+ * The algo revision 'k' was selected. It was the new effect used by AdvanceMAME.
+ * Removed libpng.dll and zlib.dll files. They were not needed anymore.
 
 2.5 2011/9
 ==========
  * Fixed compilation with newer libpng.
- * New EPX and "Depixelizing Pixel Art" documents in contrib/
+ * New EPX and "Depixelizing Pixel Art" documents were added in contrib/.
 
 2.4 2009/7
 ==========
- * Added MMX support for x86_64 [Per Øyvind Karlsen]
+ * Added MMX support for x86_64 [Per Øyvind Karlsen].
 
 2.3 2005/11
 ===========
- * Some additions in the contrib/ directory.
+ * Some additions were made in the contrib/ directory.
 
 2.2 2005/03
 ===========
  * Fixed a typo in the algorithm documentation of scale3x.
-   Specifically the definition of the E3 point in
-   the algorithm.txt file was wrong.
+ * Specifically, the definition of the E3 point in the algorithm.txt file was wrong.
 
 2.1 2004/12
 ===========
- * Added the `scale2x3' and `scale2x4' effects.
+ * Added the 'scale2x3' and 'scale2x4' effects.
  * Fixed the computation of the border pixels for scale3x.
- * Fixed the scalebit.c implementation to be C++
-   compatible [Max Horn]
+ * Fixed the scalebit.c implementation to be C++ compatible [Max Horn].
 
 2.0 2004/02
 ===========
- * Added a new revision of the `scale3x' effect. It now looks good as
-   `scale2x'.
- * Added a new optimized C version of the `scale2x' effect.
- * Added a detailed algorithm specification in the `algorithm.txt' file.
- * Minor fixes at the scalebit.c file.
+ * Added a new revision of the 'scale3x' effect.
+ * It now looked good as 'scale2x'.
+ * Added a new optimized C version of the 'scale2x' effect.
+ * Added a detailed algorithm specification in the 'algorithm.txt' file.
+ * Minor fixes were made at the scalebit.c file.
 
 1.6 2003/07
 ===========
  * Added an example of the fast implementation of the effects
-   applied to a generic bitmap. There is also an
-   example for the not obvious Scale4x effect.
- * Revised the command line tools. Now they support all the
-   formats of .PNG images. Also images with 16 bits per
-   channel.
+   applied to a generic bitmap.
+ * There was also an example for the not obvious Scale4x effect.
+ * Revised the command line tools.
+ * They now supported all the formats of .PNG images. Also images with 16 bits per channel.
  * Fixed a linking problem with some libpng installations.
 
 1.5 2003/05
@@ -91,14 +89,14 @@ Scale2x HISTORY
 1.3 2002/12
 ===========
  * Added the contrib dir with some example implementations.
-   Java by Randy Power and C SDL by Pete Shinners.
+ * Java by Randy Power and C SDL by Pete Shinners were included.
 
 1.2 2002/11
 ===========
- * The new Scale2x site is now http://scale2x.sourceforge.net
- * The MMX implementation now correctly computes the pixel on the
+ * The new Scale2x site was now http://scale2x.sourceforge.net.
+ * The MMX implementation now correctly computed the pixel on the
    left and right border.
- * Renamed the -t option in -w.
+ * Renamed the -t option to -w.
 
 1.1 2002/11
 ===========
@@ -106,5 +104,4 @@ Scale2x HISTORY
 
 1.0 2002/11
 ===========
- * First version of the library
-
+ * First version of the library.

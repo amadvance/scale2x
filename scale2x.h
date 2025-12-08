@@ -141,4 +141,3 @@ void scale2x4_32_neon(scale2x_uint32* dst0, scale2x_uint32* dst1, scale2x_uint32
 #endif
 
 #endif
-

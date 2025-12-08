@@ -16,7 +16,7 @@
 
 /*
  * This file contains an example implementation of the Scale effect
- * applyed to a generic bitmap.
+ * applied to a generic bitmap.
  *
  * You can find an high level description of the effect at :
  *
@@ -30,4 +30,3 @@ int scale_precondition(unsigned scale, unsigned pixel, unsigned width, unsigned 
 void scale(unsigned scale, void* void_dst, unsigned dst_slice, const void* void_src, unsigned src_slice, unsigned pixel, unsigned width, unsigned height, unsigned opt);
 
 #endif
-
